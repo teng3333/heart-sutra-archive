@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>聴いて覚える般若心経 — Heart Sutra Modern Archive</title>
+  <meta name="description" content="SUNO AIによって生成された般若心経の楽曲群を、デジタルアートギャラリーとしてアーカイブ。宗教音楽と現代テクノロジーの融合。">
+  <meta property="og:title" content="聴いて覚える般若心経 — Heart Sutra Modern Archive">
+  <meta property="og:description" content="12の音楽ジャンルで再解釈された般若心経。静寂と衝動の交差点。">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Noto+Serif+JP:wght@200;300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+  <!-- Locomotive Scroll CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css">
+
+  <link rel="stylesheet" href="src/css/style.css">
+</head>
+<body>
+
+  <!-- Grain Overlay -->
+  <div class="grain-overlay" aria-hidden="true"></div>
+
+  <!-- Cursor Glow -->
+  <div class="cursor-glow" aria-hidden="true"></div>
+
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loading-screen">
+    <div class="loading-inner">
+      <div class="loading-kanji">般若心経</div>
+      <div class="loading-en">Heart Sutra</div>
+      <div class="loading-bar-container">
+        <div class="loading-bar" id="loading-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div data-scroll-container id="scroll-container">
+
+    <!-- Hero Section -->
+    <header class="hero" data-scroll-section>
+      <div class="hero-inner">
+        <p class="hero-eyebrow" data-scroll data-scroll-speed="2">SUNO AI × 般若心経</p>
+        <h1 class="hero-title" data-scroll data-scroll-speed="1">
+          <span class="hero-title-line">聴いて覚える</span>
+          <span class="hero-title-line hero-title-accent">般若心経</span>
+        </h1>
+        <p class="hero-subtitle" data-scroll data-scroll-speed="0.5">
+          <span class="hero-subtitle-en">Heart Sutra Modern Archive</span>
+        </p>
+        <div class="hero-description" data-scroll data-scroll-speed="0.3">
+          <p>12の音楽ジャンルで再解釈された般若心経。<br>宗教音楽と現代テクノロジーが交差する、静寂と衝動のアーカイブ。</p>
+          <p class="hero-description-en">The Heart Sutra, reinterpreted through 12 musical genres.<br>An archive where sacred music meets modern technology.</p>
+        </div>
+        <div class="scroll-indicator" data-scroll data-scroll-speed="-0.5">
+          <span class="scroll-indicator-text">Scroll</span>
+          <div class="scroll-indicator-line"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Gallery Section -->
+    <section class="gallery-section" data-scroll-section>
+      <div class="section-header" data-scroll data-scroll-speed="1">
+        <span class="section-number">01</span>
+        <h2 class="section-title">Archive</h2>
+        <p class="section-subtitle">全十二曲 — Twelve Interpretations</p>
+      </div>
+      <div class="gallery-grid" id="gallery-grid">
+        <!-- Cards will be injected by JS -->
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section" data-scroll-section>
+      <div class="about-inner">
+        <div class="section-header" data-scroll data-scroll-speed="1">
+          <span class="section-number">02</span>
+          <h2 class="section-title">About</h2>
+          <p class="section-subtitle">このプロジェクトについて</p>
+        </div>
+        <div class="about-content" data-scroll data-scroll-speed="0.5">
+          <div class="about-text">
+            <p class="about-lead">
+              「般若心経」は、仏教の根本経典のひとつであり、<br>
+              「空」の思想を凝縮した262文字の経文です。
+            </p>
+            <p class="about-lead-en">
+              The Heart Sutra is one of the fundamental Buddhist scriptures,<br>
+              condensing the philosophy of "emptiness" into 262 characters.
+            </p>
+            <div class="about-divider"></div>
+            <p class="about-body">
+              本プロジェクトは、SUNO AIの音楽生成技術を用いて、この古典的な経文を
+              Indie、演歌、Tango、Jazz、Funk、Bollywood、Cyberpunkなど
+              12の多様な音楽ジャンルで再解釈したものです。
+            </p>
+            <p class="about-body">
+              伝統と革新、東洋と西洋、静寂と衝動——
+              相反するものが溶け合う瞬間を、音楽を通じて体験してください。
+            </p>
+            <p class="about-body-en">
+              This project uses SUNO AI's music generation technology to reinterpret 
+              this classical scripture through 12 diverse musical genres, 
+              from Indie and Enka to Tango, Jazz, Funk, Bollywood, and Cyberpunk.
+            </p>
+          </div>
+          <div class="about-sutra">
+            <p class="sutra-text">
+              色不異空　空不異色<br>
+              色即是空　空即是色
+            </p>
+            <p class="sutra-romanji">
+              shiki fu i kū &nbsp; kū fu i shiki<br>
+              shiki soku ze kū &nbsp; kū soku ze shiki
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" data-scroll-section>
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="footer-kanji">般若心経</span>
+          <span class="footer-en">Heart Sutra Modern Archive</span>
+        </div>
+        <div class="footer-info">
+          <p>Generated by <a href="https://suno.com" target="_blank" rel="noopener">SUNO AI</a></p>
+          <p class="footer-copy">&copy; 2025 — 聴いて覚える般若心経</p>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Locomotive Scroll JS -->
+  <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js"></script>
+  <!-- Masonry -->
+  <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"></script>
+  <!-- imagesLoaded -->
+  <script src="https://cdn.jsdelivr.net/npm/imagesloaded@5.0.0/imagesloaded.pkgd.min.js"></script>
+
+  <script src="src/js/app.js"></script>
+</body>
+</html>

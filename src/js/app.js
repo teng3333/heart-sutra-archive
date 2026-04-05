@@ -357,13 +357,19 @@
     // 6. Reveal cards with stagger
     revealCards();
 
-    // 7. Reveal about section
+    // 7. Reveal video section
+    revealVideoSection();
+
+    // 8. Init video player
+    initVideoPlayer();
+
+    // 9. Reveal about section
     revealAboutSection();
 
-    // 8. Init smooth scroll (lightweight parallax)
+    // 10. Init smooth scroll (lightweight parallax)
     initSmoothScroll();
 
-    // 9. Handle resize
+    // 11. Handle resize
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
@@ -371,6 +377,89 @@
         if (msnry) msnry.layout();
       }, 250);
     });
+  }
+
+  // --- Reveal Video Section ---
+  function revealVideoSection() {
+    const elements = document.querySelectorAll('.video-section .section-header, .video-showcase, .video-container, .video-info');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    elements.forEach(el => {
+      el.classList.add('reveal-element');
+      observer.observe(el);
+    });
+  }
+
+  // --- Video Player ---
+  function initVideoPlayer() {
+    const video = document.getElementById('hero-video');
+    const overlay = document.getElementById('video-play-overlay');
+    const progressFill = document.getElementById('video-progress-fill');
+    const frame = video?.closest('.video-frame');
+
+    if (!video || !overlay || !frame) return;
+
+    let isPlaying = false;
+
+    // Click overlay to play
+    overlay.addEventListener('click', () => {
+      video.muted = false;
+      video.play();
+      overlay.classList.add('is-hidden');
+      frame.classList.add('is-playing');
+      isPlaying = true;
+    });
+
+    // Click video to toggle play/pause
+    video.addEventListener('click', () => {
+      if (isPlaying) {
+        video.pause();
+        overlay.classList.remove('is-hidden');
+        frame.classList.remove('is-playing');
+        isPlaying = false;
+      } else {
+        video.play();
+        overlay.classList.add('is-hidden');
+        frame.classList.add('is-playing');
+        isPlaying = true;
+      }
+    });
+
+    // Update progress bar
+    video.addEventListener('timeupdate', () => {
+      if (video.duration) {
+        const pct = (video.currentTime / video.duration) * 100;
+        progressFill.style.width = pct + '%';
+      }
+    });
+
+    // Auto-play when in viewport (muted)
+    const videoObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !isPlaying) {
+          video.muted = true;
+          video.play().catch(() => {});
+          frame.classList.add('is-playing');
+        } else if (!entry.isIntersecting && video.muted) {
+          video.pause();
+          frame.classList.remove('is-playing');
+        }
+      });
+    }, {
+      threshold: 0.4
+    });
+
+    videoObserver.observe(video);
   }
 
   // --- DOM Ready ---

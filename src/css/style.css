@@ -481,6 +481,194 @@ img {
   border-color: var(--color-glass-border);
 }
 
+/* --- Playlist Section --- */
+.playlist-section {
+  padding: 6rem 2rem 8rem;
+  position: relative;
+}
+
+.playlist-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--color-dim));
+}
+
+.playlist-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.playlist-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.playlist-link {
+  display: block;
+}
+
+.playlist-link:hover {
+  opacity: 1;
+}
+
+.playlist-image-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.playlist-image {
+  width: 100%;
+  display: block;
+  filter: grayscale(40%) brightness(0.85);
+  transition: filter 1s var(--ease-out-expo), transform 1.2s var(--ease-out-expo);
+  will-change: transform, filter;
+}
+
+.playlist-image-container:hover .playlist-image {
+  filter: grayscale(0%) brightness(1);
+  transform: scale(1.03);
+}
+
+.playlist-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out-expo);
+  z-index: 2;
+}
+
+.playlist-image-container:hover .playlist-overlay {
+  opacity: 1;
+}
+
+.playlist-overlay-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.playlist-play-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.08);
+  transition: transform 0.4s var(--ease-out-expo), border-color 0.4s ease, background 0.4s ease;
+}
+
+.playlist-image-container:hover .playlist-play-icon {
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.playlist-play-icon svg {
+  width: 26px;
+  height: 26px;
+  color: var(--color-accent);
+  margin-left: 3px;
+}
+
+.playlist-cta {
+  font-family: var(--font-en);
+  font-size: 0.65rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.playlist-border-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: border-color 0.8s ease;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.playlist-image-container:hover .playlist-border-glow {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.playlist-info {
+  padding: 1rem 0;
+}
+
+.playlist-label {
+  font-family: var(--font-en);
+  font-size: 0.55rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--color-dim);
+  display: block;
+  margin-bottom: 0.8rem;
+}
+
+.playlist-title {
+  font-family: var(--font-jp);
+  font-weight: 200;
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  letter-spacing: 0.15em;
+  line-height: 1.4;
+  color: var(--color-accent);
+  margin-bottom: 0.5rem;
+}
+
+.playlist-title-en {
+  font-family: var(--font-en);
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  letter-spacing: 0.1em;
+  color: var(--color-dim);
+  font-style: italic;
+}
+
+.playlist-divider {
+  width: 40px;
+  height: 1px;
+  background: var(--color-dim);
+  margin: 2rem 0;
+}
+
+.playlist-desc {
+  font-family: var(--font-jp);
+  font-weight: 300;
+  font-size: clamp(0.8rem, 1.1vw, 0.95rem);
+  line-height: 2.2;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.playlist-desc-en {
+  font-family: var(--font-en);
+  font-size: clamp(0.65rem, 0.9vw, 0.78rem);
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  color: var(--color-dim);
+  margin-top: 1.5rem;
+}
+
 /* --- Video Section --- */
 .video-section {
   padding: 8rem 2rem 10rem;
@@ -864,6 +1052,19 @@ img {
   }
   .gallery-gutter-sizer {
     width: 0px;
+  }
+
+  .playlist-showcase {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .playlist-info {
+    text-align: center;
+  }
+
+  .playlist-divider {
+    margin: 2rem auto;
   }
 
   .video-showcase {

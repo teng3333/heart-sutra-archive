@@ -5,103 +5,168 @@
 (function () {
   'use strict';
 
-  // --- Track Data ---
+  // --- Track Data (全23曲) ---
   const tracks = [
     {
       number: 1,
-      genre: 'Indy',
+      genre: 'INDIES',
       title: '般若心経indie',
       image: 'assets/covers/01_indy.jpg',
-      url: 'https://suno.com/s/Wx7CnwCbekbEYNGr',
-      tags: '#般若心経 #HEARTSUTRA'
+      url: 'https://suno.com/s/Wx7CnwCbekbEYNGr'
     },
     {
       number: 2,
       genre: 'ENKA',
       title: '般若心経演歌',
       image: 'assets/covers/02_enka.jpg',
-      url: 'https://suno.com/s/enJa54lfA1apbDbO',
-      tags: '演歌'
+      url: 'https://suno.com/s/enJa54lfA1apbDbO'
     },
     {
       number: 3,
       genre: 'Tango',
       title: '般若心経tango',
       image: 'assets/covers/03_tango.jpg',
-      url: 'https://suno.com/s/5Sy85cO08UtHyEVC',
-      tags: 'tango'
+      url: 'https://suno.com/s/5Sy85cO08UtHyEVC'
     },
     {
       number: 4,
       genre: 'Acoustic',
       title: '般若心経acoustic',
       image: 'assets/covers/04_acoustic.jpg',
-      url: 'https://suno.com/s/RxVB7XfJIoxjGBae',
-      tags: 'indie pop, indie ballad, soft electronic'
+      url: 'https://suno.com/s/RxVB7XfJIoxjGBae'
     },
     {
       number: 5,
       genre: 'Blues',
       title: '般若心経Blues',
       image: 'assets/covers/05_blues.jpg',
-      url: 'https://suno.com/s/m5FIUyXT3HKfQBgD',
-      tags: 'Blues'
+      url: 'https://suno.com/s/m5FIUyXT3HKfQBgD'
     },
     {
       number: 6,
       genre: 'JAZZ',
       title: '般若心経JAZZ',
       image: 'assets/covers/06_jazz.jpg',
-      url: 'https://suno.com/s/jHp51qiXA6Gyylq1',
-      tags: 'Jazz Ballad, Female Vocals, Piano'
+      url: 'https://suno.com/s/jHp51qiXA6Gyylq1'
     },
     {
       number: 7,
       genre: 'Funk',
       title: '般若心経funk',
       image: 'assets/covers/07_funk.jpg',
-      url: 'https://suno.com/s/aeL9Kzw6rv2mN4Ey',
-      tags: '#般若心経 #色即是空空即是色'
+      url: 'https://suno.com/s/aeL9Kzw6rv2mN4Ey'
     },
     {
       number: 8,
       genre: 'Bollywood',
       title: '般若心経Bollywood',
       image: 'assets/covers/08_bollywood.jpg',
-      url: 'https://suno.com/s/bjw8h0khtyiDCC9k',
-      tags: '#般若心経 #HEARTSUTRA'
+      url: 'https://suno.com/s/bjw8h0khtyiDCC9k'
     },
     {
       number: 9,
       genre: 'iDOL',
       title: '般若心経アイドル',
       image: 'assets/covers/09_idol.jpg',
-      url: 'https://suno.com/s/aRq2vh0JiqRjFHqw',
-      tags: 'kawaii idol pop, drum and bass'
+      url: 'https://suno.com/s/aRq2vh0JiqRjFHqw'
     },
     {
       number: 10,
       genre: 'Cyber Punk',
       title: '般若心経ARTPOP',
       image: 'assets/covers/10_cyberpunk.jpg',
-      url: 'https://suno.com/s/d5Wc2J4lCiKgQFuz',
-      tags: '#般若心経 #HEARTSUTRA'
+      url: 'https://suno.com/s/d5Wc2J4lCiKgQFuz'
     },
     {
       number: 11,
       genre: 'Simple',
       title: '般若心経呟',
       image: 'assets/covers/11_simple.jpg',
-      url: 'https://suno.com/s/nfJC4YFxiPglZNyx',
-      tags: 'jazz, modern classical'
+      url: 'https://suno.com/s/nfJC4YFxiPglZNyx'
     },
     {
       number: 12,
       genre: 'Anime Song',
       title: '般若心経アニソン',
-      image: 'assets/covers/12_animesong.jpg',
-      url: 'https://suno.com/s/wTxoEvVYpjzWbbpb',
-      tags: '#般若心経 #色即是空空即是色'
+      image: 'assets/covers/12_anime_song.jpg',
+      url: 'https://suno.com/s/FtiVGZ3CQI44IKVS'
+    },
+    {
+      number: 13,
+      genre: 'Punk',
+      title: '般若心経Punk',
+      image: 'assets/covers/13_punk.webp',
+      url: 'https://suno.com/s/YfZvEC7fQ1o3bPhH'
+    },
+    {
+      number: 14,
+      genre: 'ROCK',
+      title: '般若心経ROCK',
+      image: 'assets/covers/14_rock.jpg',
+      url: 'https://suno.com/s/HL5LZyOYFD8DNJFR'
+    },
+    {
+      number: 15,
+      genre: 'Lo-Fi',
+      title: '般若心経Lo-Fi',
+      image: 'assets/covers/15_lofi.jpg',
+      url: 'https://suno.com/s/jQiBWO0Kk78oa6eg'
+    },
+    {
+      number: 16,
+      genre: 'HIPHOP',
+      title: '般若心経HIPHOP',
+      image: 'assets/covers/16_hiphop.jpg',
+      url: 'https://suno.com/s/OITaaoVjb5aP6dw6'
+    },
+    {
+      number: 17,
+      genre: 'IDM',
+      title: '般若心経IDM',
+      image: 'assets/covers/17_idm.webp',
+      url: 'https://suno.com/s/S5Q39LaxmMjmGFgy'
+    },
+    {
+      number: 18,
+      genre: 'Cyber Punk',
+      title: '般若心経CyberPunk II',
+      image: 'assets/covers/18_cyberpunk2.webp',
+      url: 'https://suno.com/s/ypdCxaXjIgW6tXg6'
+    },
+    {
+      number: 19,
+      genre: 'Cyber Punk',
+      title: '般若心経CyberPunk III',
+      image: 'assets/covers/19_cyberpunk3.jpg',
+      url: 'https://suno.com/s/EZPGaaLlKt628jf1'
+    },
+    {
+      number: 20,
+      genre: 'Hymn',
+      title: '般若心経Hymn',
+      image: 'assets/covers/20_hymn.jpg',
+      url: 'https://suno.com/s/ulaVVY0QHdCfH4BV'
+    },
+    {
+      number: 21,
+      genre: 'Gamelan',
+      title: '般若心経Gamelan',
+      image: 'assets/covers/21_gamelan.jpg',
+      url: 'https://suno.com/s/OH3OKfIBFD6RXqPT'
+    },
+    {
+      number: 22,
+      genre: 'Halloween',
+      title: '般若心経Halloween',
+      image: 'assets/covers/22_halloween.jpg',
+      url: 'https://suno.com/s/6wQaeker0gtuW5cJ'
+    },
+    {
+      number: 23,
+      genre: 'Metal',
+      title: '般若心経Metal',
+      image: 'assets/covers/23_metal.jpg',
+      url: 'https://suno.com/s/DtT6pbAOrnyosgjt'
     }
   ];
 
@@ -200,7 +265,7 @@
           const card = entry.target;
           setTimeout(() => {
             card.classList.add('is-visible');
-          }, revealIndex * 120);
+          }, revealIndex * 100);
           revealIndex++;
           observer.unobserve(card);
         }
@@ -213,9 +278,9 @@
     cards.forEach(card => observer.observe(card));
   }
 
-  // --- Reveal About Section Elements ---
-  function revealAboutSection() {
-    const elements = document.querySelectorAll('.about-section .section-header, .about-content, .about-sutra');
+  // --- Reveal Section Elements ---
+  function revealSection(selector) {
+    const elements = document.querySelectorAll(selector);
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -252,10 +317,8 @@
 
   // --- Smooth Scroll (CSS-based, lightweight alternative to Locomotive) ---
   function initSmoothScroll() {
-    // Use CSS smooth scrolling + custom scrollbar styling
     document.documentElement.style.scrollBehavior = 'smooth';
     
-    // Parallax effect on scroll
     const heroElements = document.querySelectorAll('[data-scroll-speed]');
     
     window.addEventListener('scroll', () => {
@@ -276,7 +339,7 @@
     let progress = 0;
 
     const interval = setInterval(() => {
-      progress += Math.random() * 15 + 5;
+      progress += Math.random() * 12 + 3;
       if (progress >= 100) {
         progress = 100;
         clearInterval(interval);
@@ -285,14 +348,14 @@
     }, 150);
 
     return new Promise((resolve) => {
-      const minTime = new Promise(r => setTimeout(r, 2200));
+      const minTime = new Promise(r => setTimeout(r, 2500));
 
       const imagesReady = new Promise((imgResolve) => {
         const grid = document.getElementById('gallery-grid');
         if (typeof imagesLoaded !== 'undefined') {
           imagesLoaded(grid, () => imgResolve());
         } else {
-          setTimeout(imgResolve, 1500);
+          setTimeout(imgResolve, 2000);
         }
       });
 
@@ -327,12 +390,82 @@
     });
   }
 
+  // --- Video Player ---
+  function initVideoPlayer() {
+    const video = document.getElementById('hero-video');
+    const overlay = document.getElementById('video-play-overlay');
+    const progressFill = document.getElementById('video-progress-fill');
+    const frame = video?.closest('.video-frame');
+
+    if (!video || !overlay || !frame) return;
+
+    let isPlaying = false;
+
+    overlay.addEventListener('click', () => {
+      video.muted = false;
+      video.play();
+      overlay.classList.add('is-hidden');
+      frame.classList.add('is-playing');
+      isPlaying = true;
+    });
+
+    video.addEventListener('click', () => {
+      if (isPlaying) {
+        video.pause();
+        overlay.classList.remove('is-hidden');
+        frame.classList.remove('is-playing');
+        isPlaying = false;
+      } else {
+        video.play();
+        overlay.classList.add('is-hidden');
+        frame.classList.add('is-playing');
+        isPlaying = true;
+      }
+    });
+
+    video.addEventListener('timeupdate', () => {
+      if (video.duration) {
+        const pct = (video.currentTime / video.duration) * 100;
+        progressFill.style.width = pct + '%';
+      }
+    });
+
+    const videoObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !isPlaying) {
+          video.muted = true;
+          video.play().catch(() => {});
+          frame.classList.add('is-playing');
+        } else if (!entry.isIntersecting && video.muted) {
+          video.pause();
+          frame.classList.remove('is-playing');
+        }
+      });
+    }, {
+      threshold: 0.4
+    });
+
+    videoObserver.observe(video);
+  }
+
+  // --- Playlist Hover Effect ---
+  function initPlaylistHover() {
+    const container = document.querySelector('.playlist-image-container');
+    if (!container) return;
+
+    container.addEventListener('mouseenter', () => {
+      container.classList.add('is-hovered');
+    });
+    container.addEventListener('mouseleave', () => {
+      container.classList.remove('is-hovered');
+    });
+  }
+
   // --- Main Init ---
   async function init() {
     // 1. Build gallery with shuffled tracks
     const grid = document.getElementById('gallery-grid');
     
-    // Add sizer elements for Masonry
     grid.appendChild(createGridSizer());
     grid.appendChild(createGutterSizer());
 
@@ -357,19 +490,25 @@
     // 6. Reveal cards with stagger
     revealCards();
 
-    // 7. Reveal video section
-    revealVideoSection();
+    // 7. Reveal playlist section
+    revealSection('.playlist-section .section-header, .playlist-showcase');
 
-    // 8. Init video player
+    // 8. Reveal video section
+    revealSection('.video-section .section-header, .video-showcase, .video-container, .video-info');
+
+    // 9. Init video player
     initVideoPlayer();
 
-    // 9. Reveal about section
-    revealAboutSection();
+    // 10. Init playlist hover
+    initPlaylistHover();
 
-    // 10. Init smooth scroll (lightweight parallax)
+    // 11. Reveal about section
+    revealSection('.about-section .section-header, .about-content, .about-sutra');
+
+    // 12. Init smooth scroll (lightweight parallax)
     initSmoothScroll();
 
-    // 11. Handle resize
+    // 13. Handle resize
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
@@ -377,89 +516,6 @@
         if (msnry) msnry.layout();
       }, 250);
     });
-  }
-
-  // --- Reveal Video Section ---
-  function revealVideoSection() {
-    const elements = document.querySelectorAll('.video-section .section-header, .video-showcase, .video-container, .video-info');
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    });
-
-    elements.forEach(el => {
-      el.classList.add('reveal-element');
-      observer.observe(el);
-    });
-  }
-
-  // --- Video Player ---
-  function initVideoPlayer() {
-    const video = document.getElementById('hero-video');
-    const overlay = document.getElementById('video-play-overlay');
-    const progressFill = document.getElementById('video-progress-fill');
-    const frame = video?.closest('.video-frame');
-
-    if (!video || !overlay || !frame) return;
-
-    let isPlaying = false;
-
-    // Click overlay to play
-    overlay.addEventListener('click', () => {
-      video.muted = false;
-      video.play();
-      overlay.classList.add('is-hidden');
-      frame.classList.add('is-playing');
-      isPlaying = true;
-    });
-
-    // Click video to toggle play/pause
-    video.addEventListener('click', () => {
-      if (isPlaying) {
-        video.pause();
-        overlay.classList.remove('is-hidden');
-        frame.classList.remove('is-playing');
-        isPlaying = false;
-      } else {
-        video.play();
-        overlay.classList.add('is-hidden');
-        frame.classList.add('is-playing');
-        isPlaying = true;
-      }
-    });
-
-    // Update progress bar
-    video.addEventListener('timeupdate', () => {
-      if (video.duration) {
-        const pct = (video.currentTime / video.duration) * 100;
-        progressFill.style.width = pct + '%';
-      }
-    });
-
-    // Auto-play when in viewport (muted)
-    const videoObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !isPlaying) {
-          video.muted = true;
-          video.play().catch(() => {});
-          frame.classList.add('is-playing');
-        } else if (!entry.isIntersecting && video.muted) {
-          video.pause();
-          frame.classList.remove('is-playing');
-        }
-      });
-    }, {
-      threshold: 0.4
-    });
-
-    videoObserver.observe(video);
   }
 
   // --- DOM Ready ---

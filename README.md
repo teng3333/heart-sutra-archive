@@ -1,6 +1,11 @@
-# 般若心経 — Heart Sutra Modern Archive
+# 聴いて覚える般若心経
 
-> 聴いて覚える般若心経
+**Heart Sutra Modern Archive**
+
+---
+
+> 宗教音楽と現代テクノロジーの交差点。  
+> SUNO AIによって生成された般若心経の楽曲群を、世界水準のデジタルアートギャラリーとしてアーカイブする。
 
 ---
 
@@ -8,30 +13,55 @@
 
 **「色不異空　空不異色　色即是空　空即是色」**
 
-般若心経は、仏教の根本経典のひとつであり、「空」の思想を凝縮した262文字の経文です。本プロジェクトは、SUNO AIの音楽生成技術を用いて、この古典的な経文を12の多様な音楽ジャンルで再解釈し、デジタルアートギャラリーとしてアーカイブしたものです。
+般若心経は、仏教の根本経典のひとつであり、「空」の思想を凝縮した262文字の経文です。本プロジェクトは、SUNO AIの音楽生成技術を用いて、この古典的な経文を23の多様な音楽ジャンルで再解釈し、デジタルアートギャラリーとしてアーカイブしたものです。
 
 伝統と革新、東洋と西洋、静寂と衝動——相反するものが溶け合う瞬間を、音楽を通じて体験してください。
 
-*The Heart Sutra is one of the fundamental Buddhist scriptures, condensing the philosophy of "emptiness" into 262 characters. This project reinterprets this classical text through 12 diverse musical genres using SUNO AI, archived as a digital art gallery.*
+*The Heart Sutra is one of the fundamental Buddhist scriptures, condensing the philosophy of "emptiness" into 262 characters. This project reinterprets this classical text through 23 diverse musical genres using SUNO AI, archived as a digital art gallery.*
 
 ---
 
-## Archive — 全十二曲
+## Archive — 全二十三曲
 
-| No. | Genre | Title |
-|-----|-------|-------|
-| 01 | Indy | 般若心経indie |
-| 02 | ENKA | 般若心経演歌 |
-| 03 | Tango | 般若心経tango |
-| 04 | Acoustic | 般若心経acoustic |
-| 05 | Blues | 般若心経Blues |
-| 06 | JAZZ | 般若心経JAZZ |
-| 07 | Funk | 般若心経funk |
-| 08 | Bollywood | 般若心経Bollywood |
-| 09 | iDOL | 般若心経アイドル |
-| 10 | Cyber Punk | 般若心経ARTPOP |
-| 11 | Simple | 般若心経呟 |
-| 12 | Anime Song | 般若心経アニソン |
+| No. | Genre | Title | Link |
+|-----|-------|-------|------|
+| 01 | INDIES | 般若心経indie | [SUNO](https://suno.com/s/Wx7CnwCbekbEYNGr) |
+| 02 | ENKA | 般若心経演歌 | [SUNO](https://suno.com/s/enJa54lfA1apbDbO) |
+| 03 | Tango | 般若心経tango | [SUNO](https://suno.com/s/5Sy85cO08UtHyEVC) |
+| 04 | Acoustic | 般若心経acoustic | [SUNO](https://suno.com/s/RxVB7XfJIoxjGBae) |
+| 05 | Blues | 般若心経Blues | [SUNO](https://suno.com/s/m5FIUyXT3HKfQBgD) |
+| 06 | JAZZ | 般若心経JAZZ | [SUNO](https://suno.com/s/jHp51qiXA6Gyylq1) |
+| 07 | Funk | 般若心経funk | [SUNO](https://suno.com/s/aeL9Kzw6rv2mN4Ey) |
+| 08 | Bollywood | 般若心経Bollywood | [SUNO](https://suno.com/s/bjw8h0khtyiDCC9k) |
+| 09 | iDOL | 般若心経アイドル | [SUNO](https://suno.com/s/aRq2vh0JiqRjFHqw) |
+| 10 | Cyber Punk | 般若心経ARTPOP | [SUNO](https://suno.com/s/d5Wc2J4lCiKgQFuz) |
+| 11 | Simple | 般若心経呟 | [SUNO](https://suno.com/s/nfJC4YFxiPglZNyx) |
+| 12 | Anime Song | 般若心経アニソン | [SUNO](https://suno.com/s/FtiVGZ3CQI44IKVS) |
+| 13 | Punk | 般若心経Punk | [SUNO](https://suno.com/s/YfZvEC7fQ1o3bPhH) |
+| 14 | ROCK | 般若心経ROCK | [SUNO](https://suno.com/s/HL5LZyOYFD8DNJFR) |
+| 15 | Lo-Fi | 般若心経Lo-Fi | [SUNO](https://suno.com/s/jQiBWO0Kk78oa6eg) |
+| 16 | HIPHOP | 般若心経HIPHOP | [SUNO](https://suno.com/s/OITaaoVjb5aP6dw6) |
+| 17 | IDM | 般若心経IDM | [SUNO](https://suno.com/s/S5Q39LaxmMjmGFgy) |
+| 18 | Cyber Punk | 般若心経CyberPunk II | [SUNO](https://suno.com/s/ypdCxaXjIgW6tXg6) |
+| 19 | Cyber Punk | 般若心経CyberPunk III | [SUNO](https://suno.com/s/EZPGaaLlKt628jf1) |
+| 20 | Hymn | 般若心経Hymn | [SUNO](https://suno.com/s/ulaVVY0QHdCfH4BV) |
+| 21 | Gamelan | 般若心経Gamelan | [SUNO](https://suno.com/s/OH3OKfIBFD6RXqPT) |
+| 22 | Halloween | 般若心経Halloween | [SUNO](https://suno.com/s/6wQaeker0gtuW5cJ) |
+| 23 | Metal | 般若心経Metal | [SUNO](https://suno.com/s/DtT6pbAOrnyosgjt) |
+
+---
+
+## Playlist — 聞き流し般若心経
+
+般若心経の全楽曲を、BGMとして聞き流すためのプレイリスト。
+
+[Listen on SUNO](https://suno.com/s/WeUwA3rsgaWAz2NY)
+
+---
+
+## Film — ただ空があるだけ
+
+般若心経の根本思想「空」を映像で表現した作品。23曲の般若心経楽曲とは異なるアプローチで、経典の教えを視覚的に謳い上げる。
 
 ---
 
@@ -41,24 +71,6 @@
 
 漆黒（Deep Black）を基調としたミニマルかつラグジュアリーなユーザー体験を提供し、宗教音楽と現代テクノロジーの融合を表現しています。
 
-### Color Palette
-
-- **Base**: `#000000` — 完全な黒
-- **Surface**: `#0A0A0A` — わずかな階層差
-- **Accent**: `#FFFFFF` — 純白のテキスト
-- **Muted**: `#888888` — 補助テキスト
-
-### Typography
-
-- **日本語**: Noto Serif JP (Weight 200–300) — 仏教の伝統的な美しさを現代的に解釈
-- **英語**: Cinzel / Playfair Display — 石碑に刻まれたような重厚感
-
-### Effects
-
-- **Grain Effect** — 画面全体に微細なノイズを乗せ、デジタル特有の平坦さを排除
-- **Glassmorphism** — 透過要素を使い、奥行きを表現
-- **Cursor Glow** — マウスに追従する微かな光
-
 ---
 
 ## Technical Stack
@@ -67,21 +79,25 @@
 |-----------|---------|
 | HTML5 / CSS3 / Vanilla JS | Core Implementation |
 | Masonry.js | Pinterest-style Grid Layout |
-| Locomotive Scroll | Smooth Inertia Scrolling |
 | imagesLoaded | Image Load Detection |
-| Google Fonts | Noto Serif JP, Cinzel |
+| Google Fonts | Noto Serif JP, Cinzel, Playfair Display |
 | GitHub Pages | Hosting |
 
 ---
 
 ## Features
 
-- **Random Shuffle** — 訪問ごとにカードの表示順がランダムに変化
-- **Hover Interaction** — モノクロからカラーへの遷移、スケールアニメーション
-- **Typing Animation** — ジャンル名がタイピングエフェクトで浮き上がる
-- **Masonry Layout** — 画像の高さが異なっても美しく配置
-- **Smooth Scroll** — 慣性スクロールによる滑らかな体験
-- **Auto-layout** — 楽曲追加時にシームレスに拡張可能
+| Feature | Description |
+|---------|-------------|
+| Random Shuffle | Fisher-Yates shuffle on every page visit |
+| Masonry Grid | Responsive 3-column layout with auto-fill |
+| Grayscale Hover | Monochrome to color transition on hover |
+| Typing Animation | Genre name typing effect on card hover |
+| Grain Overlay | Subtle film grain texture |
+| Cursor Glow | Ambient light following cursor |
+| Staggered Reveal | Cards fade in with staggered timing |
+| Video Player | Custom video player with auto-play |
+| Playlist Section | Featured playlist with hover effects |
 
 ---
 
@@ -90,24 +106,19 @@
 ```
 /root
 ├── /assets
-│   └── /covers        High-resolution cover images
-├── /docs              Design specifications
+│   ├── /covers    (Cover images for all 23 tracks + playlist)
+│   └── /video     (Video file)
 ├── /src
-│   ├── /css           Stylesheets
-│   └── /js            JavaScript modules
-├── index.html         Entry point
-└── README.md          This file
+│   ├── /css       (Stylesheets)
+│   └── /js        (Application logic)
+├── index.html     (Main page)
+└── README.md      (This file)
 ```
-
----
-
-## Generated by
-
-All music tracks were generated using [SUNO AI](https://suno.com).
 
 ---
 
 <p align="center">
   <strong>色即是空　空即是色</strong><br>
-  <em>Form is emptiness, emptiness is form.</em>
+  <em>Form is emptiness, emptiness is form.</em><br><br>
+  Generated by <a href="https://suno.com">SUNO AI</a>
 </p>

@@ -22,11 +22,11 @@
       /* ── Chat Launcher Button ── */
       #ann-launcher {
         position: fixed;
-        bottom: 32px;
-        right: 32px;
+        bottom: 20px;
+        right: 20px;
         z-index: 9999;
-        width: 64px;
-        height: 64px;
+        width: 56px;
+        height: 56px;
         border-radius: 50%;
         background: #000;
         border: 1px solid rgba(255,255,255,0.15);
@@ -38,6 +38,14 @@
         transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), border-color 0.3s, box-shadow 0.3s;
         overflow: hidden;
         padding: 0;
+      }
+      @media (min-width: 768px) {
+        #ann-launcher {
+          width: 64px;
+          height: 64px;
+          bottom: 32px;
+          right: 32px;
+        }
       }
       #ann-launcher:hover {
         transform: scale(1.08);
@@ -75,13 +83,13 @@
       /* ── Chat Window ── */
       #ann-chat-window {
         position: fixed;
-        bottom: 108px;
-        right: 32px;
+        bottom: 80px;
+        right: 16px;
         z-index: 9998;
-        width: 380px;
-        max-width: calc(100vw - 48px);
-        height: 560px;
-        max-height: calc(100vh - 140px);
+        width: calc(100vw - 32px);
+        max-width: 380px;
+        height: 480px;
+        max-height: calc(100vh - 120px);
         background: #080808;
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 16px;
@@ -93,6 +101,15 @@
         opacity: 0;
         pointer-events: none;
         transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease;
+      }
+      @media (min-width: 768px) {
+        #ann-chat-window {
+          width: 380px;
+          height: 560px;
+          bottom: 108px;
+          right: 32px;
+          max-height: calc(100vh - 140px);
+        }
       }
       #ann-chat-window.ann-open {
         transform: translateY(0) scale(1);

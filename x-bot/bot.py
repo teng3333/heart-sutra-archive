@@ -1,7 +1,8 @@
 """
 soul_up_an — X Auto-posting Bot
-Powered by Gemini 2.0 Flash + tweepy
+Powered by Gemini 2.5 Flash + tweepy
 Schedule: 07:00 / 12:00 / 18:00 / 21:00 JST
+Manual trigger: POST /post?secret=POST_SECRET
 """
 
 import os
@@ -9,9 +10,11 @@ import random
 import logging
 import schedule
 import time
+import threading
 import tweepy
 import urllib.request
 import xml.etree.ElementTree as ET
+from flask import Flask, jsonify, request
 from google import genai
 from datetime import datetime
 from dotenv import load_dotenv
@@ -30,47 +33,63 @@ logger = logging.getLogger(__name__)
 SITE_URL = "https://teng3333.github.io/heart-sutra-archive/?locale=ja"
 
 TRACKS = [
-    {"genre": "INDIES",       "url": "https://suno.com/s/Wx7CnwCbekbEYNGr"},
-    {"genre": "ENKA",         "url": "https://suno.com/s/enJa54lfA1apbDbO"},
-    {"genre": "tango",        "url": "https://suno.com/s/5Sy85cO08UtHyEVC"},
-    {"genre": "acoustic",     "url": "https://suno.com/s/RxVB7XfJIoxjGBae"},
-    {"genre": "Blues",        "url": "https://suno.com/s/m5FIUyXT3HKfQBgD"},
-    {"genre": "JAZZ",         "url": "https://suno.com/s/jHp51qiXA6Gyylq1"},
-    {"genre": "funk",         "url": "https://suno.com/s/aeL9Kzw6rv2mN4Ey"},
-    {"genre": "Bollywood",    "url": "https://suno.com/s/bjw8h0khtyiDCC9k"},
-    {"genre": "iDOL",         "url": "https://suno.com/s/aRq2vh0JiqRjFHqw"},
-    {"genre": "cyber punk",   "url": "https://suno.com/s/d5Wc2J4lCiKgQFuz"},
-    {"genre": "simple",       "url": "https://suno.com/s/nfJC4YFxiPglZNyx"},
-    {"genre": "anime song",   "url": "https://suno.com/s/FtiVGZ3CQI44IKVS"},
-    {"genre": "punk",         "url": "https://suno.com/s/YfZvEC7fQ1o3bPhH"},
-    {"genre": "ROCK",         "url": "https://suno.com/s/HL5LZyOYFD8DNJFR"},
-    {"genre": "lo-fi",        "url": "https://suno.com/s/jQiBWO0Kk78oa6eg"},
-    {"genre": "HIPHOP",       "url": "https://suno.com/s/OITaaoVjb5aP6dw6"},
-    {"genre": "IDM",          "url": "https://suno.com/s/S5Q39LaxmMjmGFgy"},
-    {"genre": "cyber punk II","url": "https://suno.com/s/ypdCxaXjIgW6tXg6"},
+    {"genre": "INDIES",        "url": "https://suno.com/s/Wx7CnwCbekbEYNGr"},
+    {"genre": "ENKA",          "url": "https://suno.com/s/enJa54lfA1apbDbO"},
+    {"genre": "tango",         "url": "https://suno.com/s/5Sy85cO08UtHyEVC"},
+    {"genre": "acoustic",      "url": "https://suno.com/s/RxVB7XfJIoxjGBae"},
+    {"genre": "Blues",         "url": "https://suno.com/s/m5FIUyXT3HKfQBgD"},
+    {"genre": "JAZZ",          "url": "https://suno.com/s/jHp51qiXA6Gyylq1"},
+    {"genre": "funk",          "url": "https://suno.com/s/aeL9Kzw6rv2mN4Ey"},
+    {"genre": "Bollywood",     "url": "https://suno.com/s/bjw8h0khtyiDCC9k"},
+    {"genre": "iDOL",          "url": "https://suno.com/s/aRq2vh0JiqRjFHqw"},
+    {"genre": "cyber punk",    "url": "https://suno.com/s/d5Wc2J4lCiKgQFuz"},
+    {"genre": "simple",        "url": "https://suno.com/s/nfJC4YFxiPglZNyx"},
+    {"genre": "anime song",    "url": "https://suno.com/s/FtiVGZ3CQI44IKVS"},
+    {"genre": "punk",          "url": "https://suno.com/s/YfZvEC7fQ1o3bPhH"},
+    {"genre": "ROCK",          "url": "https://suno.com/s/HL5LZyOYFD8DNJFR"},
+    {"genre": "lo-fi",         "url": "https://suno.com/s/jQiBWO0Kk78oa6eg"},
+    {"genre": "HIPHOP",        "url": "https://suno.com/s/OITaaoVjb5aP6dw6"},
+    {"genre": "IDM",           "url": "https://suno.com/s/S5Q39LaxmMjmGFgy"},
+    {"genre": "cyber punk II", "url": "https://suno.com/s/ypdCxaXjIgW6tXg6"},
     {"genre": "cyber punk III","url": "https://suno.com/s/EZPGaaLlKt628jf1"},
-    {"genre": "hymn",         "url": "https://suno.com/s/ulaVVY0QHdCfH4BV"},
-    {"genre": "gamelan",      "url": "https://suno.com/s/OH3OKfIBFD6RXqPT"},
-    {"genre": "Halloween",    "url": "https://suno.com/s/6wQaeker0gtuW5cJ"},
-    {"genre": "metal",        "url": "https://suno.com/s/DtT6pbAOrnyosgjt"},
+    {"genre": "hymn",          "url": "https://suno.com/s/ulaVVY0QHdCfH4BV"},
+    {"genre": "gamelan",       "url": "https://suno.com/s/OH3OKfIBFD6RXqPT"},
+    {"genre": "Halloween",     "url": "https://suno.com/s/6wQaeker0gtuW5cJ"},
+    {"genre": "metal",         "url": "https://suno.com/s/DtT6pbAOrnyosgjt"},
 ]
 
-# ─── Twitter 文字数カウント ───────────────────────────────────────────────────
-# Twitter の仕様: URL は長さに関わらず 23 文字換算
-# 本文 + "\n\n🎵 " (4) + "\n🌐 " (3) + URL×2(各23) = 本文 + 53 ≤ 280
-# → 本文の上限 = 227 文字（余裕を持って 215 文字に設定）
 CONTENT_MAX_CHARS = 215
 
-# NHK RSSフィード（無料・登録不要）
 RSS_FEEDS = [
-    "https://www3.nhk.or.jp/rss/news/cat0.xml",   # NHK 主要ニュース
-    "https://www3.nhk.or.jp/rss/news/cat1.xml",   # NHK 社会
-    "https://www3.nhk.or.jp/rss/news/cat3.xml",   # NHK 経済
+    "https://www3.nhk.or.jp/rss/news/cat0.xml",
+    "https://www3.nhk.or.jp/rss/news/cat1.xml",
+    "https://www3.nhk.or.jp/rss/news/cat3.xml",
 ]
+
+# ─── Global clients ───────────────────────────────────────────────────────────
+_gemini = None
+_twitter = None
+
+# ─── Flask app ────────────────────────────────────────────────────────────────
+flask_app = Flask(__name__)
+
+@flask_app.route("/health")
+def health():
+    return jsonify({"status": "ok", "bot": "soul_up_an"})
+
+@flask_app.route("/post", methods=["POST"])
+def manual_post():
+    """手動投稿トリガー: POST /post?secret=YOUR_SECRET"""
+    secret = os.environ.get("POST_SECRET", "")
+    if secret and request.args.get("secret") != secret:
+        return jsonify({"error": "unauthorized"}), 401
+    if _gemini is None or _twitter is None:
+        return jsonify({"error": "clients not ready"}), 503
+    threading.Thread(target=post_to_x, args=(_gemini, _twitter), daemon=True).start()
+    return jsonify({"status": "triggered"})
 
 # ─── Fetch News from RSS ──────────────────────────────────────────────────────
 def fetch_news() -> str:
-    """RSSからニュースを1件取得して返す。失敗したらNoneを返す。"""
     random.shuffle(RSS_FEEDS)
     for feed_url in RSS_FEEDS:
         try:
@@ -83,7 +102,7 @@ def fetch_news() -> str:
             root = ET.fromstring(xml_data)
             items = root.findall(".//item")
             if items:
-                item = random.choice(items[:10])  # 最新10件からランダム
+                item = random.choice(items[:10])
                 title = item.findtext("title", "").strip()
                 desc = item.findtext("description", "").strip()
                 news_text = title
@@ -106,13 +125,23 @@ def init_clients():
         access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
         wait_on_rate_limit=True,
     )
+
+    # 起動時に認証テスト（Read権限で確認）
+    try:
+        me = twitter.get_me()
+        if me.data:
+            logger.info(f"Twitter auth OK: @{me.data.username} (id={me.data.id})")
+        else:
+            logger.warning("Twitter auth: get_me() returned no data")
+    except Exception as e:
+        logger.error(f"Twitter auth test FAILED: {e}")
+
     return gemini, twitter
 
 # ─── Generate Post Content ────────────────────────────────────────────────────
 def generate_content(gemini: genai.Client, track: dict) -> str:
     today = datetime.now().strftime("%Y年%m月%d日")
 
-    # RSSからニュースを取得
     news = fetch_news()
     if news:
         news_instruction = f"【今日の実際のニュース】{news}"
@@ -148,7 +177,6 @@ def generate_content(gemini: genai.Client, track: dict) -> str:
     try:
         response = gemini.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         content = response.text.strip()
-        # 超過した場合は安全にトリム
         if len(content) > CONTENT_MAX_CHARS:
             content = content[:CONTENT_MAX_CHARS - 3] + "..."
             logger.warning(f"Content trimmed to {CONTENT_MAX_CHARS} chars.")
@@ -168,11 +196,19 @@ def post_to_x(gemini: genai.Client, twitter: tweepy.Client) -> None:
 
         response = twitter.create_tweet(text=full_post)
         tweet_id = response.data["id"]
-        logger.info(f"Posted successfully. tweet_id={tweet_id}")
+        logger.info(f"Posted successfully! tweet_id={tweet_id}")
         logger.info(f"--- Preview ---\n{content}\n---------------")
 
     except tweepy.TweepyException as e:
         logger.error(f"Twitter API error: {e}")
+        # 詳細エラー情報
+        if hasattr(e, "response") and e.response is not None:
+            logger.error(f"  HTTP status : {e.response.status_code}")
+            logger.error(f"  Response    : {e.response.text}")
+        if hasattr(e, "api_codes") and e.api_codes:
+            logger.error(f"  Error codes : {e.api_codes}")
+        if hasattr(e, "api_messages") and e.api_messages:
+            logger.error(f"  Error msgs  : {e.api_messages}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
 
@@ -185,15 +221,26 @@ def setup_schedule(gemini: genai.Client, twitter: tweepy.Client) -> None:
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 def main() -> None:
+    global _gemini, _twitter
+
     logger.info("========================================")
     logger.info("  soul_up_an Bot starting...")
     logger.info(f"  TZ: {os.environ.get('TZ', 'not set (UTC assumed)')}")
     logger.info("========================================")
 
-    gemini, twitter = init_clients()
-    setup_schedule(gemini, twitter)
+    _gemini, _twitter = init_clients()
+    setup_schedule(_gemini, _twitter)
 
+    # Flaskを別スレッドで起動
+    port = int(os.environ.get("PORT", 8080))
+    flask_thread = threading.Thread(
+        target=lambda: flask_app.run(host="0.0.0.0", port=port, use_reloader=False),
+        daemon=True,
+    )
+    flask_thread.start()
+    logger.info(f"Web server started on port {port}")
     logger.info("Bot is running. Waiting for scheduled posts...")
+
     while True:
         schedule.run_pending()
         time.sleep(30)

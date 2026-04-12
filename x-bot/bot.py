@@ -10,6 +10,8 @@ import logging
 import schedule
 import time
 import tweepy
+import urllib.request
+import xml.etree.ElementTree as ET
 from google import genai
 from datetime import datetime
 from dotenv import load_dotenv
@@ -59,6 +61,40 @@ TRACKS = [
 # → 本文の上限 = 227 文字（余裕を持って 215 文字に設定）
 CONTENT_MAX_CHARS = 215
 
+# NHK RSSフィード（無料・登録不要）
+RSS_FEEDS = [
+    "https://www3.nhk.or.jp/rss/news/cat0.xml",   # NHK 主要ニュース
+    "https://www3.nhk.or.jp/rss/news/cat1.xml",   # NHK 社会
+    "https://www3.nhk.or.jp/rss/news/cat3.xml",   # NHK 経済
+]
+
+# ─── Fetch News from RSS ──────────────────────────────────────────────────────
+def fetch_news() -> str:
+    """RSSからニュースを1件取得して返す。失敗したらNoneを返す。"""
+    random.shuffle(RSS_FEEDS)
+    for feed_url in RSS_FEEDS:
+        try:
+            req = urllib.request.Request(
+                feed_url,
+                headers={"User-Agent": "soul_up_an_bot/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as res:
+                xml_data = res.read()
+            root = ET.fromstring(xml_data)
+            items = root.findall(".//item")
+            if items:
+                item = random.choice(items[:10])  # 最新10件からランダム
+                title = item.findtext("title", "").strip()
+                desc = item.findtext("description", "").strip()
+                news_text = title
+                if desc and desc != title:
+                    news_text += f"。{desc[:50]}"
+                logger.info(f"Fetched news: {title}")
+                return news_text
+        except Exception as e:
+            logger.warning(f"RSS fetch failed ({feed_url}): {e}")
+    return None
+
 # ─── Initialize Clients ───────────────────────────────────────────────────────
 def init_clients():
     gemini = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
@@ -76,6 +112,15 @@ def init_clients():
 def generate_content(gemini: genai.Client, track: dict) -> str:
     today = datetime.now().strftime("%Y年%m月%d日")
 
+    # RSSからニュースを取得
+    news = fetch_news()
+    if news:
+        news_instruction = f"【今日の実際のニュース】{news}"
+        news_prompt = "上記の実際のニュースを取り上げる"
+    else:
+        news_instruction = ""
+        news_prompt = "今日の気になるニュースや社会の出来事を1つ取り上げる（具体的なトピックで）"
+
     prompt = f"""あなたはXの投稿Bot「AN（アン）」です。以下の設定で投稿文を1つ生成してください。
 
 【キャラクター: AN】
@@ -84,9 +129,10 @@ def generate_content(gemini: genai.Client, track: dict) -> str:
 - 上から目線だけど根は温かい、少し皮肉屋
 
 【今日の日付】{today}
+{news_instruction}
 
 【投稿の構成（この順番で）】
-1. 今日の気になるニュースや社会の出来事を1つ取り上げる（具体的なトピックで）
+1. {news_prompt}
 2. 般若心経の教えの切り口で1〜2文で解釈する
 3. 「ふっ」と気が楽になる短い一言で締める（例：「…ま、そういうことよ。」「執着、手放してみ？」）
 4. 「今の気分に #{track['genre']} はどう？」で終わる

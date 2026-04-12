@@ -58,7 +58,24 @@ TRACKS = [
     {"genre": "metal",         "url": "https://suno.com/s/DtT6pbAOrnyosgjt"},
 ]
 
-CONTENT_MAX_CHARS = 215
+CONTENT_MAX_CHARS = 100  # Twitter CJK weighted: 100×2 + URLs(46) + separators(10) ≈ 256 < 280
+
+def twitter_weighted_len(text: str) -> int:
+    """Twitterの加重文字数: CJK=2, URL=23, その他=1"""
+    import re
+    import unicodedata
+    # URLを除外して個別カウント
+    url_pattern = re.compile(r'https?://\S+')
+    urls = url_pattern.findall(text)
+    clean = url_pattern.sub('', text)
+    count = 0
+    for ch in clean:
+        if unicodedata.east_asian_width(ch) in ('W', 'F'):
+            count += 2
+        else:
+            count += 1
+    count += len(urls) * 23
+    return count
 
 RSS_FEEDS = [
     "https://www3.nhk.or.jp/rss/news/cat0.xml",
@@ -266,9 +283,14 @@ def generate_content(gemini: genai.Client, track: dict) -> str:
     try:
         response = gemini.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         content = response.text.strip()
+        # Python文字数チェック
         if len(content) > CONTENT_MAX_CHARS:
             content = content[:CONTENT_MAX_CHARS - 3] + "..."
-            logger.warning(f"Content trimmed to {CONTENT_MAX_CHARS} chars.")
+            logger.warning(f"Content trimmed to {CONTENT_MAX_CHARS} chars (python len).")
+        # Twitter加重文字数チェック（本文+URL+区切り全体で280以内）
+        full = f"{content}\n\n🎵 https://example.com\n🌐 https://example.com"
+        wlen = twitter_weighted_len(full)
+        logger.info(f"Tweet weighted length: {wlen}/280 (content: {len(content)} chars)")
         return content
     except Exception as e:
         logger.error(f"Gemini API error: {e}")

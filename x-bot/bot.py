@@ -229,7 +229,7 @@ def init_clients():
         consumer_secret=os.environ["X_API_KEY_SECRET"],
         access_token=os.environ["X_ACCESS_TOKEN"],
         access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
-        wait_on_rate_limit=True,
+        wait_on_rate_limit=False,  # レート制限時はハングせずエラーを返す
     )
 
     # 起動時に認証テスト（Read権限で確認）

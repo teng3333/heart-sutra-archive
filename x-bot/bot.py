@@ -88,6 +88,59 @@ def manual_post():
     threading.Thread(target=post_to_x, args=(_gemini, _twitter), daemon=True).start()
     return jsonify({"status": "triggered"})
 
+@flask_app.route("/debug")
+def debug_auth():
+    """認証デバッグ: GET /debug?secret=YOUR_SECRET"""
+    secret = os.environ.get("POST_SECRET", "")
+    if secret and request.args.get("secret") != secret:
+        return jsonify({"error": "unauthorized"}), 401
+
+    result = {"checks": []}
+
+    # 1. 環境変数の存在確認（値は隠す）
+    for var in ["X_API_KEY", "X_API_KEY_SECRET", "X_ACCESS_TOKEN", "X_ACCESS_TOKEN_SECRET"]:
+        val = os.environ.get(var, "")
+        result["checks"].append({
+            "var": var,
+            "set": bool(val),
+            "length": len(val),
+            "preview": f"{val[:4]}...{val[-4:]}" if len(val) > 8 else "too_short"
+        })
+
+    # 2. get_me() テスト（Read権限）
+    if _twitter:
+        try:
+            me = _twitter.get_me()
+            if me.data:
+                result["get_me"] = {"ok": True, "username": me.data.username, "id": me.data.id}
+            else:
+                result["get_me"] = {"ok": False, "error": "no data returned"}
+        except Exception as e:
+            result["get_me"] = {"ok": False, "error": str(e)}
+
+    # 3. create_tweet テスト（Write権限 - 短いテスト投稿）
+    if _twitter:
+        try:
+            import datetime as dt
+            test_text = f"🔧 auth test {dt.datetime.now().strftime('%H:%M:%S')} #般若心経"
+            resp = _twitter.create_tweet(text=test_text)
+            tweet_id = resp.data["id"]
+            result["create_tweet"] = {"ok": True, "tweet_id": tweet_id}
+            # テスト投稿を削除
+            try:
+                _twitter.delete_tweet(tweet_id)
+                result["delete_tweet"] = {"ok": True}
+            except:
+                result["delete_tweet"] = {"ok": False, "note": "tweet posted but not deleted"}
+        except Exception as e:
+            error_info = {"ok": False, "error": str(e)}
+            if hasattr(e, "response") and e.response is not None:
+                error_info["status"] = e.response.status_code
+                error_info["body"] = e.response.text
+            result["create_tweet"] = error_info
+
+    return jsonify(result)
+
 # ─── Fetch News from RSS ──────────────────────────────────────────────────────
 def fetch_news() -> str:
     random.shuffle(RSS_FEEDS)

@@ -141,6 +141,42 @@ def debug_auth():
 
     return jsonify(result)
 
+@flask_app.route("/test-content", methods=["POST"])
+def test_content():
+    """投稿内容のどの部分が403を起こすか特定"""
+    secret = os.environ.get("POST_SECRET", "")
+    if secret and request.args.get("secret") != secret:
+        return jsonify({"error": "unauthorized"}), 401
+
+    import datetime as dt
+    now = dt.datetime.now().strftime("%H:%M:%S")
+    results = []
+
+    tests = [
+        ("text_only", f"テスト投稿 {now} #般若心経 #空"),
+        ("with_suno", f"テスト投稿 {now}\n🎵 https://suno.com/s/d5Wc2J4lCiKgQFuz"),
+        ("with_site", f"テスト投稿 {now}\n🌐 https://teng3333.github.io/heart-sutra-archive/?locale=ja"),
+        ("with_both", f"テスト投稿 {now}\n🎵 https://suno.com/s/d5Wc2J4lCiKgQFuz\n🌐 https://teng3333.github.io/heart-sutra-archive/?locale=ja"),
+    ]
+
+    for name, text in tests:
+        try:
+            resp = _twitter.create_tweet(text=text)
+            tid = resp.data["id"]
+            results.append({"test": name, "ok": True, "tweet_id": tid})
+            try:
+                _twitter.delete_tweet(tid)
+            except:
+                pass
+        except Exception as e:
+            error_info = {"test": name, "ok": False, "error": str(e)}
+            if hasattr(e, "response") and e.response is not None:
+                error_info["status"] = e.response.status_code
+            results.append(error_info)
+            break  # 失敗したらそこで止める
+
+    return jsonify({"results": results})
+
 # ─── Fetch News from RSS ──────────────────────────────────────────────────────
 def fetch_news() -> str:
     random.shuffle(RSS_FEEDS)

@@ -86,6 +86,10 @@ RSS_FEEDS = [
 # ─── Global clients ───────────────────────────────────────────────────────────
 _gemini = None
 _twitter = None
+_twitter_v1 = None
+
+# 画像パス
+IMAGE_PATH = os.path.join(os.path.dirname(__file__), "AN.png")
 
 # ─── Flask app ────────────────────────────────────────────────────────────────
 flask_app = Flask(__name__)
@@ -102,7 +106,7 @@ def manual_post():
         return jsonify({"error": "unauthorized"}), 401
     if _gemini is None or _twitter is None:
         return jsonify({"error": "clients not ready"}), 503
-    threading.Thread(target=post_to_x, args=(_gemini, _twitter), daemon=True).start()
+    threading.Thread(target=post_to_x, args=(_gemini, _twitter, _twitter_v1), daemon=True).start()
     return jsonify({"status": "triggered"})
 
 @flask_app.route("/debug")
@@ -224,15 +228,25 @@ def fetch_news() -> str:
 def init_clients():
     gemini = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
+    # v2クライアント（ツイート投稿用）
     twitter = tweepy.Client(
         consumer_key=os.environ["X_API_KEY"],
         consumer_secret=os.environ["X_API_KEY_SECRET"],
         access_token=os.environ["X_ACCESS_TOKEN"],
         access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
-        wait_on_rate_limit=False,  # レート制限時はハングせずエラーを返す
+        wait_on_rate_limit=False,
     )
 
-    # 起動時に認証テスト（Read権限で確認）
+    # v1.1クライアント（画像アップロード用）
+    auth = tweepy.OAuth1UserHandler(
+        os.environ["X_API_KEY"],
+        os.environ["X_API_KEY_SECRET"],
+        os.environ["X_ACCESS_TOKEN"],
+        os.environ["X_ACCESS_TOKEN_SECRET"],
+    )
+    twitter_v1 = tweepy.API(auth)
+
+    # 起動時に認証テスト
     try:
         me = twitter.get_me()
         if me.data:
@@ -242,7 +256,7 @@ def init_clients():
     except Exception as e:
         logger.error(f"Twitter auth test FAILED: {e}")
 
-    return gemini, twitter
+    return gemini, twitter, twitter_v1
 
 # ─── Generate Post Content ────────────────────────────────────────────────────
 def generate_content(gemini: genai.Client, track: dict) -> str:
@@ -297,7 +311,7 @@ def generate_content(gemini: genai.Client, track: dict) -> str:
         raise
 
 # ─── Post to X ────────────────────────────────────────────────────────────────
-def post_to_x(gemini: genai.Client, twitter: tweepy.Client) -> None:
+def post_to_x(gemini: genai.Client, twitter: tweepy.Client, twitter_v1: tweepy.API) -> None:
     track = random.choice(TRACKS)
     logger.info(f"Generating post... (track: {track['genre']})")
 
@@ -305,7 +319,20 @@ def post_to_x(gemini: genai.Client, twitter: tweepy.Client) -> None:
         content = generate_content(gemini, track)
         full_post = f"{content}\n\n🎵 {track['url']}\n🌐 {SITE_URL}"
 
-        response = twitter.create_tweet(text=full_post)
+        # 画像アップロード
+        media_ids = None
+        if os.path.exists(IMAGE_PATH):
+            try:
+                media = twitter_v1.media_upload(IMAGE_PATH)
+                media_ids = [media.media_id]
+                logger.info(f"Image uploaded: media_id={media.media_id}")
+            except Exception as e:
+                logger.warning(f"Image upload failed (posting without image): {e}")
+
+        response = twitter.create_tweet(
+            text=full_post,
+            media_ids=media_ids,
+        )
         tweet_id = response.data["id"]
         logger.info(f"Posted successfully! tweet_id={tweet_id}")
         logger.info(f"--- Preview ---\n{content}\n---------------")
@@ -324,10 +351,10 @@ def post_to_x(gemini: genai.Client, twitter: tweepy.Client) -> None:
         logger.error(f"Unexpected error: {e}")
 
 # ─── Schedule Setup ───────────────────────────────────────────────────────────
-def setup_schedule(gemini: genai.Client, twitter: tweepy.Client) -> None:
+def setup_schedule(gemini: genai.Client, twitter: tweepy.Client, twitter_v1: tweepy.API) -> None:
     times = ["07:00", "12:00", "18:00", "21:00"]
     for t in times:
-        schedule.every().day.at(t).do(post_to_x, gemini=gemini, twitter=twitter)
+        schedule.every().day.at(t).do(post_to_x, gemini=gemini, twitter=twitter, twitter_v1=twitter_v1)
         logger.info(f"Scheduled: {t} JST")
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -339,8 +366,8 @@ def main() -> None:
     logger.info(f"  TZ: {os.environ.get('TZ', 'not set (UTC assumed)')}")
     logger.info("========================================")
 
-    _gemini, _twitter = init_clients()
-    setup_schedule(_gemini, _twitter)
+    _gemini, _twitter, _twitter_v1 = init_clients()
+    setup_schedule(_gemini, _twitter, _twitter_v1)
 
     # Flaskを別スレッドで起動
     port = int(os.environ.get("PORT", 8080))

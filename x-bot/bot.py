@@ -359,7 +359,7 @@ def setup_schedule(gemini: genai.Client, twitter: tweepy.Client, twitter_v1: twe
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 def main() -> None:
-    global _gemini, _twitter
+    global _gemini, _twitter, _twitter_v1
 
     logger.info("========================================")
     logger.info("  soul_up_an Bot starting...")

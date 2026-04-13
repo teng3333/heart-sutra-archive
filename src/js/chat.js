@@ -1,5 +1,5 @@
 /**
- * Chat Bot "アン" — Heart Sutra Modern Archive
+ * Chat Bot "AN" — Heart Sutra Modern Archive
  * Powered by Gemini 2.5 Flash via Cloudflare Workers
  */
 
@@ -417,7 +417,7 @@
           <img src="${AVATAR_SRC}" alt="アン" />
         </div>
         <div class="ann-header-info">
-          <div class="ann-header-name">ANN — アン</div>
+          <div class="ann-header-name">AN — アン</div>
           <div class="ann-header-status">
             <span class="ann-status-dot"></span>
             <span>阿吽 · 般若心経の案内役</span>

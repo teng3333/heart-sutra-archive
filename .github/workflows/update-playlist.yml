@@ -1,0 +1,36 @@
+name: Update SUNO Playlist
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update-playlist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install playwright
+          playwright install chromium
+          playwright install-deps chromium
+      - name: Fetch SUNO playlist
+        run: python3 scripts/fetch_playlist.py
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git diff --quiet data/playlist.json || echo "changed=true" >> $GITHUB_OUTPUT
+      - name: Commit and push if changed
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/playlist.json
+          git commit -m "chore: update SUNO playlist data [$(date -u '+%Y-%m-%d' )]"
+          git push

@@ -6,6 +6,7 @@ Manual trigger: POST /post?secret=POST_SECRET
 """
 
 import os
+import re
 import random
 import logging
 import schedule
@@ -32,31 +33,50 @@ logger = logging.getLogger(__name__)
 # ─── Config ───────────────────────────────────────────────────────────────────
 SITE_URL = "https://teng3333.github.io/heart-sutra-archive/?locale=ja"
 
-TRACKS = [
-    {"genre": "INDIES",        "url": "https://suno.com/s/Wx7CnwCbekbEYNGr"},
-    {"genre": "ENKA",          "url": "https://suno.com/s/enJa54lfA1apbDbO"},
-    {"genre": "tango",         "url": "https://suno.com/s/5Sy85cO08UtHyEVC"},
-    {"genre": "acoustic",      "url": "https://suno.com/s/RxVB7XfJIoxjGBae"},
-    {"genre": "Blues",         "url": "https://suno.com/s/m5FIUyXT3HKfQBgD"},
-    {"genre": "JAZZ",          "url": "https://suno.com/s/jHp51qiXA6Gyylq1"},
-    {"genre": "funk",          "url": "https://suno.com/s/aeL9Kzw6rv2mN4Ey"},
-    {"genre": "Bollywood",     "url": "https://suno.com/s/bjw8h0khtyiDCC9k"},
-    {"genre": "iDOL",          "url": "https://suno.com/s/aRq2vh0JiqRjFHqw"},
-    {"genre": "cyber punk",    "url": "https://suno.com/s/d5Wc2J4lCiKgQFuz"},
-    {"genre": "simple",        "url": "https://suno.com/s/nfJC4YFxiPglZNyx"},
-    {"genre": "anime song",    "url": "https://suno.com/s/FtiVGZ3CQI44IKVS"},
-    {"genre": "punk",          "url": "https://suno.com/s/YfZvEC7fQ1o3bPhH"},
-    {"genre": "ROCK",          "url": "https://suno.com/s/HL5LZyOYFD8DNJFR"},
-    {"genre": "lo-fi",         "url": "https://suno.com/s/jQiBWO0Kk78oa6eg"},
-    {"genre": "HIPHOP",        "url": "https://suno.com/s/OITaaoVjb5aP6dw6"},
-    {"genre": "IDM",           "url": "https://suno.com/s/S5Q39LaxmMjmGFgy"},
-    {"genre": "cyber punk II", "url": "https://suno.com/s/ypdCxaXjIgW6tXg6"},
-    {"genre": "cyber punk III","url": "https://suno.com/s/EZPGaaLlKt628jf1"},
-    {"genre": "hymn",          "url": "https://suno.com/s/ulaVVY0QHdCfH4BV"},
-    {"genre": "gamelan",       "url": "https://suno.com/s/OH3OKfIBFD6RXqPT"},
-    {"genre": "Halloween",     "url": "https://suno.com/s/6wQaeker0gtuW5cJ"},
-    {"genre": "metal",         "url": "https://suno.com/s/DtT6pbAOrnyosgjt"},
-]
+# SunoプレイリストURL（ここに曲を追加するだけでボットに自動反映）
+SUNO_PLAYLIST_URL = "https://suno.com/playlist/5ae1adc6-893c-4fce-bfec-a0114e0bd925"
+
+# キャッシュ（起動時 + 6時間ごとに更新）
+_cached_tracks: list[str] = []
+_tracks_last_fetched: float = 0
+TRACKS_CACHE_TTL = 6 * 60 * 60  # 6時間
+
+def fetch_suno_tracks() -> list[str]:
+    """Sunoプレイリストから全曲のURLを自動取得"""
+    global _cached_tracks, _tracks_last_fetched
+
+    # キャッシュが有効ならそのまま返す
+    if _cached_tracks and (time.time() - _tracks_last_fetched < TRACKS_CACHE_TTL):
+        return _cached_tracks
+
+    try:
+        req = urllib.request.Request(
+            SUNO_PLAYLIST_URL,
+            headers={"User-Agent": "Mozilla/5.0 (soul_up_an_bot/1.0)"}
+        )
+        with urllib.request.urlopen(req, timeout=15) as res:
+            html = res.read().decode("utf-8")
+
+        # HTMLからsong UUIDを抽出
+        uuids = re.findall(
+            r'/song/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
+            html
+        )
+        unique_uuids = list(dict.fromkeys(uuids))  # 重複排除（順序保持）
+        tracks = [f"https://suno.com/s/{uid}" for uid in unique_uuids]
+
+        if tracks:
+            _cached_tracks = tracks
+            _tracks_last_fetched = time.time()
+            logger.info(f"Suno playlist: {len(tracks)} tracks loaded")
+        else:
+            logger.warning("Suno playlist: no tracks found, using cache")
+
+        return _cached_tracks or tracks
+
+    except Exception as e:
+        logger.warning(f"Suno playlist fetch failed: {e}")
+        return _cached_tracks  # 失敗時はキャッシュを返す
 
 CONTENT_MAX_CHARS = 100  # Twitter CJK weighted: 100×2 + URLs(46) + separators(10) ≈ 256 < 280
 
@@ -259,7 +279,7 @@ def init_clients():
     return gemini, twitter, twitter_v1
 
 # ─── Generate Post Content ────────────────────────────────────────────────────
-def generate_content(gemini: genai.Client, track: dict) -> str:
+def generate_content(gemini: genai.Client) -> str:
     today = datetime.now().strftime("%Y年%m月%d日")
 
     news = fetch_news()
@@ -284,7 +304,7 @@ def generate_content(gemini: genai.Client, track: dict) -> str:
 1. {news_prompt}
 2. 般若心経の教えの切り口で1〜2文で解釈する
 3. 「ふっ」と気が楽になる短い一言で締める（例：「…ま、そういうことよ。」「執着、手放してみ？」）
-4. 「今の気分に #{track['genre']} はどう？」で終わる
+4. 最後に「般若心経、聴いてみ？」で締める
 
 【厳守ルール】
 - 本文は必ず {CONTENT_MAX_CHARS} 文字以内（URLは別途付加するので含めない）
@@ -312,12 +332,17 @@ def generate_content(gemini: genai.Client, track: dict) -> str:
 
 # ─── Post to X ────────────────────────────────────────────────────────────────
 def post_to_x(gemini: genai.Client, twitter: tweepy.Client, twitter_v1: tweepy.API) -> None:
-    track = random.choice(TRACKS)
-    logger.info(f"Generating post... (track: {track['genre']})")
+    # Sunoプレイリストから自動取得
+    tracks = fetch_suno_tracks()
+    if not tracks:
+        logger.error("No tracks available, skipping post")
+        return
+    track_url = random.choice(tracks)
+    logger.info(f"Generating post... (track: {track_url})")
 
     try:
-        content = generate_content(gemini, track)
-        full_post = f"{content}\n\n🎵 {track['url']}\n🌐 {SITE_URL}"
+        content = generate_content(gemini)
+        full_post = f"{content}\n\n🎵 {track_url}\n🌐 {SITE_URL}"
 
         # 画像アップロード
         media_ids = None
@@ -367,6 +392,11 @@ def main() -> None:
     logger.info("========================================")
 
     _gemini, _twitter, _twitter_v1 = init_clients()
+
+    # 起動時にSunoプレイリストを読み込み
+    tracks = fetch_suno_tracks()
+    logger.info(f"Loaded {len(tracks)} tracks from Suno playlist")
+
     setup_schedule(_gemini, _twitter, _twitter_v1)
 
     # Flaskを別スレッドで起動

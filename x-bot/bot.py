@@ -63,7 +63,7 @@ def fetch_suno_tracks() -> list[str]:
             html
         )
         unique_uuids = list(dict.fromkeys(uuids))  # 重複排除（順序保持）
-        tracks = [f"https://suno.com/s/{uid}" for uid in unique_uuids]
+        tracks = [f"https://suno.com/song/{uid}" for uid in unique_uuids]
 
         if tracks:
             _cached_tracks = tracks

@@ -118,6 +118,15 @@ flask_app = Flask(__name__)
 def health():
     return jsonify({"status": "ok", "bot": "soul_up_an"})
 
+@flask_app.route("/tracks")
+def show_tracks():
+    """現在のトラックリストを表示"""
+    secret = os.environ.get("POST_SECRET", "")
+    if secret and request.args.get("secret") != secret:
+        return jsonify({"error": "unauthorized"}), 401
+    tracks = fetch_suno_tracks()
+    return jsonify({"count": len(tracks), "tracks": tracks[:10], "note": "showing first 10"})
+
 @flask_app.route("/post", methods=["POST"])
 def manual_post():
     """手動投稿トリガー: POST /post?secret=YOUR_SECRET"""

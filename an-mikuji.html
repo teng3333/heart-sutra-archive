@@ -446,28 +446,37 @@ var _token = localStorage.getItem('an_token');
 var _name  = localStorage.getItem('an_name');
 var _currentKuji = '';
 var _currentVerse = '';
+var _turnCount = 0;   // ユーザーが送信した回数
+var _maxTurns  = 10;  // 1日の最大ターン数
+var _chatEnded = false;
 
 // おみくじ結果をチャットに渡すため show() をフック
+// ※ スクロールは結果セクションへ（チャットへ飛ばない）
 var _origShow = show;
 show = function() {
-  _origShow();
-  // 結果表示後にチャットセクションを表示
+  _origShow();  // → 結果セクションへスクロール（元の動作を維持）
   var s = ts(), k = gR(s), d = F[k];
   _currentKuji  = d.r;
-  _currentVerse = (function(){
-    // 節は Fortune データから取得（フィールド名はfiにあたる部分）
-    var idx = Math.floor(sr(s*7+13)*d.p.length);
-    return d.p[idx].g.substring(0,10); // 短縮版
-  })();
+  var idx = Math.floor(sr(s*7+13)*d.p.length);
+  _currentVerse = d.p[idx].g.substring(0, 10);
+  // チャットセクションを表示するだけ。スクロールはしない。
   document.getElementById('chatSection').style.display = 'block';
-  if (_token) {
-    showChatPanel();
-  }
 };
 
 function openAuth() {
-  if (_token) { showChatPanel(); return; }
+  if (_token) {
+    _showAndScrollToChat();
+    return;
+  }
   document.getElementById('modalOverlay').classList.add('active');
+}
+
+// チャットパネルを開いてチャット欄までスクロール
+function _showAndScrollToChat() {
+  showChatPanel();
+  setTimeout(function(){
+    document.getElementById('chatSection').scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
 }
 
 function closeModal() {
@@ -499,7 +508,7 @@ function doLogin() {
       localStorage.setItem('an_name', d.name);
       _token = d.token; _name = d.name;
       closeModal();
-      showChatPanel();
+      _showAndScrollToChat();
     } else {
       document.getElementById('loginErr').textContent = d.error || 'ログイン失敗';
     }
@@ -522,7 +531,7 @@ function doRegister() {
       localStorage.setItem('an_name', d.name);
       _token = d.token; _name = d.name;
       closeModal();
-      showChatPanel();
+      _showAndScrollToChat();
     } else {
       document.getElementById('regErr').textContent = d.error || '登録失敗';
     }
@@ -532,17 +541,18 @@ function doRegister() {
 function showChatPanel() {
   document.getElementById('chatInvite').style.display = 'none';
   document.getElementById('chatPanel').classList.add('active');
-  // 初回メッセージ：おみくじの結果を起点にした一言
+  // 初回メッセージ：日付シードの説明 ＋ おみくじを起点にした問い
   if (document.getElementById('chatLog').children.length === 0) {
-    var openings = [
-      '「' + _currentKuji + '」か。\n……' + _name + 'さん、これ読んで何か感じた？',
-      '……' + _currentKuji + 'ね。\n正直に言いなさい。今日の結果、どう思った？',
-      '「' + _currentKuji + '」が出たわ。\n' + _name + 'さん、今の気分、一言で言うと？',
+    var seedNote = 'ちなみに今日のおみくじは、日付で決まってる。\n何度引いても「' + _currentKuji + '」が出る。それが今日のアンタの運勢。\n';
+    var questions = [
+      '……で、これ読んでどう思った？一言でいいから。',
+      '……正直に言いなさい。今日の結果、しっくりきた？',
+      '……今の気分、一言で表すと？',
     ];
-    var msg = openings[Math.floor(Math.random() * openings.length)];
-    addBubble('an', 'AN', msg);
+    var q = questions[Math.floor(Math.random() * questions.length)];
+    addBubble('an', 'AN', seedNote + q);
   }
-  document.getElementById('chatInput').focus();
+  // focus()は呼ばない（スクロールが飛ぶのを防ぐため）
 }
 
 function addBubble(who, label, text) {
@@ -551,7 +561,7 @@ function addBubble(who, label, text) {
   wrap.className = 'chat-bubble ' + who;
   var av = document.createElement('div');
   av.className = 'chat-avatar';
-  av.textContent = who === 'an' ? 'AN' : (label ? label.charAt(0) : '?');
+  av.textContent = who === 'an' ? 'AN' : (label ? label.charAt(0).toUpperCase() : '?');
   var bubble = document.createElement('div');
   bubble.className = 'chat-text';
   bubble.innerHTML = text.replace(/\n/g, '<br>');
@@ -584,30 +594,66 @@ function hideTyping() {
   if (t) t.remove();
 }
 
+function endChat() {
+  _chatEnded = true;
+  var input = document.getElementById('chatInput');
+  var btn   = document.getElementById('chatSendBtn');
+  input.disabled = true;
+  btn.disabled   = true;
+  input.placeholder = '今日の対話はここまで。また明日。';
+  // 区切り線 ＋ 締めの言葉
+  setTimeout(function() {
+    var div = document.createElement('div');
+    div.style.cssText = 'text-align:center;padding:28px 0 8px;font-family:var(--fe);font-size:14px;color:var(--text-m);letter-spacing:4px;border-top:1px solid var(--border);margin-top:8px';
+    div.textContent = '— また明日 · See you tomorrow —';
+    document.getElementById('chatLog').appendChild(div);
+    document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
+  }, 600);
+}
+
 function sendChat() {
+  if (_chatEnded) return;
   var input = document.getElementById('chatInput');
   var msg = input.value.trim();
   if (!msg || !_token) return;
   input.value = '';
-  document.getElementById('chatSendBtn').disabled = true;
+  var btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
   addBubble('user', _name || '?', msg);
   showTyping();
+
+  // 最終ターンはANに締めくくりを促す指示を付加
+  var isLast = (_turnCount >= _maxTurns - 1);
+  var apiMsg = isLast
+    ? msg + '\n\n[今日の対話はこれで最後です。ANは今日の会話を温かく締めくくり、「明日また来てよ」と伝えてください]'
+    : msg;
+
   fetch(API + '/api/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + _token
     },
-    body: JSON.stringify({message: msg, kuji_rank: _currentKuji, verse: _currentVerse})
+    body: JSON.stringify({message: apiMsg, kuji_rank: _currentKuji, verse: _currentVerse})
   }).then(function(r){ return r.json(); }).then(function(d) {
     hideTyping();
-    document.getElementById('chatSendBtn').disabled = false;
+    _turnCount++;
     if (d.reply) {
       addBubble('an', 'AN', d.reply);
     }
+    if (_turnCount >= _maxTurns) {
+      endChat();      // 10ターン終了
+    } else {
+      btn.disabled = false;
+      // 残り2ターンになったらヒントを表示
+      if (_turnCount === _maxTurns - 2) {
+        var hint = document.getElementById('chatHint');
+        if (hint) hint.style.display = 'block';
+      }
+    }
   }).catch(function(){
     hideTyping();
-    document.getElementById('chatSendBtn').disabled = false;
+    btn.disabled = false;
     addBubble('an', 'AN', '……ちょっと待って。もう一度。');
   });
 }

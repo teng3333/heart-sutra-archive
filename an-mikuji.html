@@ -78,12 +78,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
 .mu-link{display:inline-block;margin-top:14px;font-family:var(--fe);font-size:14px;color:var(--accent-l);text-decoration:none;letter-spacing:1px;transition:color .3s}
 .mu-link:hover{color:var(--text)}
 .share{padding:48px 0;border-top:1px solid var(--border);text-align:center}
-.share-l{font-family:var(--fe);font-size:11px;letter-spacing:4px;color:var(--text-m);margin-bottom:20px}
+.share-l{font-family:var(--fe);font-size:11px;letter-spacing:4px;color:var(--text-m);margin-bottom:24px}
 .share-bs{display:flex;justify-content:center;gap:12px}
 .share-b{padding:10px 28px;border:1px solid var(--border);border-radius:2px;background:none;color:var(--text-s);font-family:var(--fb);font-size:12px;font-weight:300;letter-spacing:1px;cursor:pointer;text-decoration:none;transition:all .3s}
 .share-b:hover{border-color:var(--accent);color:var(--text)}
-.retry{display:block;width:100%;padding:16px;border:1px dashed var(--border);border-radius:2px;background:none;color:var(--text-m);font-family:var(--fb);font-size:12px;font-weight:300;letter-spacing:2px;cursor:pointer;margin-top:16px;transition:all .3s}
-.retry:hover{border-color:var(--text-m);color:var(--text-s)}
+.share-x{display:inline-flex;align-items:center;gap:10px;padding:16px 40px;border:1px solid #fff;border-radius:2px;background:#000;color:#fff;font-family:var(--fb);font-size:15px;font-weight:400;letter-spacing:3px;cursor:pointer;text-decoration:none;transition:all .3s}
+.share-x:hover{background:#1a1a1a;border-color:#ccc}
 .footer{padding:60px 0 40px;border-top:1px solid var(--border);text-align:center}
 .f-su{font-family:var(--fj);font-size:13px;letter-spacing:6px;color:var(--text-m);line-height:2.4;margin-bottom:24px}
 .f-sr{font-family:var(--fe);font-size:11px;font-style:italic;letter-spacing:2px;color:var(--text-m);opacity:.5;line-height:2;margin-bottom:32px}
@@ -222,9 +222,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
         <a href="#" class="mu-link" id="mL" target="_blank">楽曲ページで聴く →</a>
       </div>
       <div class="share">
-        <div class="share-l">Share</div>
-        <div class="share-bs"><a class="share-b" id="sX" href="#" target="_blank">𝕏 Post</a><button class="share-b" onclick="cp()">Copy</button></div>
-        <button class="retry" onclick="location.reload()">もう一度引く — Draw Again</button>
+        <div class="share-l">Share your fortune</div>
+        <a class="share-x" id="sX" href="#" target="_blank">𝕏 &nbsp;今日の運勢をポストする</a>
+        <div style="margin-top:16px"><button class="share-b" onclick="cp()">テキストをコピー</button></div>
       </div>
     </div>
   </section>

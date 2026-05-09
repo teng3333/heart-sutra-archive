@@ -262,7 +262,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
 </div>
 <script>
 function sr(s){var x=Math.sin(s)*10000;return x-Math.floor(x)}
-function ts(){var d=new Date();return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate()}
+function ts(){var d=new Date();var dateNum=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();var name=localStorage.getItem('an_name')||'guest';var nameHash=name.split('').reduce(function(a,c){return a+c.charCodeAt(0)},0);return dateNum+nameHash*97}
 function ds(){var d=new Date(),w=['日','月','火','水','木','金','土'];return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+w[d.getDay()]+'）'}
 
 /* ===== SUNO楽曲データベース =====

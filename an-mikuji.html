@@ -123,43 +123,44 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
 /* ===== チャットUI ===== */
 .chat-section{padding:40px 0;border-top:1px solid var(--border)}
 .chat-invite{text-align:center;padding:24px 0}
-.chat-invite-t{font-family:var(--fj);font-size:15px;color:var(--text-s);letter-spacing:2px;margin-bottom:24px;line-height:2.4}
-.chat-open-btn{display:inline-block;padding:14px 36px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:14px;font-weight:300;letter-spacing:2px;cursor:pointer;transition:all .3s}
+.chat-invite-t{font-family:var(--fj);font-size:17px;color:var(--text);letter-spacing:2px;margin-bottom:28px;line-height:2.6}
+.chat-open-btn{display:inline-block;padding:16px 40px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:15px;font-weight:300;letter-spacing:3px;cursor:pointer;transition:all .3s}
 .chat-open-btn:hover{background:var(--accent);color:var(--bg)}
 .chat-panel{display:none;flex-direction:column;gap:0}
 .chat-panel.active{display:flex}
-.chat-log{max-height:440px;overflow-y:auto;padding:16px 0;display:flex;flex-direction:column;gap:20px}
-.chat-bubble{display:flex;align-items:flex-start;gap:12px}
+.chat-log{max-height:480px;overflow-y:auto;padding:20px 0;display:flex;flex-direction:column;gap:24px}
+.chat-bubble{display:flex;align-items:flex-start;gap:14px}
 .chat-bubble.user{flex-direction:row-reverse}
-.chat-avatar{width:36px;height:36px;border-radius:50%;border:1px solid var(--border-l);background:var(--bg-el);display:flex;align-items:center;justify-content:center;font-family:var(--fj);font-size:13px;font-weight:800;color:var(--accent-l);flex-shrink:0}
-.chat-text{max-width:82%;padding:14px 18px;border-radius:2px;font-size:14px;font-weight:300;line-height:2.2;border:1px solid var(--border);font-family:var(--fb)}
+.chat-avatar{width:40px;height:40px;border-radius:50%;border:1px solid var(--border-l);background:var(--bg-el);display:flex;align-items:center;justify-content:center;font-family:var(--fj);font-size:14px;font-weight:800;color:var(--accent-l);flex-shrink:0}
+.chat-text{max-width:84%;padding:16px 20px;border-radius:2px;font-size:16px;font-weight:300;line-height:2.3;border:1px solid var(--border);font-family:var(--fb)}
 .chat-bubble.an .chat-text{background:var(--bg-el);color:var(--text);border-color:var(--border-l)}
-.chat-bubble.user .chat-text{background:none;color:var(--text-s);border-color:var(--border)}
-.chat-typing{opacity:.6}
-.chat-typing .chat-text{letter-spacing:4px;font-size:16px;padding:10px 18px}
-@keyframes typingPulse{0%,100%{opacity:.3}50%{opacity:.9}}
+.chat-bubble.user .chat-text{background:none;color:#b8b4ac;border-color:var(--border)}
+.chat-typing{opacity:.7}
+.chat-typing .chat-text{letter-spacing:6px;font-size:20px;padding:12px 20px}
+@keyframes typingPulse{0%,100%{opacity:.2}50%{opacity:1}}
 .chat-typing .chat-text span{display:inline-block;animation:typingPulse 1.2s ease-in-out infinite}
-.chat-typing .chat-text span:nth-child(2){animation-delay:.2s}
-.chat-typing .chat-text span:nth-child(3){animation-delay:.4s}
-.chat-input-row{display:flex;gap:10px;margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
-.chat-input{flex:1;background:none;border:1px solid var(--border);border-radius:2px;padding:12px 16px;color:var(--text);font-family:var(--fb);font-size:14px;font-weight:300;outline:none;transition:border-color .3s}
+.chat-typing .chat-text span:nth-child(2){animation-delay:.25s}
+.chat-typing .chat-text span:nth-child(3){animation-delay:.5s}
+.chat-input-row{display:flex;gap:10px;margin-top:24px;border-top:1px solid var(--border);padding-top:24px}
+.chat-input{flex:1;background:none;border:1px solid var(--border);border-radius:2px;padding:14px 18px;color:var(--text);font-family:var(--fb);font-size:16px;font-weight:300;outline:none;transition:border-color .3s}
 .chat-input:focus{border-color:var(--accent)}
-.chat-send-btn{padding:12px 24px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:13px;font-weight:300;letter-spacing:1px;cursor:pointer;transition:all .3s;white-space:nowrap}
+.chat-input::placeholder{color:#6a6860}
+.chat-send-btn{padding:14px 28px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:15px;font-weight:300;letter-spacing:1px;cursor:pointer;transition:all .3s;white-space:nowrap}
 .chat-send-btn:hover{background:var(--accent);color:var(--bg)}
 .chat-send-btn:disabled{opacity:.4;cursor:default}
 /* ===== 認証モーダル ===== */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;align-items:center;justify-content:center}
 .modal-overlay.active{display:flex}
 .modal-box{background:var(--bg-card);border:1px solid var(--border-l);padding:40px 32px;max-width:360px;width:90%;border-radius:2px}
-.modal-title{font-family:var(--fj);font-size:18px;font-weight:600;letter-spacing:4px;color:var(--text);margin-bottom:8px}
-.modal-sub{font-family:var(--fe);font-size:12px;font-style:italic;color:var(--text-s);letter-spacing:2px;margin-bottom:28px}
-.modal-input{display:block;width:100%;background:none;border:none;border-bottom:1px solid var(--border-l);padding:10px 0;color:var(--text);font-family:var(--fb);font-size:14px;font-weight:300;outline:none;margin-bottom:20px;transition:border-color .3s}
+.modal-title{font-family:var(--fj);font-size:22px;font-weight:600;letter-spacing:4px;color:var(--text);margin-bottom:8px}
+.modal-sub{font-family:var(--fe);font-size:15px;font-style:italic;color:var(--accent-l);letter-spacing:2px;margin-bottom:32px}
+.modal-input{display:block;width:100%;background:none;border:none;border-bottom:1px solid var(--border-l);padding:12px 0;color:var(--text);font-family:var(--fb);font-size:16px;font-weight:300;outline:none;margin-bottom:24px;transition:border-color .3s}
 .modal-input:focus{border-color:var(--accent)}
-.modal-input::placeholder{color:var(--text-m)}
-.modal-btn{display:block;width:100%;padding:14px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:13px;font-weight:300;letter-spacing:2px;cursor:pointer;margin-top:8px;transition:all .3s}
+.modal-input::placeholder{color:#6a6860}
+.modal-btn{display:block;width:100%;padding:16px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:15px;font-weight:300;letter-spacing:2px;cursor:pointer;margin-top:8px;transition:all .3s}
 .modal-btn:hover{background:var(--accent);color:var(--bg)}
-.modal-err{font-size:12px;color:#c07070;margin-top:12px;min-height:18px;letter-spacing:1px}
-.modal-sw{text-align:center;margin-top:20px;font-size:12px;color:var(--text-m)}
+.modal-err{font-size:14px;color:#d08080;margin-top:12px;min-height:20px;letter-spacing:1px}
+.modal-sw{text-align:center;margin-top:24px;font-size:14px;color:#8a8880}
 .modal-sw a{color:var(--accent-l);cursor:pointer;text-decoration:none}
 .modal-sw a:hover{color:var(--text)}
 </style>
@@ -201,20 +202,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
         <div class="an-msg-t" id="fM"></div>
         <div class="fi-te" id="fMe" style="padding-left:48px;margin-top:12px"></div>
       </div>
-      <div class="mu-s">
-        <div class="mu-l">今日の般若心経BGM <span>Today's Track</span></div>
-        <div class="mu-c"><button class="mu-p" onclick="window.open(document.getElementById('mU').value,'_blank')">&#9654;</button><div><div class="mu-ti" id="mT"></div><div class="mu-g" id="mG"></div></div><input type="hidden" id="mU" value="#"></div>
-        <a href="#" class="mu-link" id="mL" target="_blank">楽曲ページで聴く →</a>
-      </div>
-      <div class="share">
-        <div class="share-l">Share</div>
-        <div class="share-bs"><a class="share-b" id="sX" href="#" target="_blank">𝕏 Post</a><button class="share-b" onclick="cp()">Copy</button></div>
-        <button class="retry" onclick="location.reload()">もう一度引く — Draw Again</button>
-      </div>
-      <!-- チャットセクション -->
+      <!-- チャットセクション（BGMの上） -->
       <div class="chat-section" id="chatSection" style="display:none">
         <div class="chat-invite" id="chatInvite">
-          <p class="chat-invite-t" id="chatInviteText">ANに覚えてもらう？<br><span style="font-family:var(--fe);font-style:italic;font-size:12px;color:var(--text-m)">名前と4桁のPINだけ。10秒で登録できる。</span></p>
+          <p class="chat-invite-t" id="chatInviteText">ANに覚えてもらう？<br><span style="font-family:var(--fe);font-style:italic;font-size:14px;color:var(--accent-l)">名前と4桁のPINだけ。10秒で登録できる。</span></p>
           <button class="chat-open-btn" onclick="openAuth()">ANと話す</button>
         </div>
         <div class="chat-panel" id="chatPanel">
@@ -225,7 +216,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
           </div>
         </div>
       </div>
-      <div style="display:none">
+      <div class="mu-s">
+        <div class="mu-l">今日の般若心経BGM <span>Today's Track</span></div>
+        <div class="mu-c"><button class="mu-p" onclick="window.open(document.getElementById('mU').value,'_blank')">&#9654;</button><div><div class="mu-ti" id="mT"></div><div class="mu-g" id="mG"></div></div><input type="hidden" id="mU" value="#"></div>
+        <a href="#" class="mu-link" id="mL" target="_blank">楽曲ページで聴く →</a>
+      </div>
+      <div class="share">
+        <div class="share-l">Share</div>
+        <div class="share-bs"><a class="share-b" id="sX" href="#" target="_blank">𝕏 Post</a><button class="share-b" onclick="cp()">Copy</button></div>
+        <button class="retry" onclick="location.reload()">もう一度引く — Draw Again</button>
       </div>
     </div>
   </section>

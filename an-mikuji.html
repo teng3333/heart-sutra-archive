@@ -123,22 +123,28 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
 /* ===== チャットUI ===== */
 .chat-section{padding:40px 0;border-top:1px solid var(--border)}
 .chat-invite{text-align:center;padding:24px 0}
-.chat-invite-t{font-family:var(--fj);font-size:13px;color:var(--text-s);letter-spacing:2px;margin-bottom:20px;line-height:2}
-.chat-open-btn{display:inline-block;padding:12px 32px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:13px;font-weight:300;letter-spacing:2px;cursor:pointer;transition:all .3s}
+.chat-invite-t{font-family:var(--fj);font-size:15px;color:var(--text-s);letter-spacing:2px;margin-bottom:24px;line-height:2.4}
+.chat-open-btn{display:inline-block;padding:14px 36px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:14px;font-weight:300;letter-spacing:2px;cursor:pointer;transition:all .3s}
 .chat-open-btn:hover{background:var(--accent);color:var(--bg)}
 .chat-panel{display:none;flex-direction:column;gap:0}
 .chat-panel.active{display:flex}
-.chat-log{max-height:400px;overflow-y:auto;padding:16px 0;display:flex;flex-direction:column;gap:16px}
+.chat-log{max-height:440px;overflow-y:auto;padding:16px 0;display:flex;flex-direction:column;gap:20px}
 .chat-bubble{display:flex;align-items:flex-start;gap:12px}
 .chat-bubble.user{flex-direction:row-reverse}
-.chat-avatar{width:32px;height:32px;border-radius:50%;border:1px solid var(--border-l);background:var(--bg-el);display:flex;align-items:center;justify-content:center;font-family:var(--fj);font-size:12px;font-weight:800;color:var(--accent-l);flex-shrink:0}
-.chat-text{max-width:80%;padding:12px 16px;border-radius:2px;font-size:13px;font-weight:300;line-height:2;border:1px solid var(--border)}
+.chat-avatar{width:36px;height:36px;border-radius:50%;border:1px solid var(--border-l);background:var(--bg-el);display:flex;align-items:center;justify-content:center;font-family:var(--fj);font-size:13px;font-weight:800;color:var(--accent-l);flex-shrink:0}
+.chat-text{max-width:82%;padding:14px 18px;border-radius:2px;font-size:14px;font-weight:300;line-height:2.2;border:1px solid var(--border);font-family:var(--fb)}
 .chat-bubble.an .chat-text{background:var(--bg-el);color:var(--text);border-color:var(--border-l)}
 .chat-bubble.user .chat-text{background:none;color:var(--text-s);border-color:var(--border)}
-.chat-input-row{display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:16px}
-.chat-input{flex:1;background:none;border:1px solid var(--border);border-radius:2px;padding:10px 14px;color:var(--text);font-family:var(--fb);font-size:13px;font-weight:300;outline:none;transition:border-color .3s}
+.chat-typing{opacity:.6}
+.chat-typing .chat-text{letter-spacing:4px;font-size:16px;padding:10px 18px}
+@keyframes typingPulse{0%,100%{opacity:.3}50%{opacity:.9}}
+.chat-typing .chat-text span{display:inline-block;animation:typingPulse 1.2s ease-in-out infinite}
+.chat-typing .chat-text span:nth-child(2){animation-delay:.2s}
+.chat-typing .chat-text span:nth-child(3){animation-delay:.4s}
+.chat-input-row{display:flex;gap:10px;margin-top:20px;border-top:1px solid var(--border);padding-top:20px}
+.chat-input{flex:1;background:none;border:1px solid var(--border);border-radius:2px;padding:12px 16px;color:var(--text);font-family:var(--fb);font-size:14px;font-weight:300;outline:none;transition:border-color .3s}
 .chat-input:focus{border-color:var(--accent)}
-.chat-send-btn{padding:10px 20px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:12px;font-weight:300;letter-spacing:1px;cursor:pointer;transition:all .3s;white-space:nowrap}
+.chat-send-btn{padding:12px 24px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:13px;font-weight:300;letter-spacing:1px;cursor:pointer;transition:all .3s;white-space:nowrap}
 .chat-send-btn:hover{background:var(--accent);color:var(--bg)}
 .chat-send-btn:disabled{opacity:.4;cursor:default}
 /* ===== 認証モーダル ===== */
@@ -214,7 +220,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
         <div class="chat-panel" id="chatPanel">
           <div class="chat-log" id="chatLog"></div>
           <div class="chat-input-row">
-            <input class="chat-input" id="chatInput" type="text" placeholder="ANに話しかける…" onkeydown="if(event.key==='Enter')sendChat()">
+            <input class="chat-input" id="chatInput" type="text" placeholder="ANに話しかける…">
             <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()">送る</button>
           </div>
         </div>
@@ -527,9 +533,15 @@ function doRegister() {
 function showChatPanel() {
   document.getElementById('chatInvite').style.display = 'none';
   document.getElementById('chatPanel').classList.add('active');
-  // 初回メッセージ
+  // 初回メッセージ：おみくじの結果を起点にした一言
   if (document.getElementById('chatLog').children.length === 0) {
-    addBubble('an', 'AN', '……' + _name + 'さん、来たね。今日の運勢は「' + _currentKuji + '」か。\nどう思う？');
+    var openings = [
+      '「' + _currentKuji + '」か。\n……' + _name + 'さん、これ読んで何か感じた？',
+      '……' + _currentKuji + 'ね。\n正直に言いなさい。今日の結果、どう思った？',
+      '「' + _currentKuji + '」が出たわ。\n' + _name + 'さん、今の気分、一言で言うと？',
+    ];
+    var msg = openings[Math.floor(Math.random() * openings.length)];
+    addBubble('an', 'AN', msg);
   }
   document.getElementById('chatInput').focus();
 }
@@ -540,7 +552,7 @@ function addBubble(who, label, text) {
   wrap.className = 'chat-bubble ' + who;
   var av = document.createElement('div');
   av.className = 'chat-avatar';
-  av.textContent = who === 'an' ? 'AN' : label.charAt(0);
+  av.textContent = who === 'an' ? 'AN' : (label ? label.charAt(0) : '?');
   var bubble = document.createElement('div');
   bubble.className = 'chat-text';
   bubble.innerHTML = text.replace(/\n/g, '<br>');
@@ -548,6 +560,29 @@ function addBubble(who, label, text) {
   wrap.appendChild(bubble);
   log.appendChild(wrap);
   log.scrollTop = log.scrollHeight;
+  return wrap;
+}
+
+function showTyping() {
+  var log = document.getElementById('chatLog');
+  var wrap = document.createElement('div');
+  wrap.className = 'chat-bubble an chat-typing';
+  wrap.id = 'typingBubble';
+  var av = document.createElement('div');
+  av.className = 'chat-avatar';
+  av.textContent = 'AN';
+  var bubble = document.createElement('div');
+  bubble.className = 'chat-text';
+  bubble.innerHTML = '<span>・</span><span>・</span><span>・</span>';
+  wrap.appendChild(av);
+  wrap.appendChild(bubble);
+  log.appendChild(wrap);
+  log.scrollTop = log.scrollHeight;
+}
+
+function hideTyping() {
+  var t = document.getElementById('typingBubble');
+  if (t) t.remove();
 }
 
 function sendChat() {
@@ -557,6 +592,7 @@ function sendChat() {
   input.value = '';
   document.getElementById('chatSendBtn').disabled = true;
   addBubble('user', _name || '?', msg);
+  showTyping();
   fetch(API + '/api/chat', {
     method: 'POST',
     headers: {
@@ -565,11 +601,13 @@ function sendChat() {
     },
     body: JSON.stringify({message: msg, kuji_rank: _currentKuji, verse: _currentVerse})
   }).then(function(r){ return r.json(); }).then(function(d) {
+    hideTyping();
     document.getElementById('chatSendBtn').disabled = false;
     if (d.reply) {
       addBubble('an', 'AN', d.reply);
     }
   }).catch(function(){
+    hideTyping();
     document.getElementById('chatSendBtn').disabled = false;
     addBubble('an', 'AN', '……ちょっと待って。もう一度。');
   });

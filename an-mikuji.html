@@ -543,14 +543,8 @@ function showChatPanel() {
   document.getElementById('chatPanel').classList.add('active');
   // 初回メッセージ：日付シードの説明 ＋ おみくじを起点にした問い
   if (document.getElementById('chatLog').children.length === 0) {
-    var seedNote = 'ちなみに今日のおみくじは、日付で決まってる。\n何度引いても「' + _currentKuji + '」が出る。それが今日のアンタの運勢。\n';
-    var questions = [
-      '……で、これ読んでどう思った？一言でいいから。',
-      '……正直に言いなさい。今日の結果、しっくりきた？',
-      '……今の気分、一言で表すと？',
-    ];
-    var q = questions[Math.floor(Math.random() * questions.length)];
-    addBubble('an', 'AN', seedNote + q);
+    var seedNote = 'ちなみに今日のおみくじは、日付で決まってる。何度引いても「' + _currentKuji + '」が出る。それが今日の運勢。\n\n……今日の御神籤の一言を読んで、どう感じた？';
+    addBubble('an', 'AN', seedNote);
   }
   // focus()は呼ばない（スクロールが飛ぶのを防ぐため）
 }

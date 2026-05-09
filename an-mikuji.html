@@ -120,6 +120,42 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
 .an-ghost{position:relative;width:260px;height:260px;margin:0 auto 24px;overflow:hidden;border-radius:50%}
 .an-ghost img{width:100%;height:100%;object-fit:cover;object-position:center 15%;filter:grayscale(80%) brightness(1.5) contrast(1.15);opacity:.55;mask-image:radial-gradient(circle,rgba(0,0,0,1) 35%,rgba(0,0,0,.6) 60%,transparent 78%);-webkit-mask-image:radial-gradient(circle,rgba(0,0,0,1) 35%,rgba(0,0,0,.6) 60%,transparent 78%)}
 .an-ghost::after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 30px 10px var(--bg);pointer-events:none}
+/* ===== チャットUI ===== */
+.chat-section{padding:40px 0;border-top:1px solid var(--border)}
+.chat-invite{text-align:center;padding:24px 0}
+.chat-invite-t{font-family:var(--fj);font-size:13px;color:var(--text-s);letter-spacing:2px;margin-bottom:20px;line-height:2}
+.chat-open-btn{display:inline-block;padding:12px 32px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:13px;font-weight:300;letter-spacing:2px;cursor:pointer;transition:all .3s}
+.chat-open-btn:hover{background:var(--accent);color:var(--bg)}
+.chat-panel{display:none;flex-direction:column;gap:0}
+.chat-panel.active{display:flex}
+.chat-log{max-height:400px;overflow-y:auto;padding:16px 0;display:flex;flex-direction:column;gap:16px}
+.chat-bubble{display:flex;align-items:flex-start;gap:12px}
+.chat-bubble.user{flex-direction:row-reverse}
+.chat-avatar{width:32px;height:32px;border-radius:50%;border:1px solid var(--border-l);background:var(--bg-el);display:flex;align-items:center;justify-content:center;font-family:var(--fj);font-size:12px;font-weight:800;color:var(--accent-l);flex-shrink:0}
+.chat-text{max-width:80%;padding:12px 16px;border-radius:2px;font-size:13px;font-weight:300;line-height:2;border:1px solid var(--border)}
+.chat-bubble.an .chat-text{background:var(--bg-el);color:var(--text);border-color:var(--border-l)}
+.chat-bubble.user .chat-text{background:none;color:var(--text-s);border-color:var(--border)}
+.chat-input-row{display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:16px}
+.chat-input{flex:1;background:none;border:1px solid var(--border);border-radius:2px;padding:10px 14px;color:var(--text);font-family:var(--fb);font-size:13px;font-weight:300;outline:none;transition:border-color .3s}
+.chat-input:focus{border-color:var(--accent)}
+.chat-send-btn{padding:10px 20px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:12px;font-weight:300;letter-spacing:1px;cursor:pointer;transition:all .3s;white-space:nowrap}
+.chat-send-btn:hover{background:var(--accent);color:var(--bg)}
+.chat-send-btn:disabled{opacity:.4;cursor:default}
+/* ===== 認証モーダル ===== */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal-box{background:var(--bg-card);border:1px solid var(--border-l);padding:40px 32px;max-width:360px;width:90%;border-radius:2px}
+.modal-title{font-family:var(--fj);font-size:18px;font-weight:600;letter-spacing:4px;color:var(--text);margin-bottom:8px}
+.modal-sub{font-family:var(--fe);font-size:12px;font-style:italic;color:var(--text-s);letter-spacing:2px;margin-bottom:28px}
+.modal-input{display:block;width:100%;background:none;border:none;border-bottom:1px solid var(--border-l);padding:10px 0;color:var(--text);font-family:var(--fb);font-size:14px;font-weight:300;outline:none;margin-bottom:20px;transition:border-color .3s}
+.modal-input:focus{border-color:var(--accent)}
+.modal-input::placeholder{color:var(--text-m)}
+.modal-btn{display:block;width:100%;padding:14px;border:1px solid var(--accent);border-radius:2px;background:none;color:var(--accent-l);font-family:var(--fb);font-size:13px;font-weight:300;letter-spacing:2px;cursor:pointer;margin-top:8px;transition:all .3s}
+.modal-btn:hover{background:var(--accent);color:var(--bg)}
+.modal-err{font-size:12px;color:#c07070;margin-top:12px;min-height:18px;letter-spacing:1px}
+.modal-sw{text-align:center;margin-top:20px;font-size:12px;color:var(--text-m)}
+.modal-sw a{color:var(--accent-l);cursor:pointer;text-decoration:none}
+.modal-sw a:hover{color:var(--text)}
 </style>
 </head>
 <body>
@@ -169,6 +205,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
         <div class="share-bs"><a class="share-b" id="sX" href="#" target="_blank">𝕏 Post</a><button class="share-b" onclick="cp()">Copy</button></div>
         <button class="retry" onclick="location.reload()">もう一度引く — Draw Again</button>
       </div>
+      <!-- チャットセクション -->
+      <div class="chat-section" id="chatSection" style="display:none">
+        <div class="chat-invite" id="chatInvite">
+          <p class="chat-invite-t" id="chatInviteText">ANに覚えてもらう？<br><span style="font-family:var(--fe);font-style:italic;font-size:12px;color:var(--text-m)">名前と4桁のPINだけ。10秒で登録できる。</span></p>
+          <button class="chat-open-btn" onclick="openAuth()">ANと話す</button>
+        </div>
+        <div class="chat-panel" id="chatPanel">
+          <div class="chat-log" id="chatLog"></div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="chatInput" type="text" placeholder="ANに話しかける…" onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()">送る</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:none">
+      </div>
     </div>
   </section>
   <footer class="footer">
@@ -176,6 +228,32 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
     <div class="f-sr">shiki fu i kū  kū fu i shiki<br>shiki soku ze kū  kū soku ze shiki</div>
     <div class="f-p">AN神籤 — <a href="https://teng3333.github.io/heart-sutra-archive" class="f-a">聴いて覚える般若心経</a><br><a href="https://suno.com/playlist/5ae1adc6-893c-4fce-bfec-a0114e0bd925" class="f-a" target="_blank">♪ SUNOプレイリストで全曲聴く</a><br>Heart Sutra Modern Archive — 魂アゲアゲSoul Up部</div>
   </footer>
+
+<!-- 認証モーダル（ログイン / 登録） -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <!-- ログインフォーム -->
+    <div id="loginForm">
+      <div class="modal-title">おかえり</div>
+      <div class="modal-sub">Welcome back</div>
+      <input class="modal-input" id="loginName" type="text" placeholder="名前（ニックネーム可）" maxlength="20">
+      <input class="modal-input" id="loginPin" type="password" placeholder="4桁のPIN" maxlength="4" inputmode="numeric">
+      <button class="modal-btn" onclick="doLogin()">ログイン</button>
+      <div class="modal-err" id="loginErr"></div>
+      <div class="modal-sw">はじめて？ <a onclick="switchToRegister()">登録する</a> &nbsp;|&nbsp; <a onclick="closeModal()">閉じる</a></div>
+    </div>
+    <!-- 登録フォーム -->
+    <div id="registerForm" style="display:none">
+      <div class="modal-title">はじめまして</div>
+      <div class="modal-sub">AN、覚えるから。</div>
+      <input class="modal-input" id="regName" type="text" placeholder="名前（ニックネーム可）" maxlength="20">
+      <input class="modal-input" id="regPin" type="password" placeholder="4桁のPIN（自分で決める）" maxlength="4" inputmode="numeric">
+      <button class="modal-btn" onclick="doRegister()">登録する</button>
+      <div class="modal-err" id="regErr"></div>
+      <div class="modal-sw">すでに登録済み？ <a onclick="switchToLogin()">ログイン</a> &nbsp;|&nbsp; <a onclick="closeModal()">閉じる</a></div>
+    </div>
+  </div>
+</div>
 </div>
 <script>
 function sr(s){var x=Math.sin(s)*10000;return x-Math.floor(x)}
@@ -356,6 +434,146 @@ function show(){
 }
 function cp(){var r=document.getElementById('rT').textContent,m=document.getElementById('fM').textContent,mt=document.getElementById('mT').textContent,mu=document.getElementById('mU').value;navigator.clipboard.writeText('【AN神籤】今日の運勢は「'+r+'」\n\n'+m+'\n\nANおすすめ曲: '+mt+'\n'+mu+'\n\n#AN神籤 #般若心経\nhttps://teng3333.github.io/heart-sutra-archive').then(function(){alert('コピーしました！')})}
 document.getElementById('dd').textContent=ds();
+
+// ===== AN神籤 チャットAPI =====
+var API = 'https://discord-an-bot-production.up.railway.app';
+var _token = localStorage.getItem('an_token');
+var _name  = localStorage.getItem('an_name');
+var _currentKuji = '';
+var _currentVerse = '';
+
+// おみくじ結果をチャットに渡すため show() をフック
+var _origShow = show;
+show = function() {
+  _origShow();
+  // 結果表示後にチャットセクションを表示
+  var s = ts(), k = gR(s), d = F[k];
+  _currentKuji  = d.r;
+  _currentVerse = (function(){
+    // 節は Fortune データから取得（フィールド名はfiにあたる部分）
+    var idx = Math.floor(sr(s*7+13)*d.p.length);
+    return d.p[idx].g.substring(0,10); // 短縮版
+  })();
+  document.getElementById('chatSection').style.display = 'block';
+  if (_token) {
+    showChatPanel();
+  }
+};
+
+function openAuth() {
+  if (_token) { showChatPanel(); return; }
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+
+function switchToRegister() {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = 'block';
+}
+
+function switchToLogin() {
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'block';
+}
+
+function doLogin() {
+  var name = document.getElementById('loginName').value.trim();
+  var pin  = document.getElementById('loginPin').value.trim();
+  document.getElementById('loginErr').textContent = '';
+  if (!name || !pin) { document.getElementById('loginErr').textContent = '名前とPINを入力して'; return; }
+  fetch(API + '/api/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name: name, pin: pin})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    if (d.token) {
+      localStorage.setItem('an_token', d.token);
+      localStorage.setItem('an_name', d.name);
+      _token = d.token; _name = d.name;
+      closeModal();
+      showChatPanel();
+    } else {
+      document.getElementById('loginErr').textContent = d.error || 'ログイン失敗';
+    }
+  }).catch(function(){ document.getElementById('loginErr').textContent = '接続エラー'; });
+}
+
+function doRegister() {
+  var name = document.getElementById('regName').value.trim();
+  var pin  = document.getElementById('regPin').value.trim();
+  document.getElementById('regErr').textContent = '';
+  if (!name || !pin) { document.getElementById('regErr').textContent = '名前とPINを入力して'; return; }
+  if (pin.length !== 4 || isNaN(pin)) { document.getElementById('regErr').textContent = 'PINは4桁の数字で'; return; }
+  fetch(API + '/api/register', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name: name, pin: pin})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    if (d.token) {
+      localStorage.setItem('an_token', d.token);
+      localStorage.setItem('an_name', d.name);
+      _token = d.token; _name = d.name;
+      closeModal();
+      showChatPanel();
+    } else {
+      document.getElementById('regErr').textContent = d.error || '登録失敗';
+    }
+  }).catch(function(){ document.getElementById('regErr').textContent = '接続エラー'; });
+}
+
+function showChatPanel() {
+  document.getElementById('chatInvite').style.display = 'none';
+  document.getElementById('chatPanel').classList.add('active');
+  // 初回メッセージ
+  if (document.getElementById('chatLog').children.length === 0) {
+    addBubble('an', 'AN', '……' + _name + 'さん、来たね。今日の運勢は「' + _currentKuji + '」か。\nどう思う？');
+  }
+  document.getElementById('chatInput').focus();
+}
+
+function addBubble(who, label, text) {
+  var log = document.getElementById('chatLog');
+  var wrap = document.createElement('div');
+  wrap.className = 'chat-bubble ' + who;
+  var av = document.createElement('div');
+  av.className = 'chat-avatar';
+  av.textContent = who === 'an' ? 'AN' : label.charAt(0);
+  var bubble = document.createElement('div');
+  bubble.className = 'chat-text';
+  bubble.innerHTML = text.replace(/\n/g, '<br>');
+  wrap.appendChild(av);
+  wrap.appendChild(bubble);
+  log.appendChild(wrap);
+  log.scrollTop = log.scrollHeight;
+}
+
+function sendChat() {
+  var input = document.getElementById('chatInput');
+  var msg = input.value.trim();
+  if (!msg || !_token) return;
+  input.value = '';
+  document.getElementById('chatSendBtn').disabled = true;
+  addBubble('user', _name || '?', msg);
+  fetch(API + '/api/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + _token
+    },
+    body: JSON.stringify({message: msg, kuji_rank: _currentKuji, verse: _currentVerse})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    document.getElementById('chatSendBtn').disabled = false;
+    if (d.reply) {
+      addBubble('an', 'AN', d.reply);
+    }
+  }).catch(function(){
+    document.getElementById('chatSendBtn').disabled = false;
+    addBubble('an', 'AN', '……ちょっと待って。もう一度。');
+  });
+}
 </script>
 </body>
 </html>

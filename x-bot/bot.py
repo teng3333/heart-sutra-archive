@@ -313,7 +313,7 @@ def generate_content(gemini: genai.Client) -> str:
 1. {news_prompt}
 2. 般若心経の教えの切り口で1〜2文で解釈する
 3. 「ふっ」と気が楽になる短い一言で締める（例：「…ま、そういうことよ。」「執着、手放してみ？」）
-4. 最後に「般若心経、聴いてみ？」で締める
+4. 最後に「今日の御神籤引いてみてぇ」で締める
 
 【厳守ルール】
 - 本文は必ず {CONTENT_MAX_CHARS} 文字以内（URLは別途付加するので含めない）
@@ -341,17 +341,13 @@ def generate_content(gemini: genai.Client) -> str:
 
 # ─── Post to X ────────────────────────────────────────────────────────────────
 def post_to_x(gemini: genai.Client, twitter: tweepy.Client, twitter_v1: tweepy.API) -> None:
-    # Sunoプレイリストから自動取得
-    tracks = fetch_suno_tracks()
-    if not tracks:
-        logger.error("No tracks available, skipping post")
-        return
-    track_url = random.choice(tracks)
-    logger.info(f"Generating post... (track: {track_url})")
+    logger.info("Generating post...")
 
     try:
         content = generate_content(gemini)
-        full_post = f"{content}\n\n🎵 {track_url}\n🌐 {SITE_URL}"
+        # AN神籤URLに変更
+        mikuji_url = "https://teng3333.github.io/heart-sutra-archive/an-mikuji.html"
+        full_post = f"{content}\n\n🎰 {mikuji_url}\n🌐 {SITE_URL}"
 
         # 画像アップロード
         media_ids = None

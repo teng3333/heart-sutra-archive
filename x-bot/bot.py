@@ -382,7 +382,8 @@ def post_to_x(gemini: genai.Client, twitter: tweepy.Client, twitter_v1: tweepy.A
 
 # ─── Schedule Setup ───────────────────────────────────────────────────────────
 def setup_schedule(gemini: genai.Client, twitter: tweepy.Client, twitter_v1: tweepy.API) -> None:
-    times = ["07:00", "12:00", "18:00", "21:00"]
+    # 07:00と18:00のみ投稿（12:00と21:00は中止）
+    times = ["07:00", "18:00"]
     for t in times:
         schedule.every().day.at(t).do(post_to_x, gemini=gemini, twitter=twitter, twitter_v1=twitter_v1)
         logger.info(f"Scheduled: {t} JST")

@@ -66,6 +66,11 @@
   input,select{background:rgba(13,18,32,.6);border:1px solid var(--hair);
     color:var(--washi-hi);font-family:var(--en);font-size:16px;
     padding:13px 14px;width:100%;border-radius:0;-webkit-appearance:none;appearance:none}
+  input[type=file]{font-family:var(--ui);font-size:12px;letter-spacing:.04em;padding:11px 14px}
+  input[type=file]::file-selector-button{background:none;border:1px solid var(--hair);
+    color:var(--washi);font-family:var(--ui);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;padding:7px 14px;margin-right:14px;cursor:pointer}
+  input[type=file]::file-selector-button:hover{border-color:var(--washi)}
   select{font-family:var(--ui);font-size:13px;letter-spacing:.06em;
     background-image:linear-gradient(45deg,transparent 50%,var(--nibi) 50%),
                      linear-gradient(135deg,var(--nibi) 50%,transparent 50%);
@@ -164,6 +169,11 @@
       <span class="hint"><b>We send our audience to you.</b> 聴いた人があなたに渡れるように。</span>
     </label>
 
+    <label>Review audio <span class="ja">AN審査用音源(任意・SUNO曲でAN選を狙うなら)</span>
+      <input type="file" name="audio" accept=".mp3,audio/mpeg">
+      <span class="hint"><b>YouTube tracks don't need this</b> — AN listens to them directly. For SUNO tracks, download the mp3 from your own SUNO account and attach it here if you want AN's weekly pick to hear you. Used only for AN's review — never published, auto-deleted after 90 days.<br>YouTube投稿は不要(ANが直接聴けます)。SUNO曲でAN選の対象になりたい場合のみ、ご自身のSUNOアカウントからmp3を書き出して添付してください。審査だけに使い、公開せず、90日後に自動削除します。</span>
+    </label>
+
     <label>Genre <span class="ja">ジャンル(任意)</span>
       <select name="genre">
         <option value="">Let AN's ear decide — おまかせ</option>
@@ -241,12 +251,25 @@
       if (v) data[k] = v;
     });
 
+    // 音源添付あり → multipart、なし → 従来どおりJSON
+    var audioInput = form.elements.audio;
+    var req;
+    if (audioInput && audioInput.files && audioInput.files.length > 0) {
+      var fd = new FormData();
+      Object.keys(data).forEach(function (k) { fd.append(k, data[k]); });
+      fd.append('audio', audioInput.files[0]);
+      req = { method: 'POST', body: fd };
+    } else {
+      req = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      };
+    }
+
     seal.disabled = true;
-    fetch(API_BASE + '/api/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(function (res) { return res.json().then(function (j) { return { ok: res.ok, j: j }; }); })
+    fetch(API_BASE + '/api/submit', req)
+      .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, j: j }; }); })
       .then(function (r) {
         if (r.ok) {
           result.className = 'result on';

@@ -33,6 +33,16 @@
   body{background:var(--ai);color:var(--washi);font-family:var(--en);
        -webkit-font-smoothing:antialiased;overflow-x:hidden}
 
+  /* ── ANはヴェールの中。フォームページなので中央に沈める(ホームの.an-veilの派生) ── */
+  .an-veil{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .an-veil img{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);
+    min-width:100%;min-height:100%;width:auto;height:auto;object-fit:cover;
+    opacity:.16;filter:contrast(.97);
+    -webkit-mask-image:radial-gradient(ellipse 58% 55% at 50% 38%,#000 25%,transparent 78%);
+    mask-image:radial-gradient(ellipse 58% 55% at 50% 38%,#000 25%,transparent 78%)}
+  @media (max-width:700px){.an-veil img{opacity:.22}}
+  header,main{position:relative;z-index:1}
+
   header{display:flex;justify-content:space-between;align-items:center;
     padding:18px 22px;border-bottom:1px solid var(--hair)}
   .brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}
@@ -132,6 +142,7 @@
 </style>
 </head>
 <body>
+<div class="an-veil" aria-hidden="true"><img src="assets/an-submit-veil.jpg" alt=""></div>
 <header>
   <a class="brand" href="./">
     <span class="logo" aria-hidden="true"><span>開</span><span>羯</span><span>諦</span><span>経</span></span>

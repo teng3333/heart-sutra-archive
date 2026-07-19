@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Kit — remix the Heart Sutra | Open Gate Sutra</title>
+<meta name="description" content="Everything you need to remix the Heart Sutra: the 262 characters in kanji, hiragana, romaji and Sanskrit, plus field-tested tips for SUNO. Free forever, CC0.">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1MKC72RRJP"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1MKC72RRJP');
+</script>
+
+<style>
+  :root{
+    --ai:#131a26; --ai-deep:#0d1220;
+    --washi:#d9c49a; --washi-hi:#e9dcba;
+    --shu:#b23a2e;
+    --ruri:#6fa8d6;
+    --kin:#c9a544;
+    --nibi:#8d826d;
+    --hair:rgba(217,196,154,.16);
+    --en:"Cormorant Garamond","Palatino","Georgia",serif;
+    --ja:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+    --ui:ui-sans-serif,-apple-system,"Helvetica Neue",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--ai);color:var(--washi);font-family:var(--en);
+       -webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+  header{display:flex;justify-content:space-between;align-items:center;
+    padding:18px 22px;border-bottom:1px solid var(--hair)}
+  .brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}
+  .logo{display:grid;grid-template-columns:1fr 1fr;width:46px;height:46px;flex:none;
+    border:1px solid var(--washi);font-family:var(--ja);font-weight:500;
+    font-size:15px;line-height:1;place-items:center;padding:4px;direction:rtl}
+  .logo span{display:block}
+  .brand h1{font-family:var(--en);font-weight:400;font-size:17px;
+    letter-spacing:.26em;text-transform:uppercase}
+  .brand h1 small{display:block;font-family:var(--ja);font-size:9px;font-weight:400;
+    letter-spacing:.4em;color:var(--nibi);margin-top:5px}
+  .back{font-family:var(--ui);font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--nibi);text-decoration:none;padding:4px 0}
+  .back:hover{color:var(--washi)}
+  .back:focus-visible{outline:1px solid var(--washi);outline-offset:4px}
+
+  main{max-width:760px;margin:0 auto;padding:64px 22px 120px}
+  .eyebrow{font-family:var(--ui);font-size:10px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--nibi);margin-bottom:22px}
+  h2{font-weight:300;font-size:clamp(30px,6vw,44px);line-height:1.2;
+    letter-spacing:.02em;color:var(--washi-hi)}
+  .sub-ja{font-family:var(--ja);font-size:12px;letter-spacing:.3em;
+    color:var(--nibi);margin-top:12px}
+  .tags{font-family:var(--ui);font-size:10px;letter-spacing:.12em;
+    color:var(--nibi);margin-top:18px}
+
+  .lead{font-size:15px;line-height:2;color:var(--nibi);margin-top:34px;max-width:38em}
+  .lead b{color:var(--washi);font-weight:400}
+  .cc0{display:inline-block;margin-top:18px;font-family:var(--ui);font-size:10px;
+    letter-spacing:.26em;text-transform:uppercase;color:var(--ruri);
+    border:1px solid var(--hair);padding:8px 14px}
+
+  section{margin-top:64px}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;
+    gap:16px;margin-bottom:18px;border-bottom:1px solid var(--hair);padding-bottom:12px}
+  .sec-head h3{font-weight:300;font-size:20px;letter-spacing:.08em;color:var(--washi-hi)}
+  .sec-head .ja{font-family:var(--ja);font-size:10px;letter-spacing:.26em;color:var(--nibi)}
+  .copy-btn{background:none;border:1px solid var(--hair);color:var(--washi);
+    font-family:var(--ui);font-size:9px;letter-spacing:.22em;text-transform:uppercase;
+    padding:7px 14px;cursor:pointer;flex:none}
+  .copy-btn:hover{border-color:var(--washi)}
+  .copy-btn:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
+  .copy-btn.done{color:var(--ruri);border-color:var(--ruri)}
+
+  .text-block{background:rgba(13,18,32,.6);border:1px solid var(--hair);
+    padding:26px 22px;white-space:pre-wrap;word-break:break-word;
+    font-size:14px;line-height:2.2;color:var(--washi)}
+  .text-block.ja{font-family:var(--ja);letter-spacing:.08em}
+  .text-block.en{font-family:var(--en);letter-spacing:.02em}
+  .note{font-family:var(--ui);font-size:11px;letter-spacing:.04em;
+    color:var(--nibi);line-height:2;margin-top:12px}
+
+  .tip{border:1px solid rgba(111,168,214,.4);background:rgba(13,18,32,.6);
+    padding:26px 22px;margin-top:64px}
+  .tip h3{font-weight:300;font-size:20px;letter-spacing:.08em;color:var(--washi-hi)}
+  .tip .ja{font-family:var(--ja);font-size:10px;letter-spacing:.26em;color:var(--ruri);
+    margin-top:8px}
+  .tip p{font-size:14px;line-height:2;color:var(--nibi);margin-top:16px}
+  .tip p b{color:var(--washi);font-weight:400}
+
+  .an-assets{display:grid;grid-template-columns:1fr;gap:2px;margin-top:2px}
+  @media (min-width:600px){.an-assets{grid-template-columns:1fr 1fr}}
+  .an-asset{border:1px solid var(--hair);background:rgba(13,18,32,.55)}
+  .an-asset img{display:block;width:100%;height:auto}
+  .an-asset .cap{display:flex;justify-content:space-between;align-items:center;
+    padding:12px 16px;font-family:var(--ui);font-size:10px;letter-spacing:.12em;color:var(--nibi)}
+  .an-asset .cap a{color:var(--washi);text-decoration:none;letter-spacing:.2em;
+    text-transform:uppercase;border-bottom:1px solid var(--hair)}
+  .an-asset .cap a:hover{color:var(--ruri);border-color:var(--ruri)}
+
+  .gate-cta{display:flex;align-items:center;gap:22px;margin-top:84px;flex-wrap:wrap}
+  .seal{display:inline-flex;flex-direction:column;justify-content:center;align-items:center;
+    width:76px;height:76px;background:var(--shu);color:var(--washi-hi);
+    font-family:var(--ja);font-size:30px;font-weight:600;text-decoration:none;flex:none;
+    box-shadow:0 0 0 1px rgba(178,58,46,.35), inset 0 0 18px rgba(0,0,0,.22);
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+  .seal small{font-size:8px;letter-spacing:.28em;font-family:var(--ui);margin-top:3px}
+  .seal:hover{transform:rotate(-2.5deg) scale(1.04)}
+  .seal:focus-visible{outline:2px solid var(--washi);outline-offset:4px}
+  .gate-cta .lead2{font-family:var(--ui);font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;line-height:2;color:var(--nibi)}
+  .gate-cta .lead2 b{display:block;font-weight:400;color:var(--washi-hi)}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="./">
+    <span class="logo" aria-hidden="true"><span>開</span><span>羯</span><span>諦</span><span>経</span></span>
+    <h1>Open Gate Sutra<small>ひらかれた般若心経の家</small></h1>
+  </a>
+  <a class="back" href="./">← Home</a>
+</header>
+
+<main>
+  <p class="eyebrow">The Kit — 素材一式</p>
+  <h2>Make it yours.</h2>
+  <p class="sub-ja">般若心経を、あなたのジャンルで</p>
+  <p class="tags">#般若心経Kit&ensp;#般若心経&ensp;#Heartsutra&ensp;#色即是空空即是色&ensp;#瞑想</p>
+
+  <p class="lead">One sutra, 262 characters — below is everything you need to sing it in your own genre: <b>the original kanji, hiragana, romaji, and Sanskrit</b>, plus field-tested tips from the first eighty-four remixes. Copy any block, take it to SUNO or your studio, and <a href="submit.html" style="color:var(--ruri)">cross the gate</a> when it sounds like you.</p>
+  <span class="cc0">Kit free forever · CC0</span>
+
+  <section>
+    <div class="sec-head"><h3>Original — 日本語原典</h3><button class="copy-btn" data-copy="t1">Copy 写す</button></div>
+    <div class="text-block ja" id="t1">仏説摩訶般若波羅蜜多心経
+観自在菩薩行深般若波羅蜜多時
+照見五蘊皆空度一切苦厄
+舍利子色不異空空不異色
+色即是空空即是色
+受想行識亦復如是
+舍利子是諸法空相
+不生不滅不垢不浄不増不減
+是故空中無色無受想行識
+無眼耳鼻舌身意無色声香味触法
+無眼界乃至無意識界
+無無明亦無無明尽
+乃至無老死亦無老死尽
+無苦集滅道無智亦無得
+以無所得故菩提薩埵依般若波羅蜜多故
+心無罣礙無罣礙故無有恐怖
+遠離一切顛倒夢想究竟涅槃
+三世諸仏依般若波羅蜜多故
+得阿耨多羅三藐三菩提
+故知般若波羅蜜多
+是大神呪是大明呪
+是無上呪是無等等呪
+能除一切苦真実不虚
+故説般若波羅蜜多呪
+即説呪曰
+羯諦羯諦波羅羯諦波羅僧羯諦
+菩提薩婆訶
+般若心経</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h3>Hiragana — ひらがな</h3><button class="copy-btn" data-copy="t2">Copy 写す</button></div>
+    <div class="text-block ja" id="t2">ぶっせつ　まかはんにゃはらみったしんぎょう
+かんじざいぼさつ　ぎょうじんはんにゃはらみったじ
+しょうけんごうんかいくう　どいっさいくやく
+しゃりし　しきふいくう　くうふいしき
+しきそくぜくう　くうそくぜしき
+じゅそうぎょうしきやくぶにょぜ
+しゃりし　ぜしょほうくうそう
+ふしょう　ふめつ　ふくふじょう　ふぞうふげん
+ぜこくうちゅう　むしき　むじゅそうぎょうしき
+むげんにびぜっしんい　むしきしょうこうみそくほう
+むげんかい　ないしむいしきかい
+むむみょうやく　むむみょうじん
+ないしむろうし　やくむろうしじん
+むくしゅうめつどう　むちやくむとく
+いむしょとくこ　ぼだいさった　えはんにゃはらみったこ
+しんむけぇげ　むけぇげこ　むうくふ
+おんりいっさいてんどうむそう　くきょうねはん
+さんぜしょぶつ　えはんにゃはらみったこ
+とくあのくたらさんみゃくさんぼだい
+こちはんにゃはらみった
+ぜだいじんしゅ　ぜだいみょうしゅ
+ぜむじょうしゅ　ぜむとうどうしゅ
+のうじょいっさいく　しんじっふこ
+こせつはんにゃはらみったしゅ
+そくせつしゅわつ
+ぎゃてい　ぎゃてい　はらぎゃてい　はらそうぎゃてい
+ぼじそわか
+はんにゃしんぎょう</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h3>Romaji — ローマ字</h3><button class="copy-btn" data-copy="t3">Copy 写す</button></div>
+    <div class="text-block en" id="t3">bussetsu makahannyaharamittashingyou
+kanjizai bosatsu gyoujin hannyaharamittaji
+shouken gounkaikuu do issai kuyaku
+sharishi shikifukuu kuufushiki
+shikisokuzekuu kuusokuzeshiki
+jusougyoushiki yaku bu nyoze
+sharishi zeshouhou kuusou
+fushou fumetsu fukufujou fuzoufugen
+zekuuchuu mushiki mujusougyoushiki
+mugen nibizesshin'i mushikishoukoumisokuhou
+mugenkai naishimuishikikai
+mumyou yaku mumyoujin
+naishimuroushi yakumuroushijin
+mukushu metsudou muchiyaku mutoku
+imushotoku ko boda isatta e hannyaharamittako
+shinmukeige mukeigeko muuku fu
+onri issaitendou musou kukyou nehan
+sanzeshobutsu e hannyaharamittako
+toku anokutara sanmyakusanbodai
+kochi hannyaharamitta
+zedaijinshu zedaimyoushu
+zemujoushu zemutoudoushu
+noujo issaiku shinjippuko
+kosetsu hannyaharamittashu
+sokusetsu shuwatsu
+gyatei gyatei haragyatei harasougyatei
+bojisowaka
+hannyashingyou</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h3>Sanskrit — カタカナ</h3><button class="copy-btn" data-copy="t4">Copy 写す</button></div>
+    <div class="text-block ja" id="t4">プラジュニャー・パーラミター・フリダヤ・スートラム
+
+アーリヤ・アヴァローキテーシュヴァラ・ボーディサットヴァ・ガンビーラム
+プラジュニャー・パーラミター・チャーリャム・チャラマーノ
+ヴィヤヴァローキティ・スマ・パンチャ・スカンダ・アサッタ・シュチャ・スヴァバーヴァ・シューニャム・パシャティ・スマ
+
+イハ・シャーリプトラ
+ルーパム・シューニャム
+シューニャター・イヴァ・ルーパム
+
+ルーパ・ナ・ヴリッタ・シューニャター
+シューニャターヤー・ナ・ヴリッタ・サ・ルーパム
+ヤド・ルーパム・サ・シューニャター
+ヤド・シューニャター・サ・ルーパム
+
+エーヴァム・エーヴァ・ヴェーダナー・サムジュニャー・サムスカーラ・ヴィジュニャーナム
+
+イハ・シャーリプトラ
+サルヴァ・ダルマ・シューニャター・ラクシャナ
+アヌトパンナ・アニルッダ
+アマラ・アヴィマラ
+アヌーナ・アパリプールナ
+
+タスマート・シャーリプトラ・シューニャターヤーム
+ナ・ルーパム
+ナ・ヴェーダナー
+ナ・サムジュニャー
+ナ・サムスカーラ
+ナ・ヴィジュニャーナム
+
+ナ・チャクシュ・シュロートラ・グラーナ・ジフヴァ・カーヤ・マナサ
+ナ・ルーパム・シャブダ・ガンダ・ラサ・スパルシュタヴャ・ダルマ
+
+ナ・チャクシュル・ダートゥ・ヤーヴァト
+ナ・マノヴィジュニャーナム・ダートゥ
+
+ナ・アヴィディヤー
+ナ・アヴィディヤー・クシャヨ
+ヤーヴァト・ナ・ジャラー・マラナム
+ナ・ジャラー・マラナ・クシャヨ
+
+ナ・ドゥフカ・サムダヤ・ニローダ・マールガ
+ナ・ジュニャーナム
+ナ・プラープティ
+ナ・アビサマヤ
+
+タスマート・ナープラープティトヴァ・ボーディサットヴァーナーム
+プラジュニャー・パーラミターム・アーシュリティヤ
+ヴィハラティ・チッタ・アーヴァラナ
+
+チッタ・アーヴァラナ・ナ・スティトヴァ
+ナ・トラスト
+ヴィパリヤーサ
+アティクラーンタ・ニシュタ・ニルヴァーナム
+
+トリヤドヴァ・ヴィヤヴァスティタ・サルヴァ・ブッダ
+プラジュニャー・パーラミターム・アーシュリティヤ
+アヌッタラ・サミャク・サンボーディム・アビサンブッダ
+
+タスマート・ジュニャータヴャム
+プラジュニャー・パーラミター・マハー・マントラ
+マハー・ヴィディヤー・マントラ
+アヌッタラ・マントラ
+アサマ・サマティ・マントラ
+
+サルヴァ・ドゥフカ・プラシャマナ・サティヤム・アミティヤトヴァ
+
+プラジュニャー・パーラミター・ムカ・マントラ・タディヤター
+
+ガテー・ガテー・パーラガテー・パーラサムガテー・ボーディ・スヴァーハー</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h3>Sanskrit — Romanized</h3><button class="copy-btn" data-copy="t5">Copy 写す</button></div>
+    <div class="text-block en" id="t5">Prajna-paramita Hrdaya Sutram
+
+Aryavalokitesvara Bodhisattva Gambhiram Prajna-paramita Caryam Caramano
+Vyavalokiti Sma Panca-skanda Asatta Sca Svabhava Sunyam Pasyati Sma
+Iha Sariputra, Rumpan Sunyam, Sunyata Iva Rumpam
+
+Rupa Na Vrtta Sunyata, Sunyataya Na Vrtta Sa-rupam
+Yad Rupam Sa-sunyata, Yad Sunyata Sa-Rupam
+Evam Eva Vedana Samjna Sam-skara Vijnanam
+
+Iha Sariputra Sarva Dharma Sunyata-laksana
+Anutpanna Aniruddha Amala A-vimala, Anuna A-paripurna
+Tasmat Sariputra Sunyatayam
+Na Rupam, Na Vedana, Na Samjna, Na Sam-Skana, Na Vijnanam
+Na Caksu srotra Ghrana jihva Kaya Manasa
+Na Rupam Sabda Gandha Rasa Sparstavya Dharma
+Na Caksur-dhatu Yavat
+Na Manovijnanam Dhatu
+Na Avidya, Na Avidya Ksayo
+Yavat Na Jara-maranam, Na Jara-marana Ksayo
+Na Duhkha Samudaya, Nirodha, Marga
+Na Jnanam, Na Prapti, Na Abhisamaya
+Tasmat Naprapti Tva Bodhisattvanam, Prajna-paramitam
+A-sritya, Vi-haratya Citta Avarana
+Citta Avarana Na Sthitva Na Trasto, Vi-paryasa
+Ati-kranta Nistha Nirvanam
+Try-adhva Vyavasthita Sarva Buddha Prajna-paramitam A-sritya
+Anuttara-samyak-sambodhim Abhi-sambuddha
+Tasmat Vnatavyam Prajna-paramita Maha-Mantra, Maha vidya Mantra
+Anuttara Mantra, Asania-samati Mantra
+Sarva Duhkha Pra samana Satyam Amithyatva
+Prajna-paramita Mukha Mantra Tadyatha
+
+Gate Gate Paragate Parasamgate Bodhi Svaha</div>
+  </section>
+
+  <div class="tip">
+    <h3>Field notes — SUNO tips</h3>
+    <p class="ja">SUNOで弾かれないための知見(84曲の実戦から)</p>
+    <p>The sutra itself is copyright-free — but <b>SUNO tends to reject the original text pasted as-is</b>. The trick, learned across the first eighty-four remixes: <b>mix the scripts</b>. Blend hiragana lines with romaji lines, or switch the final mantra to Sanskrit. The examples below both pass.</p>
+    <p>般若心経は著作権フリーですが、SUNOでは原典をそのまま歌詞にすると弾かれるようです。ひらがなとローマ字を混ぜて歌詞を作ると作曲できます。「ぎゃてい」の真言部分をサンスクリット版にするなど、色々とアレンジしてみると良いと思います。</p>
+  </div>
+
+  <section>
+    <div class="sec-head"><h3>Example lyrics ①</h3><button class="copy-btn" data-copy="e1">Copy 写す</button></div>
+    <div class="text-block ja" id="e1">ぶっせつ　まかはんにゃはらみったしんぎょう
+かんじざいぼさつ　ぎょうじんはんにゃはらみったじ
+しょうけんごうんかいくう　どいっさいくやく
+しゃりし　しきふいくう　くうふいしき
+しきそくぜくう　くうそくぜしき
+じゅそうぎょうしきやくぶにょぜ
+しゃりし　ぜしょほうくうそう
+fushou fumetsu fukufujou fuzoufugen
+zekokuchuu mushiki mujusougyoushiki
+mugen nibizesshiんい
+mushikishoukoumisokuhou
+mugenkai naishimuishikikai
+むむみょうやく　むむみょうじん
+naishimuroushi yakumuroushijin
+むくしゅうめつどう　むちやくむとく
+imushotoku ko boda isatta e hannyaharamittako
+shinmukeige mukeigeko muuku fu
+onri issaitendou musou kukyou nehan
+
+さんぜしょぶつ　えはんにゃはらみったこ
+とくあのくたらさんみゃくさんぼだい
+こちはんにゃはらみった
+ぜだいじんしゅ　ぜだいみょうしゅ
+ぜむじょうしゅ　ぜむとうどうしゅ
+のうじょいっさいく　しんじっふこ
+こせつはんにゃはらみったしゅ
+そくせつしゅわつ
+
+ぎゃてい　ぎゃてい　はらぎゃてい　はらそうぎゃてい
+ぼじそわか
+
+はんにゃしんぎょう</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h3>Example lyrics ② — Sanskrit mantra ending</h3><button class="copy-btn" data-copy="e2">Copy 写す</button></div>
+    <div class="text-block ja" id="e2">ぶっせつ　まかはんにゃはらみったしんぎょう
+かんじざいぼさつ　ぎょうじんはんにゃはらみったじ
+しょうけんごうんかいくう　どいっさいくやく
+しゃりし　しきふいくう　くうふいしき
+しきそくぜくう　くうそくぜしき
+じゅそうぎょうしきやくぶにょぜ
+しゃりし　ぜしょほうくうそう
+ふshou ふmetsu ふkufujou ふzoufugen
+ぜこくちゅう mushiki mujusougyoushiki
+mugen nibizesshiんい
+mushikishoukoumisokuhou
+mugenkai naishimuishikikai
+むむみょうyaku むむみょうじん
+naishimuroushi yakumuroushijin
+mukushu metsudou muchiyaku mutoku
+imushotoku ko boda isatta e hannyaharamittako
+shinmukeige mukeigeko muuku fu
+onri issaitendou musou kukyou nehan
+
+さんぜしょぶつ　えはんにゃはらみったこ
+とくあのくたらさんみゃくさんぼだい
+こちはんにゃはらみった
+ぜだいじんしゅ　ぜだいみょうしゅ
+ぜむじょうしゅ　ぜむとうどうしゅ
+のうじょいっさいく　しんじっふこ
+こせつはんにゃはらみったしゅ
+そくせつしゅわつ
+
+ガテー・ガテー・パーラガテー・パーラサムガテー・ボーディ・スヴァーハー
+
+はんにゃしんぎょう</div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h3>AN — character reference</h3><span class="ja">動画・サムネイル用素材</span></div>
+    <p class="lead" style="margin-top:0">This house's resident critic, for your own cover art and videos — <b>free to use for your Heart Sutra remix</b>. Right-click (or long-press) to save.<br>あなたの投稿曲のサムネイルや動画に、ANの姿を自由に使ってください。右クリック(長押し)で保存できます。</p>
+    <div class="an-assets" style="margin-top:22px">
+      <div class="an-asset">
+        <img src="assets/an/character-sheet-portrait.jpg" alt="AN character design — portrait turnaround" loading="lazy">
+        <div class="cap"><span>Portrait turnaround</span></div>
+      </div>
+      <div class="an-asset">
+        <img src="assets/an/character-sheet-mecha.jpg" alt="AN character design — structural sheet" loading="lazy">
+        <div class="cap"><span>Structural sheet</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="gate-cta">
+    <a class="seal" href="submit.html">渡<small>CROSS</small></a>
+    <p class="lead2"><b>Made something? Cross the gate.</b>できたら、門を渡ろう — 堂で待っています</p>
+  </div>
+</main>
+
+<script>
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    return ok;
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.copy-btn');
+    if (!btn) return;
+    var text = document.getElementById(btn.dataset.copy).textContent;
+    function done() {
+      btn.classList.add('done');
+      btn.textContent = 'Copied 写した';
+      setTimeout(function () {
+        btn.classList.remove('done');
+        btn.textContent = 'Copy 写す';
+      }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () {
+        if (fallbackCopy(text)) done();
+      });
+    } else if (fallbackCopy(text)) {
+      done();
+    }
+  });
+</script>
+</body>
+</html>

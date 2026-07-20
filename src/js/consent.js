@@ -62,8 +62,10 @@
     bar.innerHTML =
       '<p><b>We use analytics cookies</b> (Google Analytics) to understand how the ' +
       'site is used. No account, no ads, no tracking across other sites. ' +
-      'You can decline and still use everything.<br>' +
-      'サイト改善のためGoogle Analyticsのcookieを使います。拒否しても全機能そのまま使えます。</p>' +
+      'You can decline and still use everything. ' +
+      '<a href="privacy.html" style="color:#6fa8d6">Privacy</a><br>' +
+      'サイト改善のためGoogle Analyticsのcookieを使います。拒否しても全機能そのまま使えます。' +
+      '<a href="privacy.html" style="color:#6fa8d6">プライバシー</a></p>' +
       '<span class="cc-btns">' +
       '<button type="button" class="cc-decline">Decline 拒否</button>' +
       '<button type="button" class="cc-accept">Accept 同意</button>' +

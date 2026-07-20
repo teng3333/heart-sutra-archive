@@ -1,0 +1,64 @@
+/* OGS 文書ページ共通スタイル(About / Terms / Privacy) */
+:root{
+  --ai:#131a26; --ai-deep:#0d1220;
+  --washi:#d9c49a; --washi-hi:#e9dcba;
+  --shu:#b23a2e; --ruri:#6fa8d6; --kin:#c9a544; --nibi:#8d826d;
+  --hair:rgba(217,196,154,.16);
+  --en:"Cormorant Garamond","Palatino","Georgia",serif;
+  --ja:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  --ui:ui-sans-serif,-apple-system,"Helvetica Neue",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--ai);color:var(--washi);font-family:var(--en);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+header{display:flex;justify-content:space-between;align-items:center;
+  padding:18px 22px;border-bottom:1px solid var(--hair)}
+.brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}
+.logo{display:grid;grid-template-columns:1fr 1fr;width:46px;height:46px;flex:none;
+  border:1px solid var(--washi);font-family:var(--ja);font-weight:500;
+  font-size:15px;line-height:1;place-items:center;padding:4px;direction:rtl}
+.logo span{display:block}
+.brand h1{font-family:var(--en);font-weight:400;font-size:17px;
+  letter-spacing:.26em;text-transform:uppercase}
+.brand h1 small{display:block;font-family:var(--ja);font-size:9px;font-weight:400;
+  letter-spacing:.4em;color:var(--nibi);margin-top:5px}
+.back{font-family:var(--ui);font-size:10px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--nibi);text-decoration:none;padding:4px 0}
+.back:hover{color:var(--washi)}
+.back:focus-visible{outline:1px solid var(--washi);outline-offset:4px}
+
+main{max-width:680px;margin:0 auto;padding:64px 22px 120px}
+.eyebrow{font-family:var(--ui);font-size:10px;letter-spacing:.32em;
+  text-transform:uppercase;color:var(--nibi);margin-bottom:22px}
+h2{font-weight:300;font-size:clamp(30px,6vw,44px);line-height:1.2;
+  letter-spacing:.02em;color:var(--washi-hi)}
+.sub-ja{font-family:var(--ja);font-size:12px;letter-spacing:.3em;
+  color:var(--nibi);margin-top:12px}
+.updated{font-family:var(--ui);font-size:10px;letter-spacing:.1em;
+  color:var(--nibi);margin-top:18px}
+
+h3{font-weight:400;font-size:19px;letter-spacing:.06em;color:var(--washi-hi);
+  margin:48px 0 6px;padding-top:24px;border-top:1px solid var(--hair)}
+h3 .ja{display:block;font-family:var(--ja);font-size:11px;letter-spacing:.24em;
+  color:var(--nibi);margin-top:6px}
+p{font-size:15px;line-height:2;color:var(--washi);margin-top:16px;letter-spacing:.01em}
+p.ja{font-family:var(--ja);font-size:13px;color:var(--nibi);line-height:2.1}
+a.link{color:var(--ruri);text-decoration:none;border-bottom:1px solid var(--hair)}
+a.link:hover{border-color:var(--ruri)}
+ul{margin:16px 0 0 0;padding-left:20px}
+li{font-size:14px;line-height:1.95;color:var(--washi);margin-top:8px}
+li b{color:var(--washi-hi);font-weight:400}
+.note{border:1px solid rgba(178,58,46,.4);background:rgba(13,18,32,.6);
+  padding:16px 18px;margin-top:20px;font-family:var(--ui);font-size:11px;
+  line-height:1.9;color:var(--nibi);letter-spacing:.02em}
+.note b{color:var(--shu);font-weight:400}
+.lead{font-size:16px;line-height:2.05;color:var(--nibi);margin-top:34px;max-width:40em}
+.lead b{color:var(--washi);font-weight:400}
+
+.doc-nav{display:flex;gap:18px;flex-wrap:wrap;margin-top:72px;
+  border-top:1px solid var(--hair);padding-top:26px;
+  font-family:var(--ui);font-size:10px;letter-spacing:.24em;text-transform:uppercase}
+.doc-nav a{color:var(--nibi);text-decoration:none}
+.doc-nav a:hover{color:var(--washi)}
+.doc-nav a:focus-visible{outline:1px solid var(--washi);outline-offset:4px}

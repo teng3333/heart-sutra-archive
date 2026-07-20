@@ -12,6 +12,16 @@
 body{background:var(--ai);color:var(--washi);font-family:var(--en);
   -webkit-font-smoothing:antialiased;overflow-x:hidden}
 
+/* 背景ヴェール(opt-in: そのページに .doc-veil を置いた時だけ) */
+.doc-veil{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.doc-veil img{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);
+  min-width:100%;min-height:100%;width:auto;height:auto;object-fit:cover;
+  opacity:.13;filter:contrast(.97);
+  -webkit-mask-image:radial-gradient(ellipse 60% 55% at 50% 34%,#000 22%,transparent 80%);
+  mask-image:radial-gradient(ellipse 60% 55% at 50% 34%,#000 22%,transparent 80%)}
+@media (max-width:700px){.doc-veil img{opacity:.19}}
+header,main{position:relative;z-index:1}
+
 header{display:flex;justify-content:space-between;align-items:center;
   padding:18px 22px;border-bottom:1px solid var(--hair)}
 .brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}

@@ -261,6 +261,8 @@
       var v = form.elements[k].value.trim();
       if (v) data[k] = v;
     });
+    // 規約同意はサーバー側でも必須。チェック状態を明示的に送る
+    data.agreed = document.getElementById('agree').checked ? 'true' : 'false';
 
     // 音源添付あり → multipart、なし → 従来どおりJSON
     var audioInput = form.elements.audio;

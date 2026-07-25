@@ -272,6 +272,15 @@
 <body>
 <!-- 生きた背景アート:球体生態系(canvasは living-bg.js が最背面に生成する)。
      静的ヴェール(.an-veil)と瑠璃の目は、この動的背景がANを内包するため退役。 -->
+<!-- §9.6 JSが使えない環境でも背景が成立するよう、静止画にフォールバックする -->
+<noscript>
+  <style>
+    body{background-image:radial-gradient(ellipse 70% 60% at 62% 42%,rgba(4,6,11,.55),rgba(4,6,11,.9) 72%),
+      url("assets/an-veil.jpg");
+      background-size:cover,auto 100%;background-position:center,62% top;
+      background-repeat:no-repeat;background-attachment:fixed}
+  </style>
+</noscript>
 <main>
   <header>
     <a class="brand" href="./">

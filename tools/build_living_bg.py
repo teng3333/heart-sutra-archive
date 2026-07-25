@@ -30,6 +30,57 @@ Object.assign(cv.style, {{ position:'fixed', inset:'0', width:'100%', height:'10
   display:'block', zIndex:'0', pointerEvents:'none', opacity:'{op}' }});
 document.body.insertBefore(cv, document.body.firstChild);""".format(op=BG_OPACITY)
 
+MOTION_CONTROL = """// ── §9.6 動きの停止ボタン + タブ非表示時の休止 ──
+// アクセシビリティ(前庭障害・集中の妨げ)と省電力のため、いつでも止められる。
+var __stopped = false, __hidden = false;
+try { __stopped = localStorage.getItem('ogs-motion') === 'off'; } catch(e){}
+
+function __resume(){
+  if (__stopped || __hidden || REDUCED) return;
+  requestAnimationFrame(draw);
+}
+document.addEventListener('visibilitychange', function(){
+  __hidden = document.hidden;          // 非表示タブでは描画を止める(電池・CPU)
+  if (!__hidden) __resume();
+});
+
+(function buildMotionToggle(){
+  var css = document.createElement('style');
+  css.textContent =
+    '#motion-toggle{position:fixed;left:14px;bottom:56px;z-index:9997;display:flex;' +
+    'align-items:center;gap:8px;padding:8px 12px;cursor:pointer;' +
+    'background:rgba(6,9,16,.72);border:1px solid rgba(217,196,154,.16);' +
+    'color:#8d826d;font:400 10px/1 ui-sans-serif,-apple-system,sans-serif;' +
+    'letter-spacing:.18em;text-transform:uppercase;backdrop-filter:blur(4px);' +
+    'transition:color .3s,border-color .3s}' +
+    '#motion-toggle:hover{color:#d9c49a;border-color:rgba(217,196,154,.4)}' +
+    '#motion-toggle:focus-visible{outline:1px solid #d9c49a;outline-offset:3px}' +
+    '#motion-toggle .dot{width:6px;height:6px;border-radius:50%;background:#4a4438;flex:none}' +
+    '#motion-toggle.on .dot{background:#6fa8d6;box-shadow:0 0 6px rgba(111,168,214,.7)}';
+  document.head.appendChild(css);
+
+  var b = document.createElement('button');
+  b.id = 'motion-toggle'; b.type = 'button';
+  b.innerHTML = '<span class="dot" aria-hidden="true"></span><span class="txt"></span>';
+  function sync(){
+    var moving = !__stopped && !REDUCED;
+    b.classList.toggle('on', moving);
+    b.setAttribute('aria-pressed', moving ? 'true' : 'false');
+    b.querySelector('.txt').textContent = moving ? 'Motion on' : 'Motion off';
+    b.setAttribute('aria-label', moving ? '背景の動きを止める' : '背景の動きを再開する');
+  }
+  b.addEventListener('click', function(){
+    __stopped = !__stopped;
+    try { localStorage.setItem('ogs-motion', __stopped ? 'off' : 'on'); } catch(e){}
+    sync();
+    if (!__stopped) __resume();
+  });
+  document.body.appendChild(b);
+  sync();
+})();
+
+"""
+
 DEBUG_HANDLE = """// 調整・検証用ハンドル(本番でも無害)
 window.__livingBG = {
   get phase(){ return auto ? (((performance.now()-t0)/1000 + tOffset)/CYCLE_SEC*8)%8 : manualP; },
@@ -102,7 +153,13 @@ def build() -> int:
     txt = txt.replace(
         "  if (now - fpsT > 1000){ fps.textContent = frames + 'fps'; frames = 0; fpsT = now; }",
         "  if (now - fpsT > 1000){ frames = 0; fpsT = now; }")
-    txt = txt.replace("if (REDUCED){", DEBUG_HANDLE + "if (REDUCED){", 1)
+    txt = txt.replace("if (REDUCED){", DEBUG_HANDLE + MOTION_CONTROL + "if (REDUCED){", 1)
+    # 描画ループを停止フラグで守る(停止中・非表示中は次フレームを予約しない)
+    txt = txt.replace("  if (!REDUCED) requestAnimationFrame(draw);",
+                      "  if (!REDUCED && !__stopped && !__hidden) requestAnimationFrame(draw);")
+    # 起動時に停止が記憶されていれば1フレームだけ描いて止める
+    txt = txt.replace("else requestAnimationFrame(draw);",
+                      "else if (__stopped) draw(performance.now());\nelse requestAnimationFrame(draw);")
 
     header = (
         "/* HSE/AN 生きた背景アート — OGSホーム用モジュール\n"

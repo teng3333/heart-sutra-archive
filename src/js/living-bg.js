@@ -1628,7 +1628,7 @@ function draw(now){
   if (genome.seconds - lastSave > 10){ lastSave = genome.seconds; saveGenome(); }
   frames++;
   if (now - fpsT > 1000){ frames = 0; fpsT = now; }
-  if (!REDUCED) requestAnimationFrame(draw);
+  if (!REDUCED && !__stopped && !__hidden) requestAnimationFrame(draw);
 }
 
 // 調整・検証用ハンドル(本番でも無害)
@@ -1655,7 +1655,57 @@ window.__livingBG = {
   rebuild(){ rebuild(); },
 };
 
+// ── §9.6 動きの停止ボタン + タブ非表示時の休止 ──
+// アクセシビリティ(前庭障害・集中の妨げ)と省電力のため、いつでも止められる。
+var __stopped = false, __hidden = false;
+try { __stopped = localStorage.getItem('ogs-motion') === 'off'; } catch(e){}
+
+function __resume(){
+  if (__stopped || __hidden || REDUCED) return;
+  requestAnimationFrame(draw);
+}
+document.addEventListener('visibilitychange', function(){
+  __hidden = document.hidden;          // 非表示タブでは描画を止める(電池・CPU)
+  if (!__hidden) __resume();
+});
+
+(function buildMotionToggle(){
+  var css = document.createElement('style');
+  css.textContent =
+    '#motion-toggle{position:fixed;left:14px;bottom:56px;z-index:9997;display:flex;' +
+    'align-items:center;gap:8px;padding:8px 12px;cursor:pointer;' +
+    'background:rgba(6,9,16,.72);border:1px solid rgba(217,196,154,.16);' +
+    'color:#8d826d;font:400 10px/1 ui-sans-serif,-apple-system,sans-serif;' +
+    'letter-spacing:.18em;text-transform:uppercase;backdrop-filter:blur(4px);' +
+    'transition:color .3s,border-color .3s}' +
+    '#motion-toggle:hover{color:#d9c49a;border-color:rgba(217,196,154,.4)}' +
+    '#motion-toggle:focus-visible{outline:1px solid #d9c49a;outline-offset:3px}' +
+    '#motion-toggle .dot{width:6px;height:6px;border-radius:50%;background:#4a4438;flex:none}' +
+    '#motion-toggle.on .dot{background:#6fa8d6;box-shadow:0 0 6px rgba(111,168,214,.7)}';
+  document.head.appendChild(css);
+
+  var b = document.createElement('button');
+  b.id = 'motion-toggle'; b.type = 'button';
+  b.innerHTML = '<span class="dot" aria-hidden="true"></span><span class="txt"></span>';
+  function sync(){
+    var moving = !__stopped && !REDUCED;
+    b.classList.toggle('on', moving);
+    b.setAttribute('aria-pressed', moving ? 'true' : 'false');
+    b.querySelector('.txt').textContent = moving ? 'Motion on' : 'Motion off';
+    b.setAttribute('aria-label', moving ? '背景の動きを止める' : '背景の動きを再開する');
+  }
+  b.addEventListener('click', function(){
+    __stopped = !__stopped;
+    try { localStorage.setItem('ogs-motion', __stopped ? 'off' : 'on'); } catch(e){}
+    sync();
+    if (!__stopped) __resume();
+  });
+  document.body.appendChild(b);
+  sync();
+})();
+
 if (REDUCED){ auto = false; manualP = 3.5; draw(performance.now()); }
+else if (__stopped) draw(performance.now());
 else requestAnimationFrame(draw);
 
 })();

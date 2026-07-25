@@ -1,0 +1,1712 @@
+/* HSE/AN 生きた背景アート — OGSホーム用モジュール
+   ⚠ 自動生成ファイル。編集は _proto_dynamic_bg.html 側で行い、
+      python3 tools/build_living_bg.py で再生成すること。
+   使い方: <script src="src/js/living-bg.js" defer></script> */
+(function(){
+
+'use strict';
+/* ============================================================
+   HSE/AN 動的背景 v0.3
+   v0.2からの改修(高尾フィードバック 2026-07-25):
+   1) 各パーツに複数バリエーション(木5種/花変種/塔3種/街3種
+      〈五重塔含む〉/メカ4種)= 複雑系
+   2) AN を球の中心に「ぼんやりと」キャラクターとして描く
+      (奥半球→AN→手前半球の順に描き、生態系が薄く彼女を覆う)
+   3) AN の表情(目の開閉・口元)/人間度⇔メカ度が時間と
+      ライフサイクルで移ろう(設定画: WAVE OF LOTUS ⇔ LUNA-07)
+   ============================================================ */
+// 背景レイヤーとしてcanvasを自前生成(最背面・イベントは透過)
+const cv = document.createElement('canvas');
+cv.id = 'living-bg';
+cv.setAttribute('aria-hidden', 'true');
+Object.assign(cv.style, { position:'fixed', inset:'0', width:'100%', height:'100%',
+  display:'block', zIndex:'0', pointerEvents:'none', opacity:'0.80' });
+document.body.insertBefore(cv, document.body.firstChild);
+const ctx = cv.getContext('2d');
+const DPR = Math.min(devicePixelRatio || 1, 2);
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MOBILE = matchMedia('(max-width: 700px)').matches;
+
+let W, H, CX, CY, R;
+function resize(){
+  W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  CX = MOBILE ? W * 0.5 : W * 0.63;
+  CY = MOBILE ? H * 0.44 : H * 0.5;
+  R  = Math.min(W, H) * (MOBILE ? 0.37 : 0.36);
+}
+resize(); addEventListener('resize', resize);
+
+const C = {
+  trunk:'78,64,48', leafG:'62,94,68', leafD:'40,64,48', pine:'50,82,60',
+  flower:'196,62,50', burg:'128,42,52', pink:'214,150,150',
+  lotus:'214,222,232', lotusCore:'120,180,240',
+  spire:'196,208,224', city:'168,178,192', win:'240,220,160',
+  mech:'120,168,214', mechR:'196,74,60', water:'150,200,240', foam:'235,245,255',
+  web:'170,60,50', webW:'170,190,220', core:'233,220,186',
+  skin:'232,214,196', hair:'16,15,20', an:'140,220,255',
+};
+
+/* ── 色テーマ:ループ(還元→種)ごとに切り替わる統一色 ──
+   mist=大気 / glow=発光 / wash=全体の色調(soft-light) */
+const THEMES = [
+  // 素(すじ): 色を足さないオリジナル。標準として頻繁に現れる。
+  {name:'素(無彩)', mist:'30,38,54',  glow:'220,226,238', wash:'200,206,218', plain:true},
+  {name:'瑠璃(青)', mist:'34,58,104',  glow:'150,190,255', wash:'70,130,255'},
+  {name:'緋(赤)',   mist:'92,38,46',   glow:'255,150,120', wash:'255,86,66'},
+  {name:'菫(紫)',   mist:'66,46,104',  glow:'196,150,240', wash:'165,105,255'},
+  {name:'翠(緑)',   mist:'34,84,64',   glow:'150,230,180', wash:'80,220,140'},
+  {name:'金(黄)',   mist:'96,76,30',   glow:'255,222,150', wash:'255,200,80'},
+  {name:'白緑(青緑)',mist:'34,80,86',  glow:'170,240,230', wash:'90,230,220'},
+];
+let themeIdx = (Math.random()*THEMES.length)|0;
+function nextTheme(){
+  // 素(無彩=オリジナル)を標準として約1/3で選び、残りは直前と違う有彩テーマへ。
+  if (themeIdx !== 0 && Math.random() < 0.34){ themeIdx = 0; return; }
+  let next;
+  do { next = 1 + ((Math.random()*(THEMES.length-1))|0); } while (next === themeIdx);
+  themeIdx = next;
+}
+
+/* ── 最背面の天体:1ライフサイクルに1つ、うっすら浮かぶ ──
+   銀河・地球・月・太陽・土星。種で現れ、還元とともに消える。 */
+const CELESTIALS = ['galaxy','earth','moon','sun','saturn','none'];
+let celestial = { kind:'none', nx:0, ny:0, r:1, rot:0, seed:0 };
+let celestialPrev = null, celFadeT0 = -1;
+const CEL_FADE = 7;                       // 天体の入れ替わりにかける秒数
+function pickCelestial(t){
+  celestialPrev = celestial;              // 前の天体は溶暗しながら退場
+  const k = CELESTIALS[(Math.random()*CELESTIALS.length)|0];
+  celestial = { kind:k,
+    nx: (Math.random()*2-1)*0.85, ny: (Math.random()*2-1)*0.7,
+    r: 0.55 + Math.random()*1.05, rot: Math.random()*Math.PI,
+    seed: Math.random()*999 };
+  celFadeT0 = (typeof t === 'number') ? t : -1;
+}
+pickCelestial();
+/* 天体は画像があれば画像を使う(assets/celestial/{kind}.png|jpg)。
+   無ければ下の手描き版にフォールバック。円形マスクで縁を闇へ溶かす。 */
+const CEL_IMG = {};
+(function loadCelestialImages(){
+  for (const k of ['galaxy','earth','moon','sun','saturn']){
+    for (const ext of ['png','jpg','jpeg','webp']){
+      const im = new Image();
+      im.onload = () => {
+        if (CEL_IMG[k]) return;                        // 先に読めた方を採用
+        const S = 512, can = document.createElement('canvas');
+        can.width = can.height = S;
+        const g = can.getContext('2d');
+        // 正方形に収めて中央配置
+        const sc = Math.max(S/im.naturalWidth, S/im.naturalHeight);
+        const dw = im.naturalWidth*sc, dh = im.naturalHeight*sc;
+        g.drawImage(im, (S-dw)/2, (S-dh)/2, dw, dh);
+        // 縁を透明に(黒背景へ同化)
+        g.globalCompositeOperation = 'destination-in';
+        const m = g.createRadialGradient(S/2, S/2, S*0.10, S/2, S/2, S*0.5);
+        m.addColorStop(0, 'rgba(0,0,0,1)');
+        m.addColorStop(0.72, 'rgba(0,0,0,0.95)');
+        m.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = m; g.fillRect(0, 0, S, S);
+        CEL_IMG[k] = can;
+      };
+      im.src = `assets/celestial/${k}.${ext}`;
+    }
+  }
+})();
+
+function drawCelestial(t, vis, glow, tintArr){
+  // 入れ替わりは溶暗・溶明で(いきなり切り替わらない)
+  const k = celFadeT0 < 0 ? 1 : Math.min(1, Math.max(0, (t - celFadeT0) / CEL_FADE));
+  const e = k*k*(3-2*k);                                  // smoothstep
+  if (celestialPrev && e < 1) drawCelestialOne(celestialPrev, t, vis, glow, tintArr, 1-e);
+  drawCelestialOne(celestial, t, vis, glow, tintArr, e);
+  if (e >= 1) celestialPrev = null;
+}
+function drawCelestialOne(c, t, vis, glow, tintArr, mul){
+  if (!c || c.kind === 'none' || mul <= 0.004) return;
+  const a0 = (0.10 + vis*0.16) * (0.85 + Math.sin(t*0.12 + c.seed)*0.15) * mul;  // 呼吸+フェード
+  if (a0 < 0.012) return;
+  const x = CX + c.nx*R*1.5, y = CY + c.ny*R*1.4, rad = R * c.r;
+  // 画像版(用意されていれば優先)
+  const img = CEL_IMG[c.kind];
+  // 地球・土星は画像専用(手描き版は高尾指示により廃止)
+  if (!img && (c.kind === 'earth' || c.kind === 'saturn')) return;
+  if (img){
+    const d = rad*2.4;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, a0*1.35);           // うっすら浮かぶ(実写画像は控えめに)
+    ctx.translate(x, y);
+    if (c.kind === 'galaxy') ctx.rotate(c.rot + t*0.004);
+    else if (c.kind === 'saturn') ctx.rotate(c.rot*0.3 - 0.3);
+    ctx.drawImage(img, -d/2, -d/2, d, d);
+    ctx.restore();
+    return;
+  }
+  ctx.save();
+  if (c.kind === 'galaxy'){                       // 渦巻銀河
+    ctx.translate(x, y); ctx.rotate(c.rot + t*0.004); ctx.scale(1, 0.34);
+    for (let arm = 0; arm < 2; arm++){
+      for (let i = 0; i < 130; i++){
+        const u = i/130, th = arm*Math.PI + u*4.6, rr = rad*(0.10 + u*0.95);
+        const px = Math.cos(th)*rr, py = Math.sin(th)*rr;
+        const aa = a0 * (1-u*0.75) * 0.85;
+        ctx.fillStyle = `rgba(${tintArr},${aa})`;
+        ctx.beginPath(); ctx.arc(px, py, (1-u)*2.6+0.5, 0, 7); ctx.fill();
+      }
+    }
+    const core = ctx.createRadialGradient(0,0,0,0,0,rad*0.4);
+    core.addColorStop(0, `rgba(255,246,225,${a0*1.4})`);
+    core.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = core; ctx.beginPath(); ctx.arc(0,0,rad*0.4,0,7); ctx.fill();
+  } else if (c.kind === 'sun'){                   // 太陽(コロナ)
+    const g = ctx.createRadialGradient(x,y,0,x,y,rad*1.5);
+    g.addColorStop(0, `rgba(255,238,196,${a0*1.5})`);
+    g.addColorStop(0.28, `rgba(255,190,110,${a0*0.9})`);
+    g.addColorStop(0.6, `rgba(228,120,60,${a0*0.3})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x,y,rad*1.5,0,7); ctx.fill();
+    for (let k = 0; k < 40; k++){                 // 揺らぐ光条
+      const th = k/40*Math.PI*2, len = rad*(1.05 + Math.sin(t*0.6+k)*0.10);
+      ctx.strokeStyle = `rgba(255,214,150,${a0*0.28})`; ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(x+Math.cos(th)*rad*0.92, y+Math.sin(th)*rad*0.92);
+      ctx.lineTo(x+Math.cos(th)*len, y+Math.sin(th)*len); ctx.stroke();
+    }
+  } else if (c.kind === 'moon'){                  // 月(クレーター+欠け)
+    const g = ctx.createRadialGradient(x-rad*0.3, y-rad*0.3, rad*0.05, x, y, rad);
+    g.addColorStop(0, `rgba(230,230,224,${a0*1.2})`);
+    g.addColorStop(1, `rgba(120,122,126,${a0*0.9})`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x,y,rad,0,7); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(x,y,rad,0,7); ctx.clip();
+    for (let k = 0; k < 14; k++){                 // クレーター
+      const th = c.seed*0.7 + k*2.1, rr = rad*(0.05 + ((k*53)%10)/70);
+      ctx.fillStyle = `rgba(96,98,104,${a0*0.55})`;
+      ctx.beginPath();
+      ctx.arc(x+Math.cos(th)*rad*(0.2+((k*29)%10)/16),
+              y+Math.sin(th)*rad*(0.2+((k*17)%10)/16), rr, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+    const sh = ctx.createRadialGradient(x+rad*0.55, y+rad*0.35, rad*0.1, x, y, rad*1.05);
+    sh.addColorStop(0, `rgba(2,4,10,${a0*0.85})`); sh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(x,y,rad,0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ── 隠れキャラ(超レア):UFO・ハレー彗星・衛星・宇宙船が画面を横切る ──
+   出現間隔は 5分〜60分のランダム。見た人だけが出会える一期一会。 */
+const RARE_KINDS = ['ufo','comet','satellite','ship'];
+let rare = null;                                   // 出現中のみオブジェクト
+let rareNext = 300 + Math.random()*3300;           // 次の出現(秒)
+function spawnRare(t){
+  const kind = RARE_KINDS[(Math.random()*RARE_KINDS.length)|0];
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  rare = { kind, t0: t, dir, seed: Math.random()*99,
+    dur: kind === 'comet' ? 9 + Math.random()*7 : 11 + Math.random()*9,
+    y0: 0.12 + Math.random()*0.55, y1: 0.12 + Math.random()*0.55,
+    scale: 0.8 + Math.random()*0.7 };
+  rareNext = t + 300 + Math.random()*3300;         // 次は5〜60分後
+}
+function drawRare(t){
+  if (!rare){ if (t > rareNext) spawnRare(t); return; }
+  const u = (t - rare.t0) / rare.dur;
+  if (u >= 1){ rare = null; return; }
+  const fade = Math.min(1, Math.min(u, 1-u) * 6);
+  const S = Math.min(W, H) * 0.055 * rare.scale;
+  const x = rare.dir > 0 ? -S*3 + (W + S*6)*u : W + S*3 - (W + S*6)*u;
+  const y = H * (rare.y0 + (rare.y1 - rare.y0)*u);
+  const d = rare.dir;
+  ctx.save();
+
+  if (rare.kind === 'comet'){                      // ハレー彗星(核+長い尾)
+    const tail = S*11;
+    const g = ctx.createLinearGradient(x, y, x - d*tail, y + tail*0.16);
+    g.addColorStop(0, `rgba(220,240,255,${0.55*fade})`);
+    g.addColorStop(0.35, `rgba(150,205,255,${0.22*fade})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.strokeStyle = g; ctx.lineCap = 'round';
+    for (let k = 0; k < 3; k++){
+      ctx.lineWidth = S*(0.9 - k*0.28);
+      ctx.beginPath(); ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x - d*tail*0.5, y + tail*0.04*(k+1),
+                           x - d*tail, y + tail*0.16*(k+1)*0.6);
+      ctx.stroke();
+    }
+    const core = ctx.createRadialGradient(x, y, 0, x, y, S*1.5);
+    core.addColorStop(0, `rgba(255,255,255,${0.95*fade})`);
+    core.addColorStop(0.3, `rgba(200,235,255,${0.6*fade})`);
+    core.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = core; ctx.beginPath(); ctx.arc(x, y, S*1.5, 0, 7); ctx.fill();
+
+  } else if (rare.kind === 'ufo'){                 // 円盤(ふらつきながら横切る)
+    const wob = Math.sin(t*2.2 + rare.seed)*S*0.35;
+    ctx.save(); ctx.translate(x, y + wob);
+    const beam = ctx.createLinearGradient(0, S*0.3, 0, S*4.5);
+    beam.addColorStop(0, `rgba(150,255,200,${0.20*fade})`);
+    beam.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = beam;
+    ctx.beginPath(); ctx.moveTo(-S*0.5, S*0.3); ctx.lineTo(S*0.5, S*0.3);
+    ctx.lineTo(S*1.7, S*4.5); ctx.lineTo(-S*1.7, S*4.5); ctx.closePath(); ctx.fill();
+    const dome = ctx.createRadialGradient(-S*0.2, -S*0.5, 0, 0, -S*0.3, S*0.9);
+    dome.addColorStop(0, `rgba(190,255,235,${0.75*fade})`);
+    dome.addColorStop(1, `rgba(70,150,140,${0.35*fade})`);
+    ctx.fillStyle = dome;
+    ctx.beginPath(); ctx.ellipse(0, -S*0.28, S*0.72, S*0.6, 0, Math.PI, 0); ctx.fill();
+    const body = ctx.createLinearGradient(0, -S*0.2, 0, S*0.4);
+    body.addColorStop(0, `rgba(214,226,238,${0.9*fade})`);
+    body.addColorStop(1, `rgba(96,112,130,${0.8*fade})`);
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.ellipse(0, 0, S*1.9, S*0.52, 0, 0, 7); ctx.fill();
+    for (let k = 0; k < 5; k++){
+      const on = Math.sin(t*5 + k*1.3 + rare.seed) > 0;
+      ctx.fillStyle = on ? `rgba(255,110,90,${0.95*fade})` : `rgba(120,200,255,${0.7*fade})`;
+      ctx.beginPath(); ctx.arc((k-2)*S*0.62, S*0.26, S*0.14, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+
+  } else if (rare.kind === 'satellite'){           // 人工衛星
+    ctx.save(); ctx.translate(x, y);
+    ctx.rotate(Math.sin(t*0.3+rare.seed)*0.12 + (d>0?0.2:-0.2));
+    ctx.fillStyle = `rgba(206,214,226,${0.85*fade})`;
+    ctx.fillRect(-S*0.42, -S*0.42, S*0.84, S*0.84);
+    ctx.fillStyle = `rgba(70,110,180,${0.8*fade})`;
+    ctx.fillRect(-S*2.6, -S*0.30, S*1.9, S*0.60);
+    ctx.fillRect( S*0.7, -S*0.30, S*1.9, S*0.60);
+    ctx.strokeStyle = `rgba(150,170,200,${0.55*fade})`; ctx.lineWidth = 0.8;
+    for (let k = 1; k <= 3; k++){
+      ctx.beginPath(); ctx.moveTo(-S*2.6 + k*S*0.48, -S*0.3);
+      ctx.lineTo(-S*2.6 + k*S*0.48, S*0.3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(S*0.7 + k*S*0.48, -S*0.3);
+      ctx.lineTo(S*0.7 + k*S*0.48, S*0.3); ctx.stroke();
+    }
+    ctx.strokeStyle = `rgba(200,210,225,${0.7*fade})`;
+    ctx.beginPath(); ctx.moveTo(0, -S*0.42); ctx.lineTo(0, -S*1.15); ctx.stroke();
+    if (Math.sin(t*3.4 + rare.seed) > 0.4){
+      ctx.fillStyle = `rgba(255,90,80,${0.9*fade})`;
+      ctx.beginPath(); ctx.arc(0, -S*1.2, S*0.13, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+
+  } else {                                         // 宇宙船(エンジン光の航跡)
+    ctx.save(); ctx.translate(x, y); ctx.scale(d, 1);
+    const tr = ctx.createLinearGradient(-S*1.2, 0, -S*9, 0);
+    tr.addColorStop(0, `rgba(140,215,255,${0.5*fade})`);
+    tr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = tr;
+    ctx.beginPath(); ctx.moveTo(-S*1.2, -S*0.26);
+    ctx.lineTo(-S*9, -S*0.05); ctx.lineTo(-S*9, S*0.05);
+    ctx.lineTo(-S*1.2, S*0.26); ctx.closePath(); ctx.fill();
+    const hull = ctx.createLinearGradient(0, -S*0.5, 0, S*0.5);
+    hull.addColorStop(0, `rgba(228,234,242,${0.92*fade})`);
+    hull.addColorStop(1, `rgba(120,132,150,${0.85*fade})`);
+    ctx.fillStyle = hull;
+    ctx.beginPath();
+    ctx.moveTo(S*2.6, 0); ctx.quadraticCurveTo(S*0.6, -S*0.46, -S*1.3, -S*0.36);
+    ctx.lineTo(-S*1.3, S*0.36); ctx.quadraticCurveTo(S*0.6, S*0.46, S*2.6, 0);
+    ctx.fill();
+    ctx.fillStyle = `rgba(90,102,120,${0.9*fade})`;
+    ctx.beginPath(); ctx.moveTo(-S*0.2, -S*0.3); ctx.lineTo(-S*1.5, -S*1.05);
+    ctx.lineTo(-S*1.1, -S*0.2); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-S*0.2, S*0.3); ctx.lineTo(-S*1.5, S*1.05);
+    ctx.lineTo(-S*1.1, S*0.2); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = `rgba(160,225,255,${0.9*fade})`;
+    for (let k = 0; k < 3; k++){
+      ctx.beginPath(); ctx.arc(S*(0.9 - k*0.6), -S*0.06, S*0.1, 0, 7); ctx.fill();
+    }
+    const eg = ctx.createRadialGradient(-S*1.3, 0, 0, -S*1.3, 0, S*0.9);
+    eg.addColorStop(0, `rgba(210,245,255,${0.95*fade})`);
+    eg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(-S*1.3, 0, S*0.9, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/* ── 天候イベント:雨・桜・雪・落ち葉。球体の円内(nx,ny∈[-1.2,1.2])を
+   ゆっくり舞い落ちる。位置は球体基準なので、球のまわりに散る。 ── */
+let weather = 'none', wStart = 0, wEnd = 0, wNext = 5 + Math.random()*8;
+function respawnP(p){ p.nx = (Math.random()*2-1)*1.15; p.ny = -1.15 - Math.random()*0.3; }
+const WP = Array.from({length: MOBILE ? 55 : 110}, () => {
+  const p = { s: Math.random(), rot: Math.random()*7, sway: Math.random()*9,
+              swf: 0.006 + Math.random()*0.01, spd: 0.7 + Math.random()*0.6 };
+  p.nx = (Math.random()*2-1)*1.15; p.ny = (Math.random()*2-1)*1.15; return p;
+});
+function pickWeather(t){
+  const r = Math.random();
+  weather = r<0.20 ? 'none'   : r<0.32 ? 'rain'    : r<0.45 ? 'sakura'
+          : r<0.57 ? 'snow'   : r<0.69 ? 'leaves'  : r<0.79 ? 'digital'
+          : r<0.89 ? 'bubbles' : 'stars';
+  wStart = t; wEnd = t + 18 + Math.random()*26; wNext = wEnd + 5 + Math.random()*16;
+  WP.forEach(p => {
+    respawnP(p);
+    if (weather === 'bubbles') p.ny = 1.15 + Math.random()*0.3;   // 下から出す
+    if (weather === 'digital'){ p.glyph = Math.random() < 0.5 ? '0' : '1';
+      p.flip = Math.random()*9; p.trail = 3 + (Math.random()*5|0); }
+    if (weather === 'stars'){                                      // 動かない星
+      p.nx = (Math.random()*2-1)*1.15; p.ny = (Math.random()*2-1)*1.15;
+      p.tw = Math.random()*Math.PI*2;                              // 点滅位相
+      p.tws = 0.6 + Math.random()*2.2;                             // 点滅の速さ
+      p.spike = Math.random() < 0.35;                              // 十字の光条
+    }
+  });
+}
+function drawWeather(t, tint){
+  if (t > wNext) pickWeather(t);
+  if (weather === 'none') return;
+  const life = (t - wStart) / (wEnd - wStart);
+  const intens = Math.min(1, Math.min(life, 1 - life) * 4.5);  // 徐々に降り出し・止む
+  if (intens <= 0) return;
+
+  // ── 煌めく星:動かず、その場で点滅する(球体のまわりに散る) ──
+  if (weather === 'stars'){
+    for (const p of WP){
+      p.tw += 0.02 * p.tws;
+      const nx = p.nx, ny = p.ny;
+      if (nx*nx + ny*ny > 1.35) continue;
+      const px = CX + nx*R, py = CY + ny*R;
+      const blink = Math.pow(0.5 + 0.5*Math.sin(p.tw), 2.2);   // 鋭く明滅
+      const a = 0.85 * intens * blink * (0.35 + p.s*0.65);
+      if (a < 0.02) continue;
+      const rr = 0.9 + p.s*2.2;
+      const g = ctx.createRadialGradient(px, py, 0, px, py, rr*3.2);
+      g.addColorStop(0, `rgba(255,255,255,${a})`);
+      g.addColorStop(0.32, `rgba(${tint},${a*0.5})`);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(px, py, rr*3.2, 0, 7); ctx.fill();
+      if (p.spike && a > 0.25){                                // 十字の光条
+        ctx.strokeStyle = `rgba(255,255,255,${a*0.55})`; ctx.lineWidth = 0.7;
+        const L = rr*4.5;
+        ctx.beginPath();
+        ctx.moveTo(px-L, py); ctx.lineTo(px+L, py);
+        ctx.moveTo(px, py-L); ctx.lineTo(px, py+L);
+        ctx.stroke();
+      }
+    }
+    return;
+  }
+
+  // 落下速度(ny単位/フレーム)— 大幅にゆっくり。横揺れで"舞う"
+  // bubbles は負(上昇)。digital は真っ直ぐ落ちる。
+  const fall = weather==='rain' ? 0.010 : weather==='snow' ? 0.0016
+             : weather==='sakura' ? 0.0022 : weather==='leaves' ? 0.0020
+             : weather==='digital' ? 0.0075 : -0.0026;
+  const swayAmp = weather==='rain' ? 0.02 : weather==='snow' ? 0.05
+                : weather==='sakura' ? 0.09 : weather==='leaves' ? 0.11
+                : weather==='digital' ? 0 : 0.07;   // digitalは揺れず真っ直ぐ
+  for (const p of WP){
+    p.ny += fall * p.spd; p.sway += p.swf;
+    if (fall > 0 ? p.ny > 1.2 : p.ny < -1.2){       // 上昇時は上端で撒き直し
+      respawnP(p);
+      if (fall < 0) p.ny = 1.15 + Math.random()*0.25;
+    }
+    const nx = p.nx + Math.sin(p.sway)*swayAmp, ny = p.ny;
+    if (nx*nx + ny*ny > 1.35) continue;          // 球体の円の外は描かない
+    const px = CX + nx*R, py = CY + ny*R;
+    const near = 0.5 + p.s*0.5;
+    if (weather === 'rain'){
+      p.rot += 0.02;
+      ctx.strokeStyle = `rgba(${tint},${0.20*intens*near})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px+1.5, py + 7 + p.s*8); ctx.stroke();
+    } else if (weather === 'snow'){
+      ctx.fillStyle = `rgba(238,245,255,${0.55*intens*near})`;
+      ctx.beginPath(); ctx.arc(px, py, 0.9 + p.s*2, 0, 7); ctx.fill();
+    } else if (weather === 'sakura'){
+      p.rot += 0.03 + Math.sin(p.sway)*0.02;      // ひらひら回転
+      const r = 2.6 + p.s*3;
+      ctx.save(); ctx.translate(px, py); ctx.rotate(p.rot);
+      ctx.scale(1, 0.6 + Math.abs(Math.sin(p.sway))*0.5); // 表裏でつぶれる
+      ctx.fillStyle = `rgba(242,182,198,${0.6*intens*near})`;
+      ctx.beginPath();
+      ctx.moveTo(0, -r); ctx.quadraticCurveTo(r*0.75, -r*0.2, 0, r);
+      ctx.quadraticCurveTo(-r*0.75, -r*0.2, 0, -r); ctx.fill();
+      ctx.restore();
+    } else if (weather === 'digital'){             // 0/1 のデジタル雨(真っ直ぐ降る)
+      const fs = 8 + p.s*7;
+      ctx.font = `${fs}px "SF Mono",Menlo,monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      // 尾を引く(下ほど明るい・上ほど薄い)
+      for (let k = p.trail; k >= 0; k--){
+        const yy = py - k*fs*1.15;
+        if ((py - CY)/R < -1.25) break;
+        const fade = (1 - k/(p.trail+1));
+        const ga = 0.62*intens*near*fade*fade;
+        if (ga < 0.02) continue;
+        // 先頭は白く、後続は緑
+        ctx.fillStyle = k === 0
+          ? `rgba(200,255,214,${ga})`
+          : `rgba(90,225,130,${ga*0.85})`;
+        // 文字はときどき 0/1 が入れ替わる
+        const gl = ((Math.floor(t*3 + p.flip + k) % 2) === 0) ? '0' : '1';
+        ctx.fillText(gl, px, yy);
+      }
+    } else if (weather === 'bubbles'){             // 下から上がる泡
+      const r = 2.2 + p.s*5.5;
+      const wob = Math.sin(p.sway*2.4)*0.6;         // ゆらぎ
+      ctx.strokeStyle = `rgba(190,225,255,${0.42*intens*near})`;
+      ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.ellipse(px+wob, py, r, r*(0.92+Math.sin(p.sway*3)*0.08), 0, 0, 7);
+      ctx.stroke();
+      // 内側のうすい膜と光点
+      const bg = ctx.createRadialGradient(px+wob-r*0.3, py-r*0.35, 0, px+wob, py, r);
+      bg.addColorStop(0, `rgba(235,248,255,${0.30*intens*near})`);
+      bg.addColorStop(0.55, `rgba(160,205,240,${0.07*intens*near})`);
+      bg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = bg;
+      ctx.beginPath(); ctx.arc(px+wob, py, r, 0, 7); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${0.5*intens*near})`;
+      ctx.beginPath(); ctx.arc(px+wob-r*0.34, py-r*0.38, r*0.16, 0, 7); ctx.fill();
+    } else {                                       // leaves
+      p.rot += 0.035*(p.s>0.5?1:-1);
+      const r = 2.8 + p.s*3.2;
+      ctx.save(); ctx.translate(px, py); ctx.rotate(p.rot);
+      ctx.scale(1, 0.5 + Math.abs(Math.sin(p.sway))*0.6);
+      const lc = p.s<0.4?'156,92,50':p.s<0.7?'182,124,56':'126,146,82';
+      ctx.fillStyle = `rgba(${lc},${0.55*intens*near})`;
+      ctx.beginPath(); ctx.moveTo(0,0);
+      ctx.quadraticCurveTo(r*0.6,-r*0.5,r*2,0);
+      ctx.quadraticCurveTo(r*0.6,r*0.5,0,0); ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+/* ── ANの顔:4バージョンを正面切り出し+夜に沈めてソフトマスク ──
+   設定画は3面図で、左端が正面。front{sx,sy,sw,sh}で正面ビューを切る。
+   4枚を同一サイズ・同じ目位置に正規化 → ライフサイクルでクロスフェード。 */
+// eye{ex,ey}=正面の両目中点(元画像px)、ipd=瞳孔間距離(px)。
+// 較正ページ(_face_calib.html)で瞳を実測。4枚を同一の目位置・同一スケールに正規化。
+const FACE_SET = [
+  {key:'human',       src:'assets/an/face-human.jpg',       eye:{ex:296, ey:426, ipd:115}, mech:0, sutra:0},
+  {key:'human_sutra', src:'assets/an/face-human-sutra.jpg', eye:{ex:295, ey:425, ipd:111}, mech:0, sutra:1},
+  {key:'mech_sutra',  src:'assets/an/face-mech-sutra.jpg',  eye:{ex:294, ey:416, ipd:114}, mech:1, sutra:1},
+  {key:'mech',        src:'assets/an/face-mech.jpg',         eye:{ex:304, ey:433, ipd:110}, mech:1, sutra:0},
+];
+const FW = 470, FH = 820;
+const EYE_OUT_X = FW*0.5, EYE_OUT_Y = FH*0.30, IPD_OUT = FW*0.245; // 出力側の基準
+let facesReady = 0;
+function buildFace(def){
+  const img = new Image();
+  img.onload = () => {
+    const can = document.createElement('canvas');
+    can.width = FW; can.height = FH;
+    const fc = can.getContext('2d');
+    // eyeアンカー: 目中点→(EYE_OUT_X,EYE_OUT_Y)、瞳孔間距離→IPD_OUT に正規化
+    const k = IPD_OUT / def.eye.ipd;               // 出力px / 元px
+    const sw = FW / k, sh = FH / k;
+    const sx = def.eye.ex - EYE_OUT_X / k;
+    const sy = def.eye.ey - EYE_OUT_Y / k;
+    fc.drawImage(img, sx, sy, sw, sh, 0, 0, FW, FH);
+    // 楕円グラデを全面に敷く(縦長画像に合わせ円を楕円へ。r>1は最終ストップ色)
+    const fillEllipseGrad = (cyRatio, rx, ry, stops) => {
+      fc.save();
+      fc.translate(FW*0.5, FH*cyRatio);
+      fc.scale(rx, ry);
+      const g = fc.createRadialGradient(0, 0, 0.02, 0, 0, 1);
+      for (const [o, c] of stops) g.addColorStop(o, c);
+      fc.fillStyle = g;
+      fc.fillRect(-4, -4, 8, 8);                 // 全面(スケール空間)
+      fc.restore();
+    };
+    // 中心は明るく残し周辺だけ夜へ(顔ははっきり・端は暗く)。処理は1回のみ。
+    fc.globalCompositeOperation = 'multiply';
+    fillEllipseGrad(0.36, FW*0.60, FH*0.52, [
+      [0, 'rgb(198,200,206)'], [0.45, 'rgb(150,155,166)'],
+      [0.72, 'rgb(64,68,80)'], [1, 'rgb(14,16,24)']]);
+    // ビネット: 端を透明化して黒へ同化(1回のみ)
+    fc.globalCompositeOperation = 'destination-in';
+    fillEllipseGrad(0.36, FW*0.52, FH*0.50, [
+      [0, 'rgba(0,0,0,1)'], [0.62, 'rgba(0,0,0,0.96)'],
+      [0.85, 'rgba(0,0,0,0.32)'], [1, 'rgba(0,0,0,0)']]);
+    def.can = can; facesReady++;
+  };
+  img.src = def.src;
+}
+FACE_SET.forEach(buildFace);
+
+const PHASES = [
+  {jp:'種 — Seed', en:'seed'}, {jp:'発芽 — Sprout', en:'sprout'},
+  {jp:'流動 — Flow', en:'flow'}, {jp:'開花 — Bloom', en:'bloom'},
+  {jp:'飽和 — Saturation', en:'saturation'}, {jp:'崩壊 — Dissolve', en:'dissolve'},
+  {jp:'還元 — Return', en:'return'}, {jp:'再生 — Rebirth', en:'rebirth'},
+];
+const KF = {
+  vis:     [0.10, 0.38, 0.65, 0.90, 1.00, 0.85, 0.16, 0.12],
+  conn:    [0.03, 0.20, 0.45, 0.65, 0.80, 0.25, 0.02, 0.05],
+  glow:    [0.35, 0.52, 0.74, 0.94, 1.00, 0.55, 0.12, 0.45],
+  scatter: [0.02, 0.00, 0.00, 0.00, 0.05, 0.55, 0.95, 0.30],
+  river:   [0.00, 0.15, 0.85, 0.95, 0.90, 0.25, 0.00, 0.05],
+  an:      [0.10, 0.20, 0.45, 0.75, 0.95, 0.45, 0.08, 0.20],
+};
+const CYCLE_SEC = 96;
+function kf(name, p){
+  const a = Math.floor(p) % 8, b = (a + 1) % 8, t = p - Math.floor(p);
+  const s = t * t * (3 - 2 * t);
+  return KF[name][a] * (1 - s) + KF[name][b] * s;
+}
+
+function rnd3(){
+  let v = [Math.random()*2-1, Math.random()*2-1, Math.random()*2-1];
+  const l = Math.hypot(...v) || 1; return v.map(x => x / l);
+}
+/* ════════════════════════════════════════════════════════════
+   自己成長システム(要件定義 Phase 3 / §7 成長連動)
+   ─ 生態系は「世代(gen)」を重ねて自己進化する。
+     ・maturity(成熟度): HSEの実データ + 累積観測時間 + 世代数から算出。
+       高いほど密度・接続・多様性が増す = より複雑に。
+     ・traits(形質): 各地形の出現しやすさ。世代交代ごとに突然変異し、
+       生き残った傾向が次世代へ継承される = 毎回ちがう生態系へ分岐。
+     ・chaosLv(乱雑度): 世代とともに上昇。ゆらぎ幅・変異率が増す = よりランダムに。
+     ・hueShift(色相ドリフト): 世代ごとに色が少しずつ移ろい、新しい色が生まれる。
+     ・遺伝子は localStorage に保存され、再訪すると"続きから"育つ。
+   ════════════════════════════════════════════════════════════ */
+const GENOME_KEY = 'hse-an-genome-v1';
+const BIOME_TYPES = ['forest','flower','city','crystal','mech','leaf'];
+
+function defaultGenome(){
+  const tr = {};
+  for (const b of BIOME_TYPES) tr[b] = 1;          // 初期は等確率
+  return { v:1, gen:0, seconds:0, visits:0, traits:tr,
+           rarity:{lotus:1, pagoda:1, satellite:1}, chaosLv:0.25, hueShift:0 };
+}
+function loadGenome(){
+  try {
+    const raw = localStorage.getItem(GENOME_KEY);
+    if (!raw) return defaultGenome();
+    const g = JSON.parse(raw);
+    if (!g || g.v !== 1 || !g.traits) return defaultGenome();
+    for (const b of BIOME_TYPES) if (typeof g.traits[b] !== 'number') g.traits[b] = 1;
+    return g;
+  } catch(e){ return defaultGenome(); }
+}
+function saveGenome(){
+  try { localStorage.setItem(GENOME_KEY, JSON.stringify(genome)); } catch(e){}
+}
+const genome = loadGenome();
+genome.visits = (genome.visits|0) + 1;
+
+// HSEの実データ(楽曲数・AN選数)。取得できれば成熟度の主軸になる。
+// 未提供時はローカルの育ち(世代・観測時間)だけで成長する。
+let hseStats = { tracks:0, selections:0, ok:false };
+(function fetchHSE(){
+  const base = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://127.0.0.1:5001' : 'https://open-gate-sutra-production.up.railway.app';
+  fetch(base + '/api/stats', {mode:'cors'})
+    .then(r => r.ok ? r.json() : null)
+    .then(j => { if (j && typeof j.tracks === 'number'){
+      hseStats = { tracks:j.tracks|0, selections:j.selections|0, ok:true }; } })
+    .catch(() => {});   // 未実装/オフラインでも静かに続行
+})();
+
+// 成熟度: HSEデータ(最大0.5)+ 世代(最大0.28)+ 累積観測(最大0.22)
+function maturity(){
+  const hse = hseStats.ok
+    ? Math.min(1, Math.log10(1 + hseStats.tracks) / 2.6            // 400曲で概ね1
+              * 0.75 + Math.min(1, hseStats.selections/60) * 0.25)
+    : 0;
+  const byGen  = Math.min(1, genome.gen / 40);
+  const byTime = Math.min(1, genome.seconds / 5400);               // 90分で満了
+  return Math.max(0.12, Math.min(1, hse*0.5 + byGen*0.28 + byTime*0.22));
+}
+
+// 世代交代: 形質を突然変異させ、乱雑度と色相を進め、保存する。
+function evolve(){
+  genome.gen++;
+  const mut = 0.16 + genome.chaosLv * 0.5;          // 乱雑度が高いほど大きく変異
+  for (const b of BIOME_TYPES){
+    genome.traits[b] *= 1 + (Math.random()*2 - 1) * mut;
+    genome.traits[b] = Math.max(0.18, Math.min(4.5, genome.traits[b]));
+  }
+  // まれに大変異(ある地形が一気に繁栄する)
+  if (Math.random() < 0.18){
+    const b = BIOME_TYPES[(Math.random()*BIOME_TYPES.length)|0];
+    genome.traits[b] = Math.min(4.5, genome.traits[b] * (1.6 + Math.random()));
+  }
+  for (const k in genome.rarity){                    // 稀少要素も少しずつ育つ
+    genome.rarity[k] = Math.max(0.3, Math.min(3.5,
+      genome.rarity[k] * (1 + (Math.random()*2-1)*mut*0.7) + 0.02));
+  }
+  genome.chaosLv = Math.min(1, genome.chaosLv + 0.012 + Math.random()*0.01);
+  genome.hueShift = (genome.hueShift + (Math.random()*2-1)*18 + 360) % 360;
+  saveGenome();
+}
+// 形質の重み付き抽選
+function pickTrait(){
+  let tot = 0; for (const b of BIOME_TYPES) tot += genome.traits[b];
+  let r = Math.random()*tot;
+  for (const b of BIOME_TYPES){ r -= genome.traits[b]; if (r <= 0) return b; }
+  return 'forest';
+}
+
+let biomes = [];
+// 毎周期ちがう構成にする: 支配的バイオームをランダムに選び、他をランダム配合。
+// これで「森の周」「都市の周」「花の周」…と明確に印象が変わる。
+function makeBiomes(){
+  biomes = [];
+  const M = maturity();
+  // 成熟するほど地域数が増える(多様化)。乱雑度が高いほどばらつく。
+  const nB = 5 + Math.round(M*5) + (Math.random()*(1 + genome.chaosLv*3)|0);
+  const dominant = pickTrait();                       // 形質に従う支配地形
+  for (let i = 0; i < nB; i++){
+    const r = Math.random();
+    // 支配地形の割合は乱雑度が上がるほど下がる=世代とともに混沌へ
+    const t = (r < 0.42 - genome.chaosLv*0.18) ? dominant : pickTrait();
+    biomes.push({ t, v: rnd3(), w: 0.7 + Math.random()*(0.6 + genome.chaosLv*0.6) });
+  }
+  biomes.push({ t: dominant, v: rnd3(), w: 1.2 + Math.random()*0.4 });
+}
+function biomeOf(p){
+  let best = 'forest', bs = -9;
+  for (const b of biomes){
+    const d = (p.x*b.v[0] + p.y*b.v[1] + p.z*b.v[2]) * b.w;
+    if (d > bs){ bs = d; best = b.t; }
+  }
+  return best;
+}
+
+let nodes = [], links = [], rivers = [], flies = [];
+let growth = 0.60;
+function rebuild(){
+  makeBiomes();
+  // 成熟度で全体の密度が上がる(EVOは1.0〜1.55倍。性能のため上限を設ける)
+  const M = maturity();
+  const EVO = 1 + M * 0.55;
+  const N = Math.round(((MOBILE ? 130 : 210) + growth * (MOBILE ? 150 : 300)) * EVO);
+  const GA = Math.PI * (3 - Math.sqrt(5));
+  nodes = [];
+  for (let i = 0; i < N; i++){
+    const y = 1 - (i / (N - 1)) * 2;
+    const r = Math.sqrt(1 - y * y), th = GA * i;
+    const p = { x: Math.cos(th) * r, y, z: Math.sin(th) * r };
+    nodes.push({ ...p, type: biomeOf(p),
+      size: 0.7 + Math.random() * 1.8,
+      seed: Math.random() * Math.PI * 2,
+      born: Math.random(),
+      vari: Math.random(), vari2: Math.random(),
+      jx: Math.random()-.5, jy: Math.random()-.5, jz: Math.random()-.5 });
+  }
+  const lotusN = 1 + Math.round(growth * 2 * genome.rarity.lotus * EVO);
+  const fl = nodes.filter(n => n.type === 'flower');
+  for (let k = 0; k < lotusN && k < fl.length; k++) fl[(Math.random()*fl.length)|0].type = 'lotus';
+  // 森・花の下草として葉を散らす(葉バイオーム以外にも生える)
+  for (const n of nodes){
+    if ((n.type === 'forest' && Math.random() < 0.22) ||
+        (n.type === 'flower' && Math.random() < 0.14)) n.type = 'leaf';
+  }
+
+  links = [];
+  const seen = new Set();
+  for (let i = 0; i < N; i++){
+    const cand = [];
+    for (let j = 0; j < N; j++){
+      if (i === j) continue;
+      const d = nodes[i].x*nodes[j].x + nodes[i].y*nodes[j].y + nodes[i].z*nodes[j].z;
+      if (d > 0.94) cand.push([j, d]);
+    }
+    cand.sort((a,b) => b[1] - a[1]);
+    for (const [j] of cand.slice(0, 2)){
+      const key = Math.min(i,j) + '_' + Math.max(i,j);
+      if (!seen.has(key)){ seen.add(key); links.push([i, j, Math.random()]); }
+    }
+  }
+  rivers = [];
+  for (let k = 0; k < 1 + Math.floor(growth * 2.5 * EVO); k++){
+    let a = rnd3(), b = rnd3();
+    const d = a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+    b = b.map((v,i) => v - d*a[i]); const lb = Math.hypot(...b)||1; b = b.map(v=>v/lb);
+    rivers.push({ A:a, B:b, off: Math.random()*9, wob: 0.5 + Math.random()*1.2 });
+  }
+  flies = Array.from({length: MOBILE ? 6 : 12}, () => ({
+    A: rnd3(), ph: Math.random()*9, sp: 0.15+Math.random()*0.2, r: 1.05+Math.random()*0.25 }));
+
+  // ── カオス層(参照画の「詰まった密度」へ) ──
+  // 地表の苔・岩・下草ドット(球面を埋める微細テクスチャ)
+  const TN = Math.round((MOBILE ? 260 : 620) * (0.6 + growth*0.7) * EVO);
+  const GA2 = Math.PI * (3 - Math.sqrt(5));
+  terrain = [];
+  const tcols = [C.leafD, C.pine, C.leafG, C.burg, '70,74,84', '38,52,44'];
+  for (let i = 0; i < TN; i++){
+    const y = 1 - (i/(TN-1))*2, r = Math.sqrt(1-y*y), th = GA2*i + 0.37;
+    terrain.push({ x: Math.cos(th)*r, y, z: Math.sin(th)*r,
+      c: tcols[(Math.random()*tcols.length)|0],
+      s: 0.7 + Math.random()*1.1, seed: Math.random()*9 });
+  }
+  // 呼吸する赤い糸(現れては消えるカオスの網)
+  chaosPairs = [];
+  const CPn = Math.round((MOBILE ? 16 : 34) * (0.5 + growth) * EVO * (1 + genome.chaosLv*0.8));
+  for (let k = 0; k < CPn; k++){
+    const i = (Math.random()*nodes.length)|0, j = (Math.random()*nodes.length)|0;
+    if (i !== j) chaosPairs.push([i, j, Math.random()*9, Math.random()]);
+  }
+  // ビーズつき軌道環+明滅ビーズ
+  beadRings = [];
+  for (let k = 0; k < 2 + Math.round(growth*2*EVO); k++){
+    let a = rnd3(), b = rnd3();
+    const d = a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+    b = b.map((v,i) => v - d*a[i]); const lb = Math.hypot(...b)||1; b = b.map(v=>v/lb);
+    beadRings.push({ A:a, B:b, rr: 1.10 + k*0.13, sp: 0.05+Math.random()*0.1, ph: Math.random()*9 });
+  }
+  // 球面から浮いたHUDリング(参照画の浮遊する円環)
+  floatRings = Array.from({length: 3 + Math.round(growth*3*EVO*genome.rarity.satellite)}, () => ({
+    v: rnd3(), rr: 1.06 + Math.random()*0.14, s: 0.5+Math.random()*0.8, ph: Math.random()*9 }));
+  // 内部を漂う胞子
+  spores = Array.from({length: MOBILE ? 24 : 54}, () => {
+    const v = rnd3(), rad = 0.35 + Math.random()*0.6;
+    return { x: v[0]*rad, y: v[1]*rad, z: v[2]*rad,
+      dr: (Math.random()-.5)*0.0004, ph: Math.random()*9 };
+  });
+
+  // ── 蔓(生長し・絡まり・ノードを繋ぐ) ──
+  // 近いノード対を選び、球面に沿った弧を"生長"させる。途中に葉。
+  vines = [];
+  const VN = Math.round((MOBILE ? 34 : 78) * (0.4 + growth) * EVO);   // 増量
+  for (let k = 0; k < VN; k++){
+    const i = (Math.random()*nodes.length)|0;
+    // iの近傍からjを選ぶ(絡まり=近距離)
+    let j = -1, bd = 0.90;
+    for (let tries = 0; tries < 8; tries++){
+      const c = (Math.random()*nodes.length)|0;
+      const d = nodes[i].x*nodes[c].x + nodes[i].y*nodes[c].y + nodes[i].z*nodes[c].z;
+      if (c !== i && d > bd){ bd = d; j = c; }
+    }
+    if (j < 0) continue;
+    vines.push({ i, j,
+      grow: Math.random(),                 // 生長位相(0..1、時間で伸縮)
+      gsp: 0.02 + Math.random()*0.04,
+      bow: (Math.random()-.5)*0.7,          // 弧の膨らみ(絡まり感・強め)
+      leaves: 3 + (Math.random()*5|0),      // 葉を増やす
+      lseed: Math.random(),                 // 葉色の個体差
+      seed: Math.random()*9 });
+  }
+
+  // ── 浮遊する般若心経の漢字(球面に宿る) ──
+  // 般若心経(玄奘訳)本文に実在する字のみ。重複を除いた一意集合。
+  const KJ = ['摩','訶','般','若','波','羅','蜜','多','心','経',
+    '観','自','在','菩','薩','行','深','時','照','見','五','蘊','皆','空','度','一','切','苦','厄',
+    '舎','利','子','色','不','異','空','即','是','受','想','識','亦','復','如','諸','法','相',
+    '生','滅','垢','浄','増','減','故','中','無','眼','耳','鼻','舌','身','意',
+    '声','香','味','触','界','乃','至','明','尽','老','死','集','道','智','知','得','以','所',
+    '提','埵','依','故','罣','礙','有','恐','怖','遠','離','顛','倒','夢','究','竟','涅','槃',
+    '三','世','仏','阿','耨','藐','大','神','咒','上','等','能','除','真','実','虚',
+    '説','曰','羯','諦','僧','婆','訶'];
+  kanji = [];
+  const KN = Math.round((MOBILE ? 24 : 52) * (0.5 + growth*0.6) * EVO);  // 大幅増
+  for (let k = 0; k < KN; k++){
+    const v = rnd3();
+    kanji.push({ x:v[0], y:v[1], z:v[2],
+      ch: KJ[(Math.random()*KJ.length)|0],
+      size: 0.8 + Math.random()*0.7,
+      big: Math.random() < 0.18,            // 少数を大きく(空・色など主要語の風格)
+      ph: Math.random()*9 });
+  }
+}
+let terrain = [], chaosPairs = [], beadRings = [], floatRings = [], spores = [], vines = [], kanji = [];
+rebuild();
+
+const PERSP = 3.2;
+let userRy = 0, userRx = 0;
+function project(p, ry, rx, breath, scatter){
+  const sc = 1 + scatter * 0.9;
+  let x = p.x + (p.jx||0)*scatter*1.4, y = p.y + (p.jy||0)*scatter*1.4, z = p.z + (p.jz||0)*scatter*1.4;
+  const l = Math.hypot(x,y,z)||1; x=x/l*sc; y=y/l*sc; z=z/l*sc;
+  const x1 = x*Math.cos(ry) + z*Math.sin(ry), z1 = -x*Math.sin(ry) + z*Math.cos(ry);
+  const y1 = y*Math.cos(rx) - z1*Math.sin(rx), z2 = y*Math.sin(rx) + z1*Math.cos(rx);
+  const s = PERSP / (PERSP - z2);
+  return { sx: CX + x1*R*s*breath, sy: CY + y1*R*s*breath, z: z2, s };
+}
+// 内部点用(球面に正規化しない)投影 — 胞子など
+function projRaw(x, y, z, ry, rx, breath){
+  const x1 = x*Math.cos(ry) + z*Math.sin(ry), z1 = -x*Math.sin(ry) + z*Math.cos(ry);
+  const y1 = y*Math.cos(rx) - z1*Math.sin(rx), z2 = y*Math.sin(rx) + z1*Math.cos(rx);
+  const s = PERSP / (PERSP - z2);
+  return { sx: CX + x1*R*s*breath, sy: CY + y1*R*s*breath, z: z2, s };
+}
+
+/* 色系: TW=今ループのテーマ色(draw冒頭で更新)。アイコンの色をテーマへ寄せる
+   ことで"全体を塗る"のではなく"アイコン自体の色"で色調を変える。 */
+let TW = [200,200,200];
+let TINT = 1;                                    // 素テーマ時は0(元の色のまま)                          // テーマ色 rgb(draw冒頭で設定)
+const _cl = v => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+/* 色相回転(世代の色相ドリフト用)。進化するほど固有の色へ移ろう。 */
+function hueRot([r,g,b], deg){
+  const a = deg*Math.PI/180, c = Math.cos(a), s = Math.sin(a);
+  const m = [0.213+c*0.787-s*0.213, 0.715-c*0.715-s*0.715, 0.072-c*0.072+s*0.928,
+             0.213-c*0.213+s*0.143, 0.715+c*0.285+s*0.140, 0.072-c*0.072-s*0.283,
+             0.213-c*0.213-s*0.787, 0.715-c*0.715+s*0.715, 0.072+c*0.928+s*0.072];
+  return [_cl(r*m[0]+g*m[1]+b*m[2]), _cl(r*m[3]+g*m[4]+b*m[5]), _cl(r*m[6]+g*m[7]+b*m[8])];
+}
+// col: base をテーマへ amt 寄せ、さらに個体seedで明度+寒暖を振る(毎周期ちがう色)
+function col(base, seed, jit, amt){
+  amt *= TINT;
+  const p = base.split(',').map(Number);
+  const r = p[0] + (TW[0]-p[0])*amt, g = p[1] + (TW[1]-p[1])*amt, b = p[2] + (TW[2]-p[2])*amt;
+  const br = 1 + (seed - 0.5) * jit, w = ((seed*7) % 1 - 0.5) * 22;
+  return `${_cl(r*br + w)},${_cl(g*br)},${_cl(b*br - w)}`;
+}
+// TC: テーマへ amt 寄せるだけ(ジッターなし)
+function TC(base, amt){
+  amt *= TINT;
+  const p = base.split(',').map(Number);
+  return `${_cl(p[0]+(TW[0]-p[0])*amt)},${_cl(p[1]+(TW[1]-p[1])*amt)},${_cl(p[2]+(TW[2]-p[2])*amt)}`;
+}
+
+/* ════════ アイコン群(各種にバリエーション=複雑系) ════════ */
+function pineAt(x, y, s, a, tiers, wRatio){
+  ctx.strokeStyle = `rgba(${C.trunk},${a})`; ctx.lineWidth = Math.max(0.6, s*0.14);
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - s*1.1); ctx.stroke();
+  ctx.fillStyle = `rgba(${C.pine},${a})`;
+  for (let k = 0; k < tiers; k++){
+    const w = s*wRatio*(1.0 - k*0.8/tiers), yy = y - s*(0.45 + k*1.1/tiers);
+    ctx.beginPath(); ctx.moveTo(x, yy - s*0.55);
+    ctx.lineTo(x - w*0.55, yy); ctx.lineTo(x + w*0.55, yy); ctx.closePath(); ctx.fill();
+  }
+}
+function tree(x, y, s, a, v, v2){
+  const leafG = col(C.leafG, v2, 0.5, 0.42), leafD = col(C.leafD, v2, 0.5, 0.42),  // テーマ+個体差
+        pine = col(C.pine, v2, 0.45, 0.42), trunk = col(C.trunk, v2, 0.3, 0.25);
+  if (v < 0.22){ ctx.strokeStyle=`rgba(${trunk},${a})`; ctx.lineWidth=Math.max(0.6,s*0.14);
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-s*1.1);ctx.stroke();
+    ctx.fillStyle=`rgba(${pine},${a})`;
+    for(let k=0;k<3;k++){const w=s*(1-k*0.27),yy=y-s*(0.45+k*0.37);
+      ctx.beginPath();ctx.moveTo(x,yy-s*0.55);ctx.lineTo(x-w*0.55,yy);ctx.lineTo(x+w*0.55,yy);ctx.closePath();ctx.fill();}
+    return; }
+  if (v < 0.40){ ctx.strokeStyle=`rgba(${trunk},${a})`; ctx.lineWidth=Math.max(0.6,s*0.14);
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y-s*1.4);ctx.stroke();
+    ctx.fillStyle=`rgba(${pine},${a})`;
+    for(let k=0;k<4;k++){const w=s*0.7*(1-k*0.2),yy=y-s*(0.5+k*0.35);
+      ctx.beginPath();ctx.moveTo(x,yy-s*0.6);ctx.lineTo(x-w*0.55,yy);ctx.lineTo(x+w*0.55,yy);ctx.closePath();ctx.fill();}
+    return; }
+  if (v < 0.50){                                                 // 若木
+    ctx.strokeStyle = `rgba(${trunk},${a})`; ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - s*0.7); ctx.stroke();
+    ctx.fillStyle = `rgba(${leafG},${a})`;
+    ctx.beginPath(); ctx.arc(x, y - s*0.85, s*0.4, 0, 7); ctx.fill(); return;
+  }
+  const tall = v > 0.82, hh = tall ? 1.6 : 1.15;                 // 広葉樹/高木
+  ctx.strokeStyle = `rgba(${trunk},${a})`; ctx.lineWidth = Math.max(0.6, s*0.16);
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - s*hh); ctx.stroke();
+  const mixG = v2 < 0.5 ? leafG : leafD;
+  for (const [dx, dy, rr, cc] of [[-0.32,-0.85,0.5,leafD],[0.3,-1.0,0.55,mixG],[0,-1.3,0.6,mixG]]){
+    ctx.fillStyle = `rgba(${cc},${a})`;
+    ctx.beginPath(); ctx.arc(x + dx*s, y + (dy - (tall?0.35:0))*s, rr*s*(tall?0.85:1), 0, 7); ctx.fill();
+  }
+}
+function flower(x, y, s, a, v, v2, bloom){
+  const fcol = col(v2 < 0.55 ? C.flower : (v2 < 0.85 ? C.burg : C.pink), v, 0.4, 0.55);
+  if (bloom < 0.25){                                             // 蕾
+    ctx.fillStyle = `rgba(${fcol},${a*0.8})`;
+    ctx.beginPath(); ctx.ellipse(x, y, s*0.28, s*0.5, 0.3, 0, 7); ctx.fill(); return;
+  }
+  const pet = 5 + (v*4|0), rr = s*(0.5 + bloom*0.5);
+  for (let k = 0; k < pet; k++){
+    const th = k/pet*Math.PI*2 + v*7;
+    ctx.fillStyle = `rgba(${fcol},${a*(0.45+bloom*0.4)})`;
+    ctx.beginPath();
+    ctx.ellipse(x + Math.cos(th)*rr, y + Math.sin(th)*rr, rr*0.6, rr*0.34, th, 0, 7);
+    ctx.fill();
+  }
+  ctx.fillStyle = `rgba(${C.win},${a*0.85})`;
+  ctx.beginPath(); ctx.arc(x, y, s*0.18, 0, 7); ctx.fill();
+}
+function lotus(x, y, s, a, glow){
+  for (let ring = 2; ring >= 0; ring--){
+    const pet = 6 + ring*2, rr = s*(0.5 + ring*0.42);
+    for (let k = 0; k < pet; k++){
+      const th = k/pet*Math.PI*2 + ring*0.3;
+      ctx.fillStyle = `rgba(${TC(C.lotus,0.35)},${a*(0.5 - ring*0.12)})`;
+      ctx.beginPath();
+      ctx.ellipse(x + Math.cos(th)*rr, y + Math.sin(th)*rr, rr*0.55, rr*0.28, th, 0, 7);
+      ctx.fill();
+    }
+  }
+  const g = ctx.createRadialGradient(x, y, 0, x, y, s*0.55);
+  g.addColorStop(0, `rgba(${C.lotusCore},${a*glow})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, s*0.55, 0, 7); ctx.fill();
+}
+function spire(x, y, s, a, v){
+  if (v < 0.33){                                                 // 三連水晶塔
+    for (let k = 0; k < 3; k++){
+      const dx = (k-1)*s*0.5, hh = s*(1.5 - Math.abs(k-1)*0.45);
+      const g = ctx.createLinearGradient(x, y-hh, x, y);
+      g.addColorStop(0, `rgba(${TC(C.spire,0.4)},${a})`); g.addColorStop(1, `rgba(${TC(C.spire,0.4)},${a*0.15})`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(x+dx, y-hh);
+      ctx.lineTo(x+dx-s*0.2, y); ctx.lineTo(x+dx+s*0.2, y); ctx.closePath(); ctx.fill();
+    }
+  } else if (v < 0.66){                                          // 単尖塔+輪
+    const hh = s*1.9;
+    const g = ctx.createLinearGradient(x, y-hh, x, y);
+    g.addColorStop(0, `rgba(${TC(C.spire,0.4)},${a})`); g.addColorStop(1, `rgba(${TC(C.spire,0.4)},${a*0.12})`);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(x, y-hh);
+    ctx.lineTo(x-s*0.24, y); ctx.lineTo(x+s*0.24, y); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = `rgba(${TC(C.mech,0.4)},${a*0.6})`; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.ellipse(x, y-hh*0.55, s*0.5, s*0.14, 0, 0, 7); ctx.stroke();
+  } else {                                                       // 双碑
+    for (const dx of [-0.3, 0.35]){
+      ctx.fillStyle = `rgba(${TC(C.spire,0.4)},${a*0.8})`;
+      ctx.fillRect(x+dx*s - s*0.12, y - s*(1.1+Math.abs(dx)), s*0.24, s*(1.1+Math.abs(dx)));
+    }
+  }
+  ctx.fillStyle = `rgba(${C.foam},${a*0.9})`;
+  ctx.fillRect(x-0.6, y - s*1.9 - 1, 1.2, 1.2);
+}
+/* 葉のマーク(4種: 単葉・三つ葉・双葉・細長い笹) */
+function leafIcon(x, y, s, a, v, v2, t){
+  const g = col(C.leafG, v2, 0.5, 0.42), d = col(C.leafD, v2, 0.5, 0.42);
+  const sway = Math.sin(t*0.5 + v2*9) * 0.12;
+  const one = (ang, len, cc) => {                 // 尖った葉1枚(葉脈つき)
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang + sway);
+    ctx.fillStyle = `rgba(${cc},${a})`;
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(len*0.35, -len*0.30, len, 0);
+    ctx.quadraticCurveTo(len*0.35,  len*0.30, 0, 0);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${d},${a*0.75})`; ctx.lineWidth = 0.45;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(len*0.94, 0); ctx.stroke();
+    ctx.restore();
+  };
+  if (v < 0.3){                                    // 単葉+茎
+    ctx.strokeStyle = `rgba(${d},${a*0.85})`; ctx.lineWidth = Math.max(0.5, s*0.12);
+    ctx.beginPath(); ctx.moveTo(x, y + s*0.7); ctx.lineTo(x, y); ctx.stroke();
+    one(-1.15, s*1.7, g);
+  } else if (v < 0.58){                            // 三つ葉
+    one(-1.9, s*1.35, g); one(-0.55, s*1.35, d); one(-1.22, s*1.6, g);
+  } else if (v < 0.82){                            // 双葉(左右対称)
+    one(-2.5, s*1.3, d); one(-0.64, s*1.3, g);
+    ctx.strokeStyle = `rgba(${d},${a*0.8})`; ctx.lineWidth = Math.max(0.5, s*0.1);
+    ctx.beginPath(); ctx.moveTo(x, y + s*0.6); ctx.lineTo(x, y); ctx.stroke();
+  } else {                                         // 笹(細長3枚)
+    one(-1.55, s*2.1, g); one(-1.05, s*1.8, d); one(-2.05, s*1.8, d);
+  }
+}
+function crystal(x, y, s, a, v){
+  const tw = v > 0.5;
+  for (const dx of tw ? [-0.3, 0.3] : [0]){
+    ctx.fillStyle = `rgba(${TC(C.spire,0.4)},${a*0.8})`;
+    ctx.beginPath(); ctx.moveTo(x+dx*s, y - s*(tw?0.7:1));
+    ctx.lineTo(x+dx*s + s*0.4, y); ctx.lineTo(x+dx*s, y + s*0.4); ctx.lineTo(x+dx*s - s*0.4, y);
+    ctx.closePath(); ctx.fill();
+  }
+}
+function cityBlock(x, y, s, a, v, v2, t){
+  if (v < 0.30){                                                 // 五重塔
+    ctx.strokeStyle = `rgba(${C.trunk},${a})`; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - s*1.8); ctx.stroke();
+    ctx.fillStyle = `rgba(${C.burg},${a*0.9})`;
+    for (let k = 0; k < 4; k++){
+      const w = s*(1.15 - k*0.22), yy = y - s*(0.35 + k*0.42);
+      ctx.beginPath(); ctx.moveTo(x - w*0.6, yy);
+      ctx.quadraticCurveTo(x, yy - s*0.35, x + w*0.6, yy);
+      ctx.lineTo(x + w*0.42, yy + s*0.1); ctx.lineTo(x - w*0.42, yy + s*0.1);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = `rgba(${C.win},${a})`;
+    ctx.fillRect(x-0.6, y - s*1.95, 1.2, 2.2);                   // 相輪の光
+  } else if (v < 0.60){                                          // 高層タワー+点滅灯
+    const hh = s*(1.6 + v2*0.8);
+    ctx.fillStyle = `rgba(${TC(C.city,0.4)},${a*0.8})`;
+    ctx.fillRect(x - s*0.28, y - hh, s*0.56, hh);
+    ctx.strokeStyle = `rgba(${TC(C.city,0.4)},${a*0.7})`; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(x, y - hh); ctx.lineTo(x, y - hh - s*0.5); ctx.stroke();
+    const blink = Math.sin(t*2.2 + v2*9) > 0.5;
+    if (blink){ ctx.fillStyle = `rgba(${TC(C.mechR,0.35)},${a})`;
+      ctx.beginPath(); ctx.arc(x, y - hh - s*0.5, 1, 0, 7); ctx.fill(); }
+    ctx.fillStyle = `rgba(${C.win},${a*0.85})`;
+    for (let w = 0; w < 4; w++) ctx.fillRect(x - s*0.12, y - hh + 2 + w*Math.max(2, hh*0.2), 0.9, 0.9);
+  } else {                                                       // 低層街区
+    const n = 2 + (v2*3|0);
+    for (let k = 0; k < n; k++){
+      const bw = s*0.5, bh = s*(0.5 + ((v2*7+k)%1)*0.9), bx = x + (k-(n-1)/2)*bw*1.15;
+      ctx.fillStyle = `rgba(${TC(C.city,0.4)},${a*0.75})`;
+      ctx.fillRect(bx - bw/2, y - bh, bw, bh);
+      ctx.fillStyle = `rgba(${C.win},${a*0.85})`;
+      for (let w = 0; w < 2; w++) ctx.fillRect(bx - bw*0.2, y - bh + 1 + w*Math.max(2,bh*0.35), 0.9, 0.9);
+    }
+  }
+}
+function mech(x, y, s, a, v, v2, t){
+  if (v < 0.28){                                                 // HUDリング
+    ctx.strokeStyle = `rgba(${TC(C.mech,0.4)},${a})`; ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.arc(x, y, s, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, s*0.55, v2*7 + t*0.4, v2*7 + t*0.4 + 4.2); ctx.stroke();
+    ctx.fillStyle = `rgba(${v2<0.5?C.mechR:C.mech},${a})`;
+    ctx.beginPath(); ctx.arc(x, y, s*0.18, 0, 7); ctx.fill();
+  } else if (v < 0.52){                                          // 人工衛星
+    ctx.fillStyle = `rgba(${TC(C.city,0.4)},${a*0.9})`;
+    ctx.fillRect(x - s*0.22, y - s*0.22, s*0.44, s*0.44);
+    ctx.fillStyle = `rgba(${TC(C.mech,0.4)},${a*0.7})`;
+    ctx.fillRect(x - s*1.15, y - s*0.14, s*0.75, s*0.28);
+    ctx.fillRect(x + s*0.4,  y - s*0.14, s*0.75, s*0.28);
+    ctx.strokeStyle = `rgba(${TC(C.city,0.4)},${a*0.8})`; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(x, y - s*0.22); ctx.lineTo(x, y - s*0.7); ctx.stroke();
+  } else if (v < 0.76){                                          // 歯車
+    ctx.strokeStyle = `rgba(${TC(C.city,0.4)},${a})`; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.arc(x, y, s*0.6, 0, 7); ctx.stroke();
+    for (let k = 0; k < 8; k++){
+      const th = k/8*Math.PI*2 + t*0.15*(v2<0.5?1:-1);
+      ctx.fillStyle = `rgba(${TC(C.city,0.4)},${a*0.9})`;
+      ctx.fillRect(x + Math.cos(th)*s*0.72 - 0.8, y + Math.sin(th)*s*0.72 - 0.8, 1.6, 1.6);
+    }
+    ctx.fillStyle = `rgba(${TC(C.mechR,0.35)},${a*0.8})`;
+    ctx.beginPath(); ctx.arc(x, y, s*0.14, 0, 7); ctx.fill();
+  } else {                                                       // 点の軌道環
+    ctx.strokeStyle = `rgba(${TC(C.mech,0.4)},${a*0.5})`; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.ellipse(x, y, s, s*0.35, v2*3, 0, 7); ctx.stroke();
+    const th = t*0.8 + v2*9;
+    ctx.fillStyle = `rgba(${C.an},${a})`;
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(th)*s*Math.cos(v2*3) - Math.sin(th)*0, y + Math.sin(th)*s*0.35, 1.1, 0, 7);
+    ctx.fill();
+  }
+}
+
+/* ════════ AN — 球の中心に宿るキャラクター ════════
+   ぼんやり(低α+前面の生態系が薄く覆う)。
+   mecha 0=WAVE OF LOTUS(生身・髪の花) → 1=LUNA-07(機械)
+   eyes 0=伏し目 → 1=開眼。時間+ライフサイクルで移ろう           */
+function drawANCenter(t, aBase, facePos, eyes, mouth){
+  const hr = R * 0.30;                     // 頭の半径基準(v0.5: 大きく)
+  const x = CX + Math.sin(t*0.21)*2, y = CY - R*0.02 + Math.sin(t*0.3)*2.5;
+  const a = aBase;
+  if (a < 0.01) return;
+
+  // 4顔クロスフェード用の係数
+  const fp = ((facePos % 4) + 4) % 4;
+  const i0 = Math.floor(fp), i1 = (i0 + 1) % 4, ft0 = fp - i0;
+  const ft = ft0*ft0*(3 - 2*ft0);
+  const mechAmt = FACE_SET[i0].mech*(1-ft) + FACE_SET[i1].mech*ft;
+
+  // 後光(人間=暖色 ⇔ メカ=青白)
+  const aura = ctx.createRadialGradient(x, y + hr*0.3, 0, x, y + hr*0.3, hr*2.4);
+  aura.addColorStop(0, `rgba(${mechAmt<0.5?C.skin:C.an},${a*0.16})`);
+  aura.addColorStop(0.5, `rgba(${C.lotusCore},${a*0.06})`);
+  aura.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = aura;
+  ctx.beginPath(); ctx.arc(x, y + hr*0.3, hr*2.4, 0, 7); ctx.fill();
+
+  if (FACE_SET[0].can && FACE_SET[i1].can){
+    // ── 4バージョンの正面顔をクロスフェード(ぼんやり) ──
+    const fw = hr*2.9, fh = fw * (FH/FW);            // v0.5: 大きめ
+    // 目基準(EYE_OUT_Y=0.30)が中心やや上に来るよう配置。全4枚で同一。
+    const fx = x - fw*0.5, fy = y - fh*(EYE_OUT_Y/FH);
+    const clarity = Math.min(1, a*1.7);              // 顔をはっきり
+    ctx.save();
+    ctx.globalAlpha = clarity * (1 - ft);
+    if (FACE_SET[i0].can) ctx.drawImage(FACE_SET[i0].can, fx, fy, fw, fh);
+    ctx.globalAlpha = clarity * ft;
+    ctx.drawImage(FACE_SET[i1].can, fx, fy, fw, fh);
+    ctx.restore();
+
+    // 呼吸する光
+    const wa = a*0.14*(0.8+Math.sin(t*0.5)*0.2);
+    const warm = ctx.createRadialGradient(x, y, 0, x, y, hr*1.0);
+    warm.addColorStop(0, mechAmt<0.5 ? `rgba(${C.skin},${wa})` : `rgba(${C.an},${wa*0.9})`);
+    warm.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = warm; ctx.beginPath(); ctx.arc(x, y, hr*1.0, 0, 7); ctx.fill();
+
+    // (目もとの点滅光は高尾指示により廃止。素材の瞳をそのまま活かす)
+    // 胸の動力コア(メカ度で青が強まる)
+    const coreA = a*(0.3 + mechAmt*0.6)*(0.8+Math.sin(t*1.3)*0.2);
+    const cg = ctx.createRadialGradient(x, y + hr*1.55, 0, x, y + hr*1.55, hr*0.32);
+    cg.addColorStop(0, `rgba(${C.an},${coreA})`);
+    cg.addColorStop(0.5, `rgba(${C.lotusCore},${coreA*0.5})`);
+    cg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(x, y + hr*1.55, hr*0.32, 0, 7); ctx.fill();
+    return;   // 画像版はここで完結(以下は画像未読込時のフォールバック)
+  }
+
+  const m = mechAmt;
+  {
+  // 顔のほの明かり
+  const face = ctx.createRadialGradient(x, y, 0, x, y, hr*0.95);
+  face.addColorStop(0, `rgba(${C.skin},${a*0.30})`);
+  face.addColorStop(0.8, `rgba(${C.skin},${a*0.08})`);
+  face.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = face;
+  ctx.beginPath(); ctx.ellipse(x, y, hr*0.72, hr*0.9, 0, 0, 7); ctx.fill();
+  // 輪郭(顎のライン)
+  ctx.strokeStyle = `rgba(${C.skin},${a*0.35})`; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x - hr*0.66, y - hr*0.1);
+  ctx.quadraticCurveTo(x - hr*0.62, y + hr*0.62, x, y + hr*0.86);
+  ctx.quadraticCurveTo(x + hr*0.62, y + hr*0.62, x + hr*0.66, y - hr*0.1);
+  ctx.stroke();
+
+  // 髪 — ウェーブのかかった黒ボブ(設定画準拠)。sway で揺れる
+  ctx.strokeStyle = `rgba(${C.hair},${a*0.85})`;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = hr*0.5;
+  ctx.beginPath(); ctx.arc(x, y - hr*0.18, hr*0.82, Math.PI*1.02, Math.PI*1.98); ctx.stroke();
+  ctx.lineWidth = hr*0.3;
+  for (const sgn of [-1, 1]){                                    // サイドの房
+    const sw = Math.sin(t*0.5 + sgn)*hr*0.04;
+    ctx.beginPath();
+    ctx.moveTo(x + sgn*hr*0.72, y - hr*0.45);
+    ctx.quadraticCurveTo(x + sgn*(hr*0.92 + sw), y + hr*0.15,
+                         x + sgn*(hr*0.65 - sw), y + hr*0.72);
+    ctx.stroke();
+  }
+  ctx.lineWidth = hr*0.09;                                       // 跳ねる毛先
+  for (const [sgn, len, yy] of [[-1,0.5,0.55],[1,0.45,0.6],[-1,0.3,0.1],[1,0.35,0.05]]){
+    const sw = Math.sin(t*0.6 + yy*9)*hr*0.05;
+    ctx.beginPath();
+    ctx.moveTo(x + sgn*hr*0.8, y + hr*(yy - 0.25));
+    ctx.quadraticCurveTo(x + sgn*hr*(0.95+len*0.4), y + hr*yy + sw,
+                         x + sgn*hr*(1.05+len*0.5), y + hr*(yy+0.18) + sw);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+
+  // ── 表情:目(開閉クロスフェード)・眉・口 ──
+  const ey = y - hr*0.02, ew = hr*0.30, edx = hr*0.36;
+  for (const sgn of [-1, 1]){
+    const ex = x + sgn*edx;
+    // 眉(かすか)
+    ctx.strokeStyle = `rgba(${C.hair},${a*0.5})`; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ex - ew*0.5, ey - hr*0.2);
+    ctx.quadraticCurveTo(ex, ey - hr*0.26, ex + ew*0.5, ey - hr*0.2); ctx.stroke();
+    if (eyes > 0.05){                                            // 開いた目
+      const open = eyes;
+      ctx.strokeStyle = `rgba(${C.hair},${a*0.8*open})`; ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(ex - ew*0.55, ey);
+      ctx.quadraticCurveTo(ex, ey - ew*0.5*open, ex + ew*0.55, ey);
+      ctx.quadraticCurveTo(ex, ey + ew*0.34*open, ex - ew*0.55, ey);
+      ctx.stroke();
+      // 虹彩: 人間=茶 ⇔ メカ=シアン発光
+      const ir = `rgba(${m<0.5?'122,86,64':C.an},${a*0.85*open})`;
+      ctx.fillStyle = ir;
+      ctx.beginPath(); ctx.arc(ex, ey - ew*0.03, ew*0.22*Math.max(0.4,open), 0, 7); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${a*0.8*open})`;
+      ctx.beginPath(); ctx.arc(ex + ew*0.08, ey - ew*0.12, ew*0.05, 0, 7); ctx.fill();
+      if (m > 0.55){                                             // メカ時: 目の光輪
+        ctx.strokeStyle = `rgba(${C.an},${a*0.4*open*(m-0.55)*2})`; ctx.lineWidth = 0.6;
+        ctx.beginPath(); ctx.arc(ex, ey, ew*0.4, 0, 7); ctx.stroke();
+      }
+    }
+    if (eyes < 0.85){                                            // 伏し目(閉)
+      const cl = 1 - eyes;
+      ctx.strokeStyle = `rgba(${C.hair},${a*0.85*cl})`; ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(ex - ew*0.55, ey + ew*0.05);
+      ctx.quadraticCurveTo(ex, ey + ew*0.3, ex + ew*0.55, ey + ew*0.05);
+      ctx.stroke();
+      ctx.lineWidth = 0.7;                                       // まつ毛
+      for (const ldx of [-0.3, 0, 0.3]){
+        ctx.beginPath();
+        ctx.moveTo(ex + ldx*ew, ey + ew*(0.22 - Math.abs(ldx)*0.3));
+        ctx.lineTo(ex + (ldx+0.1*sgn)*ew, ey + ew*(0.4 - Math.abs(ldx)*0.3));
+        ctx.stroke();
+      }
+    }
+  }
+  // 鼻(点)と口(mouth: -1 憂い ↔ +1 微笑)
+  ctx.strokeStyle = `rgba(${C.hair},${a*0.4})`; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x - 1, y + hr*0.3); ctx.lineTo(x + 1, y + hr*0.3); ctx.stroke();
+  ctx.strokeStyle = `rgba(${C.flower},${a*0.6})`; ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(x - hr*0.16, y + hr*0.52);
+  ctx.quadraticCurveTo(x, y + hr*(0.52 + mouth*0.09), x + hr*0.16, y + hr*0.52);
+  ctx.stroke();
+  }
+
+  // ── 人間度⇔メカ度(WAVE OF LOTUS ⇔ LUNA-07) ──
+  if (m < 0.6){                                                  // 髪の赤い花(人間側)
+    const fa = a * (1 - m/0.6);
+    flower(x - hr*0.62, y - hr*0.62, hr*0.16, fa, 0.3, 0.2, 1);
+  }
+  if (m > 0.25){                                                 // 耳のインプラント(LUNA-07)
+    const ma = a * Math.min(1, (m - 0.25)/0.5);
+    const ex2 = x + hr*0.68, ey2 = y + hr*0.1;
+    ctx.fillStyle = `rgba(${TC(C.city,0.4)},${ma*0.9})`;
+    ctx.beginPath(); ctx.moveTo(ex2, ey2 - hr*0.14);
+    ctx.lineTo(ex2 + hr*0.12, ey2 - hr*0.05); ctx.lineTo(ex2 + hr*0.1, ey2 + hr*0.12);
+    ctx.lineTo(ex2 - hr*0.02, ey2 + hr*0.08); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = `rgba(${C.an},${ma})`;
+    ctx.beginPath(); ctx.arc(ex2 + hr*0.05, ey2, hr*0.035, 0, 7); ctx.fill();
+    // 頬の回路線
+    ctx.strokeStyle = `rgba(${C.an},${ma*0.4})`; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(ex2 - hr*0.05, ey2 + hr*0.1);
+    ctx.lineTo(x + hr*0.3, y + hr*0.42); ctx.lineTo(x + hr*0.28, y + hr*0.6); ctx.stroke();
+    // 首のユニット(節)
+    ctx.strokeStyle = `rgba(${TC(C.city,0.4)},${ma*0.7})`; ctx.lineWidth = 1;
+    for (let k = 0; k < 3; k++){
+      ctx.beginPath();
+      ctx.moveTo(x - hr*0.14, y + hr*(0.95 + k*0.09));
+      ctx.lineTo(x + hr*0.14, y + hr*(0.95 + k*0.09)); ctx.stroke();
+    }
+  }
+  // 胸の動力コア(常時・メカ度で青が強まる/§設定画 POWER UNIT)
+  const coreA = a * (0.35 + m*0.6) * (0.8 + Math.sin(t*1.3)*0.2);
+  const cg = ctx.createRadialGradient(x, y + hr*1.45, 0, x, y + hr*1.45, hr*0.3);
+  cg.addColorStop(0, `rgba(${C.an},${coreA})`);
+  cg.addColorStop(0.5, `rgba(${C.lotusCore},${coreA*0.5})`);
+  cg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = cg;
+  ctx.beginPath(); ctx.arc(x, y + hr*1.45, hr*0.3, 0, 7); ctx.fill();
+  if (m > 0.6){                                                  // 「07」刻印
+    ctx.fillStyle = `rgba(${TC(C.mechR,0.35)},${a*(m-0.6)*2*0.8})`;
+    ctx.font = `${Math.max(7, hr*0.14)}px ui-sans-serif`;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('07', x + hr*0.5, y + hr*1.3);
+  }
+}
+
+/* ── 背景静物 ── */
+const stars = Array.from({length: MOBILE ? 50 : 90}, () => ({
+  x: Math.random(), y: Math.random(), s: Math.random()*1.4+.3,
+  tw: Math.random()*Math.PI*2 }));
+const leaves = Array.from({length: MOBILE ? 4 : 7}, () => ({
+  x: Math.random(), y: Math.random(), s: 4+Math.random()*5,
+  v: .01+Math.random()*.02, rot: Math.random()*7, vr:(Math.random()-.5)*.01 }));
+
+/* ── メインループ ── */
+// ランダム化: 毎回ちがうリズム・ちがう始点にする(諸行無常=二度と同じ像はない)
+const RAND_T = Math.random()*9000;      // 全周期の位相を毎回ずらす
+const RAND_FACE = Math.random()*4;      // 顔巡回の開始位置もランダム
+let t0 = performance.now(), tOffset = RAND_T, auto = true, manualP = 0, dim = false;
+let lastPi = -1, lastNow = performance.now(), lastSave = genome.seconds;
+let mechaBase = 0.30;
+let faceCycleAuto = true;                 // 顔4版を自動巡回するか
+const FACE_SEC = 22;                       // 1版あたりの滞在秒(全4版で約88秒)
+let frames = 0, fpsT = performance.now();
+function draw(now){
+  const t = (now - t0) / 1000;
+  const p = auto ? ((t + tOffset) / CYCLE_SEC * 8) % 8 : manualP;
+  const vis = kf('vis',p), connA = kf('conn',p), glow = kf('glow',p),
+        scatter = kf('scatter',p), riverA = kf('river',p), anA = kf('an',p);
+  const ry = t * 0.045 + userRy, rx = 0.35 + Math.sin(t*0.03)*0.10 + userRx;
+  const breath = 1 + Math.sin(t*0.25)*0.013;
+
+  // ANの顔(4バージョン: 人間→経文→メカ経文→メカ)の巡回位置。
+  // auto=自動巡回(諸行無常) / スライダー操作時はその値へ寄せる。
+  // ライフサイクルの飽和(p4-6)でメカ側へ押し、崩壊で人間へ戻る。
+  const faceAuto = faceCycleAuto;
+  const facePos = faceAuto
+    ? (RAND_FACE + t/FACE_SEC + (p>4&&p<6 ? (p-4)*0.4 : 0)) % 4
+    : mechaBase*3;
+  const blink = Math.abs(Math.sin(t*0.9)) > 0.985 ? 0 : 1;
+  const eyes = Math.max(0, Math.min(1,
+    (0.25 + 0.55*Math.sin(t*0.033+2)) * (0.25+glow*0.75))) * blink;
+  const mouth = 0.25 + Math.sin(t*0.021)*0.45;
+
+  const TH = THEMES[themeIdx];               // 今ループの統一色
+  // 世代の色相ドリフトを重ね、進化するほど原色から離れた固有色になる
+  TINT = TH.plain ? 0 : 1;
+  const hs = TH.plain ? 0 : genome.hueShift;
+  TW = hueRot(TH.wash.split(',').map(Number), hs);
+  const mistC = hueRot(TH.mist.split(',').map(Number), hs).join(',');
+  const glowC = hueRot(TH.glow.split(',').map(Number), hs).join(',');
+
+  ctx.fillStyle = '#04060b'; ctx.fillRect(0, 0, W, H);
+  for (const st of stars){
+    st.tw += 0.02;
+    ctx.fillStyle = `rgba(200,214,235,${(0.1+Math.abs(Math.sin(st.tw))*0.22)*(0.4+glow*0.6)})`;
+    ctx.fillRect(st.x*W, st.y*H, st.s, st.s);
+  }
+  drawCelestial(t, vis, glow, mistC);          // 最背面の天体(銀河/地球/月/太陽/土星)
+
+  const mist = ctx.createRadialGradient(CX, CY, R*0.2, CX, CY, R*2.2);
+  mist.addColorStop(0, `rgba(${mistC},${0.22*glow})`); mist.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = mist; ctx.fillRect(0, 0, W, H);
+
+  const ground = ctx.createRadialGradient(CX - R*0.2, CY - R*0.25, R*0.1, CX, CY, R*1.02);
+  ground.addColorStop(0, `rgba(26,34,30,${0.5*vis*(1-scatter*0.8)})`);
+  ground.addColorStop(0.75, `rgba(14,18,20,${0.55*vis*(1-scatter*0.8)})`);
+  ground.addColorStop(1, 'rgba(4,6,11,0)');
+  ctx.fillStyle = ground;
+  ctx.beginPath(); ctx.arc(CX, CY, R*1.02*breath*(1+scatter*0.5), 0, 7); ctx.fill();
+
+  const pulse = 0.85 + Math.sin(t*0.9)*0.15;
+  const core = ctx.createRadialGradient(CX, CY, 0, CX, CY, R*0.5*pulse);
+  core.addColorStop(0, `rgba(${C.core},${0.12*glow})`);
+  core.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = core; ctx.fillRect(CX-R, CY-R, R*2, R*2);
+
+  // 地表の苔・岩ドット(球面を埋める微細テクスチャ=密度)
+  for (const tp of terrain){
+    const q = project(tp, ry, rx, breath, scatter);
+    if (q.z < -0.05) continue;
+    const depth = (q.z+1)/2;
+    const a = depth * 0.30 * vis * (1 - scatter*0.7) * (0.7 + Math.sin(t*0.6+tp.seed)*0.3);
+    if (a < 0.02) continue;
+    ctx.fillStyle = `rgba(${TC(tp.c,0.4)},${a})`;
+    ctx.beginPath(); ctx.arc(q.sx, q.sy, tp.s*q.s, 0, 7); ctx.fill();
+  }
+
+  // 開花〜飽和で網が濃く複雑になる係数(p=3が開花、4が飽和)
+  const bloomN = Math.max(0, 1 - Math.abs(p - 3.6) / 1.5);   // 開花前後で1に近づく
+
+  // 糸の網(開花時は太く明るくなり、光の粒が走る)
+  ctx.lineWidth = 0.55 + bloomN * 1.5;      // 開花で最大約2px
+  for (const [i, j, r] of links){
+    const a1 = nodes[i], b1 = nodes[j];
+    if (a1.born > vis || b1.born > vis) continue;
+    const qa = project(a1, ry, rx, breath, scatter), qb = project(b1, ry, rx, breath, scatter);
+    const depth = ((qa.z + qb.z)/2 + 1)/2;
+    const al = connA * (0.10 + depth*0.42) * (1 + bloomN*1.35);
+    if (al < 0.02) continue;
+    const mx = (qa.sx+qb.sx)/2 + ((qa.sx+qb.sx)/2 - CX)*0.07;
+    const my = (qa.sy+qb.sy)/2 + ((qa.sy+qb.sy)/2 - CY)*0.07;
+    ctx.strokeStyle = r < 0.45 ? `rgba(${C.web},${al*0.9})` : `rgba(${C.webW},${al*0.6})`;
+    ctx.beginPath(); ctx.moveTo(qa.sx, qa.sy);
+    ctx.quadraticCurveTo(mx, my, qb.sx, qb.sy); ctx.stroke();
+    // 開花時: 線上を光の粒が流れる(つながりが"生きている"感じ)
+    if (bloomN > 0.15 && depth > 0.45 && r < 0.6){
+      const u = ((t*0.35 + r*7) % 1);
+      const lx = (1-u)*(1-u)*qa.sx + 2*(1-u)*u*mx + u*u*qb.sx;
+      const ly = (1-u)*(1-u)*qa.sy + 2*(1-u)*u*my + u*u*qb.sy;
+      const pa = bloomN * depth * 0.9 * Math.sin(u*Math.PI);   // 端で消える
+      const prr = 3.2 + bloomN*2.2;
+      const pg = ctx.createRadialGradient(lx, ly, 0, lx, ly, prr);
+      pg.addColorStop(0, `rgba(${TC(C.core,0.45)},${pa})`);
+      pg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = pg;
+      ctx.beginPath(); ctx.arc(lx, ly, prr, 0, 7); ctx.fill();
+    }
+  }
+
+  // 開花時に増える"第2の網"(遠いノード同士も結ぶ=複雑化)
+  if (bloomN > 0.1){
+    ctx.lineWidth = 0.45 + bloomN * 1.1;
+    for (const [i, j, ph, r] of chaosPairs){
+      const qa = project(nodes[i], ry, rx, breath, scatter);
+      const qb = project(nodes[j], ry, rx, breath, scatter);
+      if (qa.z < 0.1 && qb.z < 0.1) continue;
+      const al = bloomN * 0.52 * (0.4 + ((qa.z+qb.z)/2+1)/2 * 0.6)
+               * (0.6 + 0.4*Math.sin(t*0.6 + ph));
+      if (al < 0.02) continue;
+      ctx.strokeStyle = r < 0.5 ? `rgba(${TC(C.an,0.4)},${al})` : `rgba(${C.webW},${al*0.8})`;
+      ctx.beginPath(); ctx.moveTo(qa.sx, qa.sy); ctx.lineTo(qb.sx, qb.sy); ctx.stroke();
+    }
+    // ノードの発光(開花のきらめき)
+    for (const n of nodes){
+      if (n.born > vis || n.vari > 0.45) continue;
+      const q = project(n, ry, rx, breath, scatter);
+      if (q.z < 0.25) continue;
+      const tw = 0.5 + 0.5*Math.sin(t*1.6 + n.seed*3);
+      const ga = bloomN * tw * (q.z-0.25)/0.75 * 0.5;
+      if (ga < 0.03) continue;
+      const rr = 5 + n.size*3;
+      const g2 = ctx.createRadialGradient(q.sx, q.sy, 0, q.sx, q.sy, rr);
+      g2.addColorStop(0, `rgba(${TC(C.core,0.5)},${ga})`);
+      g2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g2;
+      ctx.beginPath(); ctx.arc(q.sx, q.sy, rr, 0, 7); ctx.fill();
+    }
+  }
+
+  // 呼吸する赤い糸(現れては消えるカオスの網)
+  ctx.lineWidth = 0.5;
+  for (const [i, j, ph, r] of chaosPairs){
+    const breathe = Math.max(0, Math.sin(t*0.45 + ph));
+    const al = connA * 0.55 * breathe * breathe * breathe;
+    if (al < 0.02) continue;
+    const qa = project(nodes[i], ry, rx, breath, scatter), qb = project(nodes[j], ry, rx, breath, scatter);
+    if (qa.z < -0.3 && qb.z < -0.3) continue;
+    const mx = (qa.sx+qb.sx)/2 + ((qa.sx+qb.sx)/2 - CX)*0.18;
+    const my = (qa.sy+qb.sy)/2 + ((qa.sy+qb.sy)/2 - CY)*0.18;
+    ctx.strokeStyle = r < 0.7 ? `rgba(${C.web},${al})` : `rgba(${C.an},${al*0.7})`;
+    ctx.beginPath(); ctx.moveTo(qa.sx, qa.sy);
+    ctx.quadraticCurveTo(mx, my, qb.sx, qb.sy); ctx.stroke();
+  }
+
+  // ビーズつき軌道環(明滅ビーズが走る)
+  for (const ring of beadRings){
+    ctx.strokeStyle = `rgba(${C.webW},${0.10*glow})`; ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    const pts = [];
+    for (let i = 0; i <= 80; i++){
+      const th = i/80*Math.PI*2;
+      const q = project({ x:(Math.cos(th)*ring.A[0]+Math.sin(th)*ring.B[0])*ring.rr,
+                          y:(Math.cos(th)*ring.A[1]+Math.sin(th)*ring.B[1])*ring.rr,
+                          z:(Math.cos(th)*ring.A[2]+Math.sin(th)*ring.B[2])*ring.rr,
+                          jx:0,jy:0,jz:0 }, ry, rx, breath, 0);
+      pts.push(q);
+      i ? ctx.lineTo(q.sx, q.sy) : ctx.moveTo(q.sx, q.sy);
+    }
+    ctx.stroke();
+    for (let i = 0; i < 80; i += 10){                     // 静のビーズ
+      const q = pts[i], depth = (q.z+1)/2;
+      ctx.fillStyle = `rgba(${C.webW},${0.35*depth*glow})`;
+      ctx.beginPath(); ctx.arc(q.sx, q.sy, 0.9, 0, 7); ctx.fill();
+    }
+    const bi = Math.floor(((t*ring.sp + ring.ph) % 1) * 80); // 走る赤ビーズ
+    const bq = pts[bi];
+    ctx.fillStyle = `rgba(${TC(C.mechR,0.35)},${0.8*((bq.z+1)/2)*glow})`;
+    ctx.beginPath(); ctx.arc(bq.sx, bq.sy, 1.6, 0, 7); ctx.fill();
+  }
+
+  // 浮遊HUDリング(球面から浮いた円環)
+  for (const fr of floatRings){
+    const q = project({x:fr.v[0]*fr.rr, y:fr.v[1]*fr.rr, z:fr.v[2]*fr.rr, jx:0,jy:0,jz:0},
+                      ry, rx, breath, 0);
+    if (q.z < -0.1) continue;
+    const depth = (q.z+1)/2, a = depth * 0.5 * glow;
+    const s = R*0.045*fr.s*q.s;
+    ctx.strokeStyle = `rgba(${TC(C.mech,0.4)},${a})`; ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.arc(q.sx, q.sy, s, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(q.sx, q.sy, s*0.6, t*0.5+fr.ph, t*0.5+fr.ph+3.8); ctx.stroke();
+    ctx.fillStyle = `rgba(${Math.sin(t+fr.ph)>0?C.mechR:C.an},${a})`;
+    ctx.beginPath(); ctx.arc(q.sx, q.sy, s*0.16, 0, 7); ctx.fill();
+  }
+
+  // 蔓(生長し絡まり、葉をつけ、先が巻きひげになる)
+  for (const vn of vines){
+    const a1 = nodes[vn.i], b1 = nodes[vn.j];
+    const app = Math.min(1, (vis - Math.max(a1.born, b1.born)) / 0.18);
+    if (app <= 0) continue;                              // 徐々に発生
+    const qa = project(a1, ry, rx, breath, scatter), qb = project(b1, ry, rx, breath, scatter);
+    const depth = ((qa.z+qb.z)/2 + 1)/2;
+    if (depth < 0.12) continue;
+    const grow = 0.45 + 0.55*(0.5+0.5*Math.sin(t*vn.gsp + vn.seed));  // ゆっくり伸縮
+    const va = connA * (0.2 + depth*0.6) * grow * app;
+    if (va < 0.03) continue;
+    const gcol = col(C.leafG, vn.lseed, 0.5, 0.42), dcol = col(C.leafD, vn.lseed, 0.5, 0.42);
+    // 制御点(法線方向に膨らませて絡まり感)+ わずかな揺れ
+    const sway = Math.sin(t*0.4 + vn.seed)*6*qa.s;
+    const mx = (qa.sx+qb.sx)/2 + ((qa.sy - qb.sy))*vn.bow + sway;
+    const my = (qa.sy+qb.sy)/2 + ((qb.sx - qa.sx))*vn.bow;
+    const ex = qa.sx + (qb.sx-qa.sx)*grow, ey = qa.sy + (qb.sy-qa.sy)*grow;
+    // 蔓本体
+    ctx.strokeStyle = `rgba(${dcol},${va*0.9})`;
+    ctx.lineWidth = Math.max(0.7, 1.1*qa.s); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(qa.sx, qa.sy);
+    ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+    // 巻きひげ(先端が渦を巻く=生物感)
+    if (grow > 0.82){
+      const tang = Math.atan2(ey-my, ex-mx);
+      ctx.lineWidth = Math.max(0.5, 0.8*qa.s);
+      ctx.beginPath(); ctx.moveTo(ex, ey);
+      for (let c = 1; c <= 8; c++){
+        const rr = c*0.6*qa.s, aa = tang + c*0.7;
+        ctx.lineTo(ex + Math.cos(aa)*rr, ey + Math.sin(aa)*rr);
+      }
+      ctx.stroke();
+    }
+    // 葉(先が尖った形・左右交互・わずかに揺れる)
+    for (let L = 1; L <= vn.leaves; L++){
+      const u = L/(vn.leaves+1); if (u > grow) break;
+      const lx = (1-u)*(1-u)*qa.sx + 2*(1-u)*u*mx + u*u*ex;
+      const ly = (1-u)*(1-u)*qa.sy + 2*(1-u)*u*my + u*u*ey;
+      const base = Math.atan2(ey-qa.sy, ex-qa.sx);
+      const ang = base + (L%2?1:-1)*(1.0 + Math.sin(t*0.6+L+vn.seed)*0.18);
+      const ls = (1.6 + (L%3))*qa.s * Math.min(1,(grow-u)*4);
+      ctx.fillStyle = `rgba(${L%2?gcol:dcol},${va})`;
+      ctx.save(); ctx.translate(lx, ly); ctx.rotate(ang);
+      ctx.beginPath();                                   // 尖った葉(木の葉形)
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(ls*0.7, -ls*0.5, ls*2, 0);
+      ctx.quadraticCurveTo(ls*0.7, ls*0.5, 0, 0);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(${dcol},${va*0.7})`; ctx.lineWidth=0.4; // 葉脈
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(ls*2,0); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.lineCap = 'butt';
+  }
+
+  // 川
+  for (const rv of rivers){
+    for (let k = 0; k < 34; k++){
+      const th = ((t*0.10 + rv.off + k*0.07) % 2.6) - 1.3;
+      const wob = Math.sin(th*4*rv.wob)*0.06;
+      const q = project({ x: Math.cos(th)*rv.A[0] + Math.sin(th)*rv.B[0],
+                          y: Math.cos(th)*rv.A[1] + Math.sin(th)*rv.B[1] + wob,
+                          z: Math.cos(th)*rv.A[2] + Math.sin(th)*rv.B[2] },
+                        ry, rx, breath*1.005, 0);
+      if (q.z < -0.1) continue;
+      const depth = (q.z+1)/2;
+      const foam = Math.abs(Math.sin(th*7)) > 0.93;
+      ctx.fillStyle = foam
+        ? `rgba(${C.foam},${riverA*depth*0.8})`
+        : `rgba(${TC(C.water,0.42)},${riverA*(0.12+depth*0.5)*(1-k/40)})`;
+      ctx.beginPath(); ctx.arc(q.sx, q.sy, (foam?1.8:1.2)*q.s, 0, 7); ctx.fill();
+    }
+  }
+
+  // ノード: 奥半球 → AN(中心) → 手前半球(ANが薄く覆われる=ぼんやり)
+  const order = nodes.map((n) => [n, project(n, ry, rx, breath, scatter)])
+                     .sort((a,b) => a[1].z - b[1].z);
+  const drawNode = ([n, q]) => {
+    // 徐々に発生・消失(bornしきい値の前後0.18でうっすらフェード)
+    const app = Math.min(1, (vis - n.born) / 0.18);
+    if (app <= 0) return;
+    const depth = (q.z+1)/2;
+    const a = (0.12 + depth*0.8) * (1 - scatter*0.6) * (app*app*(3-2*app));
+    if (a < 0.02) return;
+    // 発生初期は少し小さく → 生長して定寸(ふわっと現れる)
+    const s = n.size * q.s * R * 0.030 * (0.85 + glow*0.3) * (0.6 + 0.4*app);
+    switch(n.type){
+      case 'forest':  tree(q.sx, q.sy, s*1.25, a, n.vari, n.vari2); break;
+      case 'flower':  flower(q.sx, q.sy, s*0.8, a, n.vari, n.vari2, Math.max(0,(glow-0.4)*1.6)); break;
+      case 'lotus':   lotus(q.sx, q.sy, s*1.5, a, glow); break;
+      case 'city':    cityBlock(q.sx, q.sy, s, a, n.vari, n.vari2, t); break;
+      case 'leaf':    leafIcon(q.sx, q.sy, s*0.95, a, n.vari, n.vari2, t); break;
+      case 'crystal': (n.vari < 0.5 ? spire : crystal)(q.sx, q.sy, s*1.15, a, n.vari2); break;
+      case 'mech':    mech(q.sx, q.sy, s*0.95, a, n.vari, n.vari2, t); break;
+    }
+  };
+  for (const nq of order) if (nq[1].z < 0.02) drawNode(nq);
+  drawANCenter(t, anA * (0.5 + growth*0.35) * (1 - scatter*0.55), facePos, eyes, mouth);
+  for (const nq of order) if (nq[1].z >= 0.02) drawNode(nq);
+
+  // 浮遊する漢字(球面に宿る般若心経の語)
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const kj of kanji){
+    const q = project(kj, ry, rx, breath, scatter);
+    if (q.z < 0.0) continue;                     // 手前半球のみ(可読性)
+    const depth = (q.z+1)/2;
+    const fade = 0.35 + 0.65*Math.abs(Math.sin(t*0.15 + kj.ph)); // ゆっくり明滅
+    const a = (depth-0.5)*2 * fade * glow * (kj.big ? 0.9 : 0.6);
+    if (a < 0.04) continue;
+    const fs = (kj.big ? R*0.075 : R*0.038) * kj.size * q.s;
+    ctx.font = `500 ${fs}px "Shippori Mincho","Hiragino Mincho ProN",serif`;
+    // 経文は淡い washi、主要語(big)はほのかな朱の縁
+    if (kj.big){
+      ctx.fillStyle = `rgba(${TC(C.mechR,0.35)},${a*0.25})`;
+      ctx.fillText(kj.ch, q.sx+0.6, q.sy+0.6);
+    }
+    ctx.fillStyle = `rgba(${TC(C.core,0.3)},${a})`;   // 漢字もテーマへ寄せる
+    ctx.fillText(kj.ch, q.sx, q.sy);
+  }
+
+  // 内部を漂う胞子(生命の粒)
+  for (const sp of spores){
+    sp.ph += 0.01;
+    const q = projRaw(sp.x, sp.y + Math.sin(sp.ph)*0.02, sp.z, ry, rx, breath);
+    const depth = (q.z+1)/2;
+    ctx.fillStyle = `rgba(${TC(C.lotus,0.35)},${(0.12+depth*0.25)*glow*Math.abs(Math.sin(sp.ph*1.7))})`;
+    ctx.beginPath(); ctx.arc(q.sx, q.sy, 0.9*q.s, 0, 7); ctx.fill();
+  }
+
+  // 蛍
+  for (const f of flies){
+    f.ph += 0.016 * f.sp;
+    const th = f.ph;
+    const q = project({ x: Math.cos(th)*f.A[0]*f.r + Math.sin(th)*f.A[2]*f.r,
+                        y: Math.cos(th)*f.A[1]*f.r + Math.sin(th)*f.A[0]*f.r,
+                        z: Math.cos(th)*f.A[2]*f.r + Math.sin(th)*f.A[1]*f.r },
+                      ry, rx, breath, 0);
+    const tw = 0.3 + Math.abs(Math.sin(f.ph*3))*0.7;
+    ctx.fillStyle = `rgba(${C.win},${0.5*tw*glow})`;
+    ctx.beginPath(); ctx.arc(q.sx, q.sy, 1.1, 0, 7); ctx.fill();
+  }
+
+  // 舞い落ちる葉
+  for (const lf of leaves){
+    lf.y = (lf.y + lf.v*0.016) % 1.1; lf.rot += lf.vr;
+    ctx.save(); ctx.translate(lf.x*W, lf.y*H); ctx.rotate(lf.rot + Math.sin(t+lf.s)*0.3);
+    ctx.fillStyle = `rgba(${C.leafD},0.35)`;
+    ctx.beginPath(); ctx.ellipse(0, 0, lf.s, lf.s*0.45, 0, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+
+  // 天候(雨・桜・雪・落ち葉)を球体まわりに舞わせる
+  drawWeather(t, weather === 'rain' ? glowC : '235,240,255');
+
+  drawRare(t);                                  // 隠れキャラ(超レア)
+
+  const vg = ctx.createRadialGradient(CX, CY, R*0.9, W/2, H/2, Math.max(W,H)*0.75);
+  vg.addColorStop(0, 'rgba(4,6,11,0)'); vg.addColorStop(1, 'rgba(2,3,6,0.94)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  if (dim){ ctx.fillStyle = 'rgba(4,6,11,0.35)'; ctx.fillRect(0, 0, W, H); }
+
+  const pi = Math.floor(p) % 8;
+  // 還元フェーズ(pi=6, ほぼ不可視)= 世代交代。
+  // 進化(突然変異)→ 色テーマ更新 → 新しい生態系を構築。毎周ちがう姿へ。
+  if (auto && pi === 6 && lastPi !== 6){ evolve(); nextTheme(); pickCelestial(t); rebuild(); }
+  lastPi = pi;
+  // 累積観測時間(成熟度の一部)。10秒ごとに保存。
+  genome.seconds += (now - lastNow) / 1000;
+  lastNow = now;
+  if (genome.seconds - lastSave > 10){ lastSave = genome.seconds; saveGenome(); }
+  frames++;
+  if (now - fpsT > 1000){ frames = 0; fpsT = now; }
+  if (!REDUCED && !__stopped && !__hidden) requestAnimationFrame(draw);
+}
+
+// 調整・検証用ハンドル(本番でも無害)
+window.__livingBG = {
+  get phase(){ return auto ? (((performance.now()-t0)/1000 + tOffset)/CYCLE_SEC*8)%8 : manualP; },
+  set phase(v){ auto = false; manualP = v; },
+  resume(){ auto = true; },
+  get theme(){ return THEMES[themeIdx].name; },
+  setTheme(i){ themeIdx = i; },
+  get gen(){ return genome.gen; },
+  get maturity(){ return maturity(); },
+  setWeather(w){ const tn=(performance.now()-t0)/1000;
+    weather=w; wStart=tn-6; wEnd=tn+120; wNext=1e9;
+    WP.forEach(p=>{ respawnP(p);
+      if(w==='bubbles') p.ny=1.15+Math.random()*0.3;
+      if(w==='stars'){p.nx=(Math.random()*2-1)*1.15;p.ny=(Math.random()*2-1)*1.15;
+        p.tw=Math.random()*6.28;p.tws=0.6+Math.random()*2.2;p.spike=Math.random()<0.35;}
+      if(w==='digital'){p.glyph=Math.random()<0.5?'0':'1';p.flip=Math.random()*9;p.trail=3+(Math.random()*5|0);} }); },
+  setCelestial(k){ celestial.kind = k; celestialPrev = null; celFadeT0 = -1; },
+  swapCelestial(){ pickCelestial((performance.now()-t0)/1000); },   // フェード検証用
+  get celFade(){ return celFadeT0 < 0 ? 1 :
+    Math.min(1, ((performance.now()-t0)/1000 - celFadeT0) / CEL_FADE); },
+  get celPair(){ return [celestialPrev && celestialPrev.kind, celestial.kind]; },
+  rebuild(){ rebuild(); },
+};
+
+// ── §9.6 動きの停止ボタン + タブ非表示時の休止 ──
+// アクセシビリティ(前庭障害・集中の妨げ)と省電力のため、いつでも止められる。
+var __stopped = false, __hidden = false;
+try { __stopped = localStorage.getItem('ogs-motion') === 'off'; } catch(e){}
+
+function __resume(){
+  if (__stopped || __hidden || REDUCED) return;
+  requestAnimationFrame(draw);
+}
+document.addEventListener('visibilitychange', function(){
+  __hidden = document.hidden;          // 非表示タブでは描画を止める(電池・CPU)
+  if (!__hidden) __resume();
+});
+
+(function buildMotionToggle(){
+  var css = document.createElement('style');
+  css.textContent =
+    '#motion-toggle{position:fixed;left:14px;bottom:56px;z-index:9997;display:flex;' +
+    'align-items:center;gap:8px;padding:8px 12px;cursor:pointer;' +
+    'background:rgba(6,9,16,.72);border:1px solid rgba(217,196,154,.16);' +
+    'color:#8d826d;font:400 10px/1 ui-sans-serif,-apple-system,sans-serif;' +
+    'letter-spacing:.18em;text-transform:uppercase;backdrop-filter:blur(4px);' +
+    'transition:color .3s,border-color .3s}' +
+    '#motion-toggle:hover{color:#d9c49a;border-color:rgba(217,196,154,.4)}' +
+    '#motion-toggle:focus-visible{outline:1px solid #d9c49a;outline-offset:3px}' +
+    '#motion-toggle .dot{width:6px;height:6px;border-radius:50%;background:#4a4438;flex:none}' +
+    '#motion-toggle.on .dot{background:#6fa8d6;box-shadow:0 0 6px rgba(111,168,214,.7)}' +
+    '@media (max-width:700px){#motion-toggle{left:auto;right:10px;bottom:46px;padding:7px 9px;font-size:9px}}';
+  document.head.appendChild(css);
+
+  var b = document.createElement('button');
+  b.id = 'motion-toggle'; b.type = 'button';
+  b.innerHTML = '<span class="dot" aria-hidden="true"></span><span class="txt"></span>';
+  function sync(){
+    var moving = !__stopped && !REDUCED;
+    b.classList.toggle('on', moving);
+    b.setAttribute('aria-pressed', moving ? 'true' : 'false');
+    b.querySelector('.txt').textContent = moving ? 'Motion on' : 'Motion off';
+    b.setAttribute('aria-label', moving ? '背景の動きを止める' : '背景の動きを再開する');
+  }
+  b.addEventListener('click', function(){
+    __stopped = !__stopped;
+    try { localStorage.setItem('ogs-motion', __stopped ? 'off' : 'on'); } catch(e){}
+    sync();
+    if (!__stopped) __resume();
+  });
+  document.body.appendChild(b);
+  sync();
+})();
+
+if (REDUCED){ auto = false; manualP = 3.5; draw(performance.now()); }
+else if (__stopped) draw(performance.now());
+else requestAnimationFrame(draw);
+
+})();

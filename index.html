@@ -1,277 +1,408 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>聴いて覚える般若心経 — Heart Sutra Modern Archive</title>
-  <meta name="description" content="SUNO AIによって生成された般若心経の楽曲群を、デジタルアートギャラリーとしてアーカイブ。宗教音楽と現代テクノロジーの融合。">
-  <meta property="og:title" content="聴いて覚える般若心経 — Heart Sutra Modern Archive">
-  <meta property="og:description" content="23の音楽ジャンルで再解釈された般若心経。静寂と衝動の交差点。">
-  <meta property="og:type" content="website">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Gate Sutra — the Heart Sutra, recomposed by the world</title>
+<meta name="description" content="A worldwide remix platform for the Heart Sutra. One sutra, 262 characters — recomposed by the world. Make it yours, submit your link, and be heard.">
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Noto+Serif+JP:wght@200;300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Open Gate Sutra">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta property="og:title" content="Open Gate Sutra — the Heart Sutra, recomposed by the world">
+<meta property="og:description" content="One sutra, 262 characters — recomposed by the world. Make it yours in any genre, paste your link, and be heard.">
+<meta property="og:url" content="https://teng3333.github.io/heart-sutra-archive/">
+<meta property="og:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Open Gate Sutra — the Heart Sutra recomposed by the world">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Open Gate Sutra — the Heart Sutra, recomposed by the world">
+<meta name="twitter:description" content="One sutra, 262 characters — recomposed by the world. Make it yours, paste your link, and be heard.">
+<meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
 
-  <!-- Locomotive Scroll CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="src/css/style.css">
+<!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
+<script src="src/js/consent.js" defer></script>
+<!-- 生きた背景アート(球体生態系・最背面に固定・視差設定に配慮) -->
+<script src="src/js/living-bg.js?v=2" defer></script>
+<!-- BGM(訪問ごとにランダムな般若心経リミックス・常設トグルで停止可) -->
+<script src="src/js/bgm.js?v=2" defer></script>
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1MKC72RRJP"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-1MKC72RRJP');
-  </script>
+<style>
+  :root{
+    --ai:#131a26; --ai-deep:#0d1220;
+    --washi:#d9c49a; --washi-hi:#e9dcba;
+    --shu:#b23a2e;
+    --ruri:#6fa8d6;
+    --kin:#c9a544;           /* 金:神籤の間にのみ */
+    --nibi:#8d826d;
+    --hair:rgba(217,196,154,.16);
+    --en:"Cormorant Garamond","Palatino","Georgia",serif;
+    --ja:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+    --ui:ui-sans-serif,-apple-system,"Helvetica Neue",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--ai);color:var(--washi);font-family:var(--en);
+       -webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+  /* ── ANはヴェールの中。ボンヤリと、右奥に立つ ── */
+  .an-veil{position:fixed;top:0;left:50%;transform:translateX(-38%);
+    height:100vh;z-index:0;pointer-events:none}
+  .an-veil img{height:100%;width:auto;display:block;opacity:.24;filter:contrast(.97);
+    -webkit-mask-image:radial-gradient(ellipse 62% 58% at 50% 30%,#000 32%,transparent 84%);
+    mask-image:radial-gradient(ellipse 62% 58% at 50% 30%,#000 32%,transparent 84%)}
+  @media (max-width:700px){
+    .an-veil{transform:translateX(-50%);height:82vh}
+    .an-veil img{opacity:.30}
+  }
+  /* ── 瑠璃の目:常時ぼんやり(基底)+動かせる環境では10秒毎に息をする ── */
+  .an-eye-glow{position:fixed;z-index:0;pointer-events:none;
+    width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
+    left:calc(50vw - 1.33vh);top:35.23vh; /* y=35.23%: 2026-07-18 高尾指示で瞳1つ分下方修正(5-2の検出ロジックを瞳周辺に限定して再実測した重心) */
+    background:radial-gradient(circle, rgba(111,168,214,.9) 0%, rgba(111,168,214,.38) 45%, rgba(111,168,214,0) 75%);
+    filter:blur(1.5px);opacity:.18}
+  @media (max-width:700px){
+    .an-eye-glow{left:calc(50vw - 6.63vh);top:28.89vh} /* 0.3523×82vh */
+  }
+  @media (prefers-reduced-motion:no-preference){
+    .an-eye-glow{animation:eyeglow 10s ease-in-out infinite}
+  }
+  @keyframes eyeglow{
+    0%,75%,100%{opacity:.18}
+    85%{opacity:.85}
+  }
+  main{position:relative;z-index:1}
+  /* 生きた背景の上でも本文が読めるよう、コンテンツ側に薄い暗幕を敷く(§10.1) */
+  main::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:radial-gradient(ellipse 95% 75% at 50% 45%,rgba(4,6,11,.34),rgba(4,6,11,.62) 72%)}
+
+  /* ── 落款システム(この家の署名) ── */
+  .seal{display:inline-flex;flex-direction:column;justify-content:center;align-items:center;
+    width:76px;height:76px;background:var(--shu);color:var(--washi-hi);
+    font-family:var(--ja);font-size:30px;font-weight:600;text-decoration:none;flex:none;
+    box-shadow:0 0 0 1px rgba(178,58,46,.35), inset 0 0 18px rgba(0,0,0,.22);
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+  .seal small{font-size:8px;letter-spacing:.28em;font-family:var(--ui);margin-top:3px}
+  .seal:hover{transform:rotate(-2.5deg) scale(1.04)}
+  .seal:active{transform:scale(.94)}
+  .seal:focus-visible{outline:2px solid var(--washi);outline-offset:4px}
+  .seal-mini{display:inline-flex;justify-content:center;align-items:center;
+    width:30px;height:30px;background:var(--shu);color:var(--washi-hi);
+    font-family:var(--ja);font-size:14px;font-weight:600;flex:none}
+
+  /* ── ヘッダー:ロゴ=開羯諦経の角印、題=Open Gate Sutra ── */
+  header{display:flex;justify-content:space-between;align-items:center;
+    padding:18px 22px;border-bottom:1px solid var(--hair)}
+  .brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}
+  .logo{display:grid;grid-template-columns:1fr 1fr;width:46px;height:46px;flex:none;
+    border:1px solid var(--washi);font-family:var(--ja);font-weight:500;
+    font-size:15px;line-height:1;place-items:center;padding:4px;
+    direction:rtl}  /* 印章の読み順:右上→右下→左上→左下 */
+  .logo span{display:block}
+  .brand h1{font-family:var(--en);font-weight:400;font-size:17px;
+    letter-spacing:.26em;text-transform:uppercase}
+  .brand h1 small{display:block;font-family:var(--ja);font-size:9px;font-weight:400;
+    letter-spacing:.4em;color:var(--nibi);margin-top:5px}
+  nav{display:flex;gap:20px;align-items:center;font-family:var(--ui);font-size:10px;
+    letter-spacing:.24em;text-transform:uppercase;color:var(--nibi)}
+  nav a{color:inherit;text-decoration:none;padding:4px 0}
+  nav a:focus-visible{outline:1px solid var(--washi);outline-offset:4px}
+  nav .lang{border:1px solid var(--hair);padding:5px 10px}
+  nav .soon{opacity:.45;cursor:default}
+
+  /* ── HERO:主旨が3秒で伝わること ── */
+  .hero{min-height:86vh;display:flex;flex-direction:column;justify-content:center;
+    padding:64px 22px 72px;max-width:1080px;margin:0 auto}
+  .hero-inner{max-width:620px}
+  .eyebrow{font-family:var(--ui);font-size:10px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--nibi);margin-bottom:26px}
+  .hero h2{font-weight:300;font-size:clamp(38px,8.6vw,68px);line-height:1.12;
+    letter-spacing:.01em;color:var(--washi-hi)}
+  .hero h2 em{font-style:italic;color:var(--nibi)}
+  .verbs{display:flex;flex-wrap:wrap;margin-top:34px;border:1px solid var(--hair)}
+  .verbs span{flex:1 1 auto;text-align:center;padding:13px 14px;
+    border-right:1px solid var(--hair);font-family:var(--ja);font-size:12px;
+    letter-spacing:.22em;white-space:nowrap}
+  .verbs span:last-child{border-right:0}
+  .verbs b{display:block;font-family:var(--ui);font-weight:400;font-size:8px;
+    letter-spacing:.3em;color:var(--nibi);margin-top:5px}
+  .hero-ja{font-family:var(--ja);font-size:13px;letter-spacing:.2em;
+    color:var(--nibi);margin-top:28px;line-height:2.3}
+  .gate-cta{display:flex;align-items:center;gap:22px;margin-top:44px;flex-wrap:wrap}
+  .gate-cta .lead{font-family:var(--ui);font-size:11px;letter-spacing:.2em;
+    text-transform:uppercase;line-height:2}
+  .gate-cta .lead b{display:block;font-weight:400;color:var(--washi-hi)}
+  .gate-cta .lead span{color:var(--nibi);font-size:10px}
+  .listen{display:inline-block;margin-top:26px;color:var(--nibi);text-decoration:none;
+    font-family:var(--ui);font-size:11px;letter-spacing:.26em;text-transform:uppercase;
+    border-bottom:1px solid var(--hair);padding-bottom:6px}
+  .listen:hover{color:var(--washi)}
+
+  /* ── 経の川 ── */
+  .river{border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);
+    overflow:hidden;white-space:nowrap;padding:13px 0;position:relative;z-index:1;
+    background:rgba(13,18,32,.5)}
+  .river span{display:inline-block;font-family:var(--ja);font-size:12px;
+    letter-spacing:.72em;color:var(--nibi);padding-right:.72em}
+  @media (prefers-reduced-motion:no-preference){
+    .river span{animation:flow 220s linear infinite}
+    @keyframes flow{to{transform:translateX(-50%)}}
+  }
+
+  section{padding:88px 22px;max-width:1080px;margin:0 auto}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:44px}
+  .sec-head h3{font-weight:300;font-size:26px;letter-spacing:.1em}
+  .sec-head span{font-family:var(--ja);font-size:11px;letter-spacing:.3em;color:var(--nibi)}
+
+  .steps{display:grid;grid-template-columns:1fr;gap:2px}
+  @media (min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
+  .step{border:1px solid var(--hair);padding:30px 24px;display:flex;
+    flex-direction:column;gap:16px;background:rgba(13,18,32,.55)}
+  .step .head{display:flex;align-items:center;gap:14px}
+  .step h4{font-weight:400;font-size:17px;letter-spacing:.06em}
+  .step p{font-size:14px;line-height:1.85;color:var(--nibi);letter-spacing:.02em}
+  .step p b{color:var(--washi);font-weight:400}
+  .step .free{font-family:var(--ui);font-size:9px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--ruri)}
+
+  .nine{display:grid;grid-template-columns:1fr;gap:2px}
+  @media (min-width:760px){.nine{grid-template-columns:repeat(3,1fr)}}
+  .work{position:relative;border:1px solid var(--hair);padding:24px;
+    color:inherit;background:rgba(13,18,32,.55);
+    display:flex;gap:18px;align-items:flex-start;transition:background .4s}
+  .work .body{display:flex;flex-direction:column;gap:14px;flex:1;min-width:0}
+  .work:hover{background:rgba(217,196,154,.05)}
+  .work:focus-within{outline:1px solid var(--washi);outline-offset:-1px}
+  .work .win{font-family:var(--ja);font-size:10px;letter-spacing:.3em;color:var(--nibi)}
+  .work .title{font-size:21px;font-weight:300;letter-spacing:.02em;
+    display:flex;align-items:baseline;gap:10px}
+  .work .title .play{font-size:11px;color:var(--ruri)}
+  /* カード全面リンク:タイトルのリンクをカード全体に引き延ばす */
+  .work .work-main{color:inherit;text-decoration:none;outline:none}
+  .work .work-main::after{content:"";position:absolute;inset:0}
+  /* 作者リンクは前面に出し、「聴く」と「作者へ渡る」の2動線を両立 */
+  .work .artist{position:relative;z-index:2;font-family:var(--ui);font-size:11px;
+    letter-spacing:.12em;color:var(--nibi)}
+  .work .artist a{color:var(--washi);text-decoration:none;
+    border-bottom:1px solid var(--hair);padding-bottom:2px}
+  .work .artist a:hover{color:var(--ruri);border-color:var(--ruri)}
+  .work .artist a:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
+  .work .meta{font-family:var(--ui);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--nibi);display:flex;gap:14px;flex-wrap:wrap}
+  .work .an-seal{position:absolute;top:-1px;right:-1px}
+  /* カバーアート:SUNOサムネイル流用。縦長を切らず小さく全体表示。
+     旧サイト(style.css)の流儀=白黒→ホバーでカラー を継承 */
+  .work .cover{flex:none;width:104px;border:1px solid var(--hair)}
+  .work .cover img{display:block;width:100%;height:auto;
+    filter:grayscale(100%) brightness(.85);
+    transition:filter .8s cubic-bezier(.16,1,.3,1)}
+  .work:hover .cover img,.work:focus-within .cover img{filter:grayscale(0%) brightness(1)}
+  .see-all{display:block;text-align:center;margin-top:34px;color:var(--washi);
+    text-decoration:none;font-size:12px;letter-spacing:.3em;text-transform:uppercase;
+    font-family:var(--ui)}
+  .see-all.soon{opacity:.45;cursor:default}
+
+  .kudoku{border:1px solid var(--hair);padding:52px 26px;text-align:center;
+    background:rgba(13,18,32,.55)}
+  .kudoku p{font-size:clamp(19px,3.4vw,26px);font-weight:300;line-height:1.7;
+    max-width:23em;margin:0 auto;letter-spacing:.02em}
+  .kudoku p i{color:var(--nibi)}
+  .kudoku .ja{font-family:var(--ja);font-size:12px;letter-spacing:.26em;
+    color:var(--nibi);margin-top:22px;line-height:2.2}
+
+  /* ── 家の間取り:本堂・参道・脇間(.stepの意匠を流用) ── */
+  .step .links{display:flex;flex-wrap:wrap;gap:14px 18px;margin-top:auto;
+    font-family:var(--ui);font-size:10px;letter-spacing:.24em;text-transform:uppercase}
+  .step .links a,.step .links button{color:var(--washi);text-decoration:none;
+    border:0;border-bottom:1px solid var(--hair);padding:0 0 4px;background:none;
+    font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
+  .step .links a:hover,.step .links button:hover{color:var(--ruri);border-color:var(--ruri)}
+  .step .links a:focus-visible,.step .links button:focus-visible{
+    outline:1px solid var(--washi);outline-offset:3px}
+
+  /* ── 神籤の間:金はこの間にのみ許す ── */
+  .oracle{text-align:center;padding:96px 22px 104px;position:relative;z-index:1}
+  .medallion{width:min(74vw,330px);aspect-ratio:1;border-radius:50%;overflow:hidden;
+    margin:0 auto 38px;border:1px solid rgba(201,165,68,.55);
+    box-shadow:0 0 60px rgba(201,165,68,.12), 0 0 0 8px rgba(13,18,32,.6);
+    transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+  .medallion img{display:block;width:100%;height:100%;object-fit:cover}
+  a.med-link{display:inline-block;text-decoration:none}
+  a.med-link:hover .medallion{transform:scale(1.02)}
+  a.med-link:focus-visible{outline:1px solid var(--kin);outline-offset:8px}
+  .oracle h3{font-weight:300;font-size:24px;letter-spacing:.14em;color:var(--washi-hi)}
+  .oracle .sub{font-family:var(--ja);font-size:11px;letter-spacing:.34em;
+    color:var(--kin);margin-top:10px}
+  .oracle p.desc{font-size:14px;line-height:2;color:var(--nibi);
+    max-width:34em;margin:26px auto 0;letter-spacing:.02em}
+  .oracle p.desc b{color:var(--washi);font-weight:400}
+  .draw{display:inline-block;margin-top:34px;color:var(--washi-hi);text-decoration:none;
+    font-family:var(--ui);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
+    border:1px solid rgba(201,165,68,.5);padding:14px 30px;transition:border-color .4s}
+  .draw:hover,.draw:focus-visible{border-color:var(--kin);outline:none}
+
+  footer{border-top:1px solid var(--hair);padding:46px 22px 96px;text-align:center;
+    font-size:11px;letter-spacing:.3em;color:var(--nibi);font-style:italic;
+    position:relative;z-index:1}
+  .foot-links{font-style:normal;font-family:var(--ui);font-size:10px;
+    letter-spacing:.24em;text-transform:uppercase;margin-bottom:26px;
+    display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+  .foot-links a{color:var(--nibi);text-decoration:none;padding:4px 0}
+  .foot-links a:hover{color:var(--washi)}
+  .foot-links a:focus-visible{outline:1px solid var(--washi);outline-offset:4px}
+
+  .sticky-gate{position:fixed;left:50%;bottom:18px;transform:translate(-50%,120px);
+    z-index:30;display:flex;align-items:center;gap:12px;
+    background:var(--shu);color:var(--washi-hi);text-decoration:none;
+    padding:13px 24px;font-family:var(--ui);font-size:11px;letter-spacing:.24em;
+    text-transform:uppercase;box-shadow:0 6px 26px rgba(0,0,0,.45);
+    transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+  .sticky-gate.on{transform:translate(-50%,0)}
+  .sticky-gate b{font-family:var(--ja);font-weight:600;font-size:14px;letter-spacing:0}
+  .sticky-gate:focus-visible{outline:2px solid var(--washi);outline-offset:3px}
+  @media (max-width:620px){nav a:not(.lang),nav span.nav-item{display:none}
+    .brand h1{font-size:14px}}
+</style>
 </head>
 <body>
+<!-- 生きた背景アート:球体生態系(canvasは living-bg.js が最背面に生成する)。
+     静的ヴェール(.an-veil)と瑠璃の目は、この動的背景がANを内包するため退役。 -->
+<!-- §9.6 JSが使えない環境でも背景が成立するよう、静止画にフォールバックする -->
+<noscript>
+  <style>
+    body{background-image:radial-gradient(ellipse 70% 60% at 62% 42%,rgba(4,6,11,.55),rgba(4,6,11,.9) 72%),
+      url("assets/an-veil.jpg");
+      background-size:cover,auto 100%;background-position:center,62% top;
+      background-repeat:no-repeat;background-attachment:fixed}
+  </style>
+</noscript>
+<main>
+  <header>
+    <a class="brand" href="./">
+      <span class="logo" aria-hidden="true"><span>開</span><span>羯</span><span>諦</span><span>経</span></span>
+      <h1>Open Gate Sutra<small>ひらかれた般若心経の家</small></h1>
+    </a>
+    <nav>
+      <a href="submit.html">Submit</a><a href="#nine">Listen</a><a href="kit.html">Kit</a><a href="#oracle">Oracle</a>
+      <span class="lang soon" title="Coming soon — 準備中">日本語</span>
+    </nav>
+  </header>
 
-  <!-- Grain Overlay -->
-  <div class="grain-overlay" aria-hidden="true"></div>
-
-  <!-- Cursor Glow -->
-  <div class="cursor-glow" aria-hidden="true"></div>
-
-  <!-- Loading Screen -->
-  <div class="loading-screen" id="loading-screen">
-    <div class="loading-inner">
-      <div class="loading-kanji">般若心経</div>
-      <div class="loading-en">Heart Sutra</div>
-      <div class="loading-bar-container">
-        <div class="loading-bar" id="loading-bar"></div>
+  <div class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">A worldwide remix platform for the Heart Sutra</p>
+      <h2>One sutra, 262 characters.<br><em>Recomposed by the world.</em></h2>
+      <div class="verbs" role="list">
+        <span role="listitem">作る<b>MAKE</b></span>
+        <span role="listitem">渡す<b>SUBMIT</b></span>
+        <span role="listitem">聴く<b>LISTEN</b></span>
+        <span role="listitem">語らう<b>CONNECT</b></span>
       </div>
+      <p class="hero-ja">般若心経を、あなたのジャンルで作曲して、投稿する。<br>世界中の般若心経を聴いて、作った人と語り合う。</p>
+      <div class="gate-cta">
+        <a class="seal" href="submit.html">渡<small>CROSS</small></a>
+        <p class="lead"><b>Cross the gate — submit your remix</b><span>30 seconds · no account · your track stays yours</span></p>
+      </div>
+      <a class="listen" href="#nine">Just listening? Start with today's nine ↓</a>
     </div>
   </div>
 
-  <!-- Main Content -->
-  <div data-scroll-container id="scroll-container">
-
-    <!-- Hero Section -->
-    <header class="hero" data-scroll-section>
-      <div class="hero-inner">
-        <p class="hero-eyebrow" data-scroll data-scroll-speed="2">SUNO AI × 般若心経</p>
-        <h1 class="hero-title" data-scroll data-scroll-speed="1">
-          <span class="hero-title-line">聴いて覚える</span>
-          <span class="hero-title-line hero-title-accent">般若心経</span>
-        </h1>
-        <p class="hero-subtitle" data-scroll data-scroll-speed="0.5">
-          <span class="hero-subtitle-en">Heart Sutra Modern Archive</span>
-        </p>
-        <div class="hero-description" data-scroll data-scroll-speed="0.3">
-          <p>23の音楽ジャンルで再解釈された般若心経。<br>宗教音楽と現代テクノロジーが交差する、静寂と衝動のアーカイブ。</p>
-          <p class="hero-description-en">The Heart Sutra, reinterpreted through 23 musical genres.<br>An archive where sacred music meets modern technology.</p>
-        </div>
-        <div class="scroll-indicator" data-scroll data-scroll-speed="-0.5">
-          <span class="scroll-indicator-text">Scroll</span>
-          <div class="scroll-indicator-line"></div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Gallery Section -->
-    <section class="gallery-section" data-scroll-section>
-      <div class="section-header" data-scroll data-scroll-speed="1">
-        <span class="section-number">01</span>
-        <h2 class="section-title">Archive</h2>
-        <p class="section-subtitle">全二十三曲 — Twenty-Three Interpretations</p>
-      </div>
-      <div class="gallery-grid" id="gallery-grid">
-        <!-- Cards will be injected by JS -->
-      </div>
-    </section>
-
-    <!-- Playlist Section -->
-    <section class="playlist-section" data-scroll-section>
-      <div class="playlist-inner">
-        <div class="section-header" data-scroll data-scroll-speed="1">
-          <span class="section-number">02</span>
-          <h2 class="section-title">Playlist</h2>
-          <p class="section-subtitle">聞き流し般若心経 — Ambient Heart Sutra</p>
-        </div>
-
-        <div class="playlist-showcase">
-          <a href="https://suno.com/s/WeUwA3rsgaWAz2NY" target="_blank" rel="noopener noreferrer" class="playlist-link">
-            <div class="playlist-image-container">
-              <img 
-                src="assets/covers/playlist_kikinagashi.png" 
-                alt="聞き流し般若心経" 
-                class="playlist-image"
-                loading="lazy"
-              >
-              <div class="playlist-overlay">
-                <div class="playlist-overlay-inner">
-                  <div class="playlist-play-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M8 5.14v13.72a1 1 0 001.5.86l11.04-6.86a1 1 0 000-1.72L9.5 4.28a1 1 0 00-1.5.86z" fill="currentColor"/>
-                    </svg>
-                  </div>
-                  <span class="playlist-cta">Listen on SUNO</span>
-                </div>
-              </div>
-              <div class="playlist-border-glow"></div>
-            </div>
-          </a>
-          <div class="playlist-info">
-            <span class="playlist-label">Playlist</span>
-            <h3 class="playlist-title">聞き流し般若心経</h3>
-            <p class="playlist-title-en">Ambient Heart Sutra Playlist</p>
-            <div class="playlist-divider"></div>
-            <p class="playlist-desc">
-              般若心経の全楽曲を、BGMとして聞き流すためのプレイリスト。<br>
-              日常の中に、経典の響きを溶け込ませる。
-            </p>
-            <p class="playlist-desc-en">
-              A curated playlist for ambient listening of all Heart Sutra tracks.<br>
-              Let the sacred sounds blend into your everyday life.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Video Section -->
-    <section class="video-section" data-scroll-section>
-      <div class="video-inner">
-        <div class="section-header" data-scroll data-scroll-speed="1">
-          <span class="section-number">03</span>
-          <h2 class="section-title">Film</h2>
-          <p class="section-subtitle">映像作品 — Visual Work</p>
-        </div>
-
-        <div class="video-showcase">
-          <div class="video-container">
-            <div class="video-frame">
-              <video 
-                id="hero-video"
-                src="assets/video/tada_sora.mp4" 
-                playsinline 
-                loop 
-                muted
-                preload="metadata"
-                poster=""
-              ></video>
-              <div class="video-play-overlay" id="video-play-overlay">
-                <div class="video-play-btn">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 5.14v13.72a1 1 0 001.5.86l11.04-6.86a1 1 0 000-1.72L9.5 4.28a1 1 0 00-1.5.86z" fill="currentColor"/>
-                  </svg>
-                </div>
-                <span class="video-play-text">Play</span>
-              </div>
-              <div class="video-progress-bar">
-                <div class="video-progress-fill" id="video-progress-fill"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="video-info">
-            <div class="video-title-block">
-              <span class="video-label">Title</span>
-              <h3 class="video-title">ただ空があるだけ</h3>
-              <p class="video-title-en">There is only Emptiness</p>
-            </div>
-            <div class="video-divider"></div>
-            <div class="video-description">
-              <p class="video-desc-text">
-                般若心経の根本思想「空」を映像で表現した作品。<br>
-                23曲の般若心経楽曲とは異なるアプローチで、<br>
-                経典の教えを視覚的に謳い上げる。
-              </p>
-              <p class="video-desc-en">
-                A visual expression of "Emptiness" (Ku) — the core philosophy of the Heart Sutra.<br>
-                A distinct work from the 23 musical interpretations,<br>
-                conveying the scripture's teachings through moving images.
-              </p>
-            </div>
-            <div class="video-meta">
-              <span class="video-meta-item">Originally posted on Instagram Reels</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- About Section -->
-    <section class="about-section" data-scroll-section>
-      <div class="about-inner">
-        <div class="section-header" data-scroll data-scroll-speed="1">
-          <span class="section-number">04</span>
-          <h2 class="section-title">About</h2>
-          <p class="section-subtitle">このプロジェクトについて</p>
-        </div>
-        <div class="about-content" data-scroll data-scroll-speed="0.5">
-          <div class="about-text">
-            <p class="about-lead">
-              「般若心経」は、仏教の根本経典のひとつであり、<br>
-              「空」の思想を凝縮した262文字の経文です。
-            </p>
-            <p class="about-lead-en">
-              The Heart Sutra is one of the fundamental Buddhist scriptures,<br>
-              condensing the philosophy of "emptiness" into 262 characters.
-            </p>
-            <div class="about-divider"></div>
-            <p class="about-body">
-              本プロジェクトは、SUNO AIの音楽生成技術を用いて、この古典的な経文を
-              Indies、演歌、Tango、Jazz、Funk、Bollywood、Cyberpunk、Metal、Gamelanなど
-              23の多様な音楽ジャンルで再解釈したものです。
-            </p>
-            <p class="about-body">
-              伝統と革新、東洋と西洋、静寂と衝動——
-              相反するものが溶け合う瞬間を、音楽を通じて体験してください。
-            </p>
-            <p class="about-body-en">
-              This project uses SUNO AI's music generation technology to reinterpret 
-              this classical scripture through 23 diverse musical genres, 
-              from Indies and Enka to Tango, Jazz, Funk, Bollywood, Cyberpunk, Metal, and Gamelan.
-            </p>
-          </div>
-          <div class="about-sutra">
-            <p class="sutra-text">
-              色不異空　空不異色<br>
-              色即是空　空即是色
-            </p>
-            <p class="sutra-romanji">
-              shiki fu i kū &nbsp; kū fu i shiki<br>
-              shiki soku ze kū &nbsp; kū soku ze shiki
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer" data-scroll-section>
-      <div class="footer-inner">
-        <div class="footer-brand">
-          <span class="footer-kanji">般若心経</span>
-          <span class="footer-en">Heart Sutra Modern Archive</span>
-        </div>
-        <div class="footer-info">
-          <p>Generated by <a href="https://suno.com" target="_blank" rel="noopener">SUNO AI</a></p>
-          <p class="footer-copy">&copy; 2025 — 聴いて覚える般若心経</p>
-        </div>
-      </div>
-    </footer>
-
+  <div class="river" aria-hidden="true">
+    <span>観自在菩薩行深般若波羅蜜多時照見五蘊皆空度一切苦厄舎利子色不異空空不異色色即是空空即是色受想行識亦復如是舎利子是諸法空相不生不滅不垢不浄不増不減是故空中無色無受想行識無眼耳鼻舌身意無色声香味触法無眼界乃至無意識界　</span><span>観自在菩薩行深般若波羅蜜多時照見五蘊皆空度一切苦厄舎利子色不異空空不異色色即是空空即是色受想行識亦復如是舎利子是諸法空相不生不滅不垢不浄不増不減是故空中無色無受想行識無眼耳鼻舌身意無色声香味触法無眼界乃至無意識界　</span>
   </div>
 
-  <!-- Locomotive Scroll JS -->
-  <script src="https://cdn.jsdelivr.net/npm/locomotive-scroll@4.1.4/dist/locomotive-scroll.min.js"></script>
-  <!-- Masonry -->
-  <script src="https://cdn.jsdelivr.net/npm/masonry-layout@4.2.2/dist/masonry.pkgd.min.js"></script>
-  <!-- imagesLoaded -->
-  <script src="https://cdn.jsdelivr.net/npm/imagesloaded@5.0.0/imagesloaded.pkgd.min.js"></script>
+  <section id="gate">
+    <div class="sec-head"><h3>How to cross</h3><span>渡り方</span></div>
+    <div class="steps">
+      <div class="step">
+        <div class="head"><span class="seal-mini">一</span><h4>Make it yours</h4></div>
+        <p>Take <a href="kit.html" style="color:var(--ruri);text-decoration:none;border-bottom:1px solid var(--hair)">the free kit</a> — <b>the 262 characters, romaji, Sanskrit, and field-tested SUNO tips</b>. Drill, bossa, gospel, gagaku. Any genre is a valid prayer.</p>
+        <p class="free">Kit free forever · CC0</p>
+      </div>
+      <div class="step">
+        <div class="head"><span class="seal-mini">二</span><h4>Paste your link</h4></div>
+        <p>Publish on <b>SUNO (commercial-use plan) or YouTube</b>, then paste the link here with your name and country. No account, no upload.</p>
+        <p class="free">30 seconds</p>
+      </div>
+      <div class="step">
+        <div class="head"><span class="seal-mini">三</span><h4>Cross, and be heard</h4></div>
+        <p>Every sound work enters the Hall <b>permanently, under your name</b> — and opens its own thread, so listeners can talk with you. AN stamps her seal on the ones that make her look up.</p>
+        <p class="free">Honor is added · never revoked</p>
+      </div>
+    </div>
+  </section>
 
-  <script src="src/js/app.js"></script>
-  <script src="src/js/chat.js"></script>
-  
-  <!-- AN Mikuji Launcher -->
-  <a href="an-mikuji.html" id="mikuji-launcher" title="AN御神籤">
-    <img src="assets/covers/mikuji_icon.png" alt="AN Mikuji">
-  </a>
+  <section id="nine">
+    <div class="sec-head"><h3>Today's Nine</h3><span>今日の九曲</span></div>
+    <!-- 種火:高尾の84曲プレイリストから日替わり9曲を todays-nine.js が描画。本番は submissions / an_selections に接続 -->
+    <div class="nine" id="nine-grid"></div>
+    <noscript><p style="text-align:center;margin-top:34px"><a href="https://suno.com/playlist/5ae1adc6-893c-4fce-bfec-a0114e0bd925" style="color:inherit">Listen to the Heart Sutra playlist on SUNO →</a></p></noscript>
+  </section>
+
+  <section>
+    <div class="kudoku">
+      <p>Your remix stays yours — monetize it anywhere. When AN stamps her seal, <i>we send our audience to you.</i></p>
+      <p class="ja">作ったものは、あなたのもの。選ばれたら、家があなたへ観客を送り出す。<br>写経に功徳があったように、リミックスに功徳を。</p>
+    </div>
+  </section>
+
+  <section id="house">
+    <div class="sec-head"><h3>The House</h3><span>家の間取り</span></div>
+    <div class="steps">
+      <div class="step">
+        <div class="head"><span class="seal-mini">本</span><h4>Main Hall 本堂</h4></div>
+        <p>The gate and the hall. Submit your remix, and listen to <b>the world's Heart Sutra gathering here</b> — today's nine, every day.</p>
+        <p class="links"><a href="submit.html">Submit 渡る</a><a href="#nine">Today's Nine 聴く</a></p>
+      </div>
+      <div class="step">
+        <div class="head"><span class="seal-mini">参</span><h4>Approach 参道</h4></div>
+        <p>A small shrine on the path. <b>Draw a fortune, and AN reads you a verse for your day.</b></p>
+        <p class="links"><a href="an-mikuji.html">AN神籤 Draw</a></p>
+      </div>
+      <div class="step">
+        <div class="head"><span class="seal-mini">脇</span><h4>Side Rooms 脇間</h4></div>
+        <p>Let the sutra play on — <b>the first twenty-three tracks, the ambient playlist, and the film</b> rest in the first archive.</p>
+        <p class="links"><a href="archive.html">Playlist &amp; Film 聞き流す</a></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="oracle" id="oracle">
+    <a class="med-link" href="an-mikuji.html" aria-label="AN神籤を引く">
+      <div class="medallion"><img src="assets/mikuji-medallion.jpg" alt="AN神籤 — 金彩の円相の中で坐すAN"></div>
+    </a>
+    <h3>The Oracle</h3>
+    <p class="sub">AN神籤 — 参道の小さな社</p>
+    <p class="desc">A side chapel off the main hall. <b>Draw a fortune, and AN reads you a verse for your day.</b></p>
+    <a class="draw" href="an-mikuji.html">Draw today's fortune — 籤を引く</a>
+  </div>
+
+  <footer>
+    <p class="foot-links">
+      <a href="about.html">About</a>
+      <a href="kit.html">Kit</a>
+      <a href="archive.html">The First Twenty-Three</a>
+      <a href="an-mikuji.html">AN神籤</a>
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+    </p>
+    gate gate pāragate pārasaṃgate bodhi svāhā
+  </footer>
+</main>
+
+<a class="sticky-gate" id="stickyGate" href="submit.html"><b>渡</b>Cross the gate</a>
+<script src="src/js/todays-nine.js"></script>
+<script>
+  const gate = document.getElementById('stickyGate');
+  const hero = document.querySelector('.hero');
+  new IntersectionObserver(([e])=>{
+    gate.classList.toggle('on', !e.isIntersecting);
+  },{threshold:.15}).observe(hero);
+</script>
 </body>
 </html>

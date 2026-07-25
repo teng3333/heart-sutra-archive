@@ -1,0 +1,8 @@
+.env
+
+# Handoff artifacts (extracted into repo for reference, not part of the site)
+OGS_handoff_v1.0.zip
+ogs-handoff/
+
+# Local Claude Code settings (permissions etc.)
+.claude/settings.local.json

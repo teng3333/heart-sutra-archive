@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross the Gate — Submit your remix | Open Gate Sutra</title>
+<meta name="description" content="Submit your Heart Sutra remix to Open Gate Sutra. Paste your SUNO or YouTube link — 30 seconds, no account, your track stays yours.">
+
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Open Gate Sutra">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta property="og:title" content="Cross the Gate — Submit your remix | Open Gate Sutra">
+<meta property="og:description" content="Paste your SUNO or YouTube link — 30 seconds, no account, your track stays yours.">
+<meta property="og:url" content="https://teng3333.github.io/heart-sutra-archive/submit.html">
+<meta property="og:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Open Gate Sutra — the Heart Sutra recomposed by the world">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Cross the Gate — Submit your remix">
+<meta name="twitter:description" content="Paste your SUNO or YouTube link — 30 seconds, no account, your track stays yours.">
+<meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
+<script src="src/js/consent.js" defer></script>
+<script>
+  // 本番キーはCloudflareで発行後に置換。ローカルは公式の常時成功テストキーを使う。
+  window.OGS_TURNSTILE_SITE_KEY =
+    (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? '1x00000000000000000000AA'
+      : '0x4AAAAAAD9CdMPOYThFErmn';
+  window.ogsRenderTurnstile = function () {
+    window.ogsTurnstileWidgetId = window.turnstile.render('#turnstile-widget', {
+      sitekey: window.OGS_TURNSTILE_SITE_KEY,
+      action: 'submit',
+      theme: 'dark',
+      language: 'auto'
+    });
+  };
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=ogsRenderTurnstile&amp;render=explicit" defer></script>
+
+<style>
+  :root{
+    --ai:#131a26; --ai-deep:#0d1220;
+    --washi:#d9c49a; --washi-hi:#e9dcba;
+    --shu:#b23a2e;
+    --ruri:#6fa8d6;
+    --kin:#c9a544;
+    --nibi:#8d826d;
+    --hair:rgba(217,196,154,.16);
+    --en:"Cormorant Garamond","Palatino","Georgia",serif;
+    --ja:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+    --ui:ui-sans-serif,-apple-system,"Helvetica Neue",sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--ai);color:var(--washi);font-family:var(--en);
+       -webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+  /* ── ANはヴェールの中。フォームページなので中央に沈める(ホームの.an-veilの派生) ── */
+  .an-veil{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  /* object-position で顔(画像の 53%,34% 付近)を画面内の同じ比率に固定する。
+     以前は min-width/height 方式で、横長画面だと顔が上に見切れていた。 */
+  .an-veil img{position:absolute;inset:0;width:100%;height:100%;
+    object-fit:cover;object-position:53% 34%;
+    opacity:.16;filter:contrast(.97);
+    -webkit-mask-image:radial-gradient(ellipse 58% 55% at 50% 38%,#000 25%,transparent 78%);
+    mask-image:radial-gradient(ellipse 58% 55% at 50% 38%,#000 25%,transparent 78%)}
+  @media (max-width:700px){.an-veil img{opacity:.22}}
+  header,main{position:relative;z-index:1}
+
+  header{display:flex;justify-content:space-between;align-items:center;
+    padding:18px 22px;border-bottom:1px solid var(--hair)}
+  .brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}
+  .logo{display:grid;grid-template-columns:1fr 1fr;width:46px;height:46px;flex:none;
+    border:1px solid var(--washi);font-family:var(--ja);font-weight:500;
+    font-size:15px;line-height:1;place-items:center;padding:4px;direction:rtl}
+  .logo span{display:block}
+  .brand h1{font-family:var(--en);font-weight:400;font-size:17px;
+    letter-spacing:.26em;text-transform:uppercase}
+  .brand h1 small{display:block;font-family:var(--ja);font-size:9px;font-weight:400;
+    letter-spacing:.4em;color:var(--nibi);margin-top:5px}
+  .back{font-family:var(--ui);font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--nibi);text-decoration:none;padding:4px 0}
+  .back:hover{color:var(--washi)}
+  .back:focus-visible{outline:1px solid var(--washi);outline-offset:4px}
+
+  main{max-width:660px;margin:0 auto;padding:64px 22px 120px}
+  .eyebrow{font-family:var(--ui);font-size:10px;letter-spacing:.32em;
+    text-transform:uppercase;color:var(--nibi);margin-bottom:22px}
+  h2{font-weight:300;font-size:clamp(30px,6vw,44px);line-height:1.2;
+    letter-spacing:.02em;color:var(--washi-hi)}
+  .sub-ja{font-family:var(--ja);font-size:12px;letter-spacing:.3em;
+    color:var(--nibi);margin-top:12px}
+
+  form{margin-top:46px;display:flex;flex-direction:column;gap:26px}
+  label{display:flex;flex-direction:column;gap:9px;
+    font-family:var(--ui);font-size:10px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--nibi)}
+  label .ja{font-family:var(--ja);letter-spacing:.2em;font-size:10px}
+  label .req{color:var(--shu)}
+  input,select{background:rgba(13,18,32,.6);border:1px solid var(--hair);
+    color:var(--washi-hi);font-family:var(--en);font-size:16px;
+    padding:13px 14px;width:100%;border-radius:0;-webkit-appearance:none;appearance:none}
+  input[type=file]{font-family:var(--ui);font-size:12px;letter-spacing:.04em;padding:11px 14px}
+  input[type=file]::file-selector-button{background:none;border:1px solid var(--hair);
+    color:var(--washi);font-family:var(--ui);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;padding:7px 14px;margin-right:14px;cursor:pointer}
+  input[type=file]::file-selector-button:hover{border-color:var(--washi)}
+  select{font-family:var(--ui);font-size:13px;letter-spacing:.06em;
+    background-image:linear-gradient(45deg,transparent 50%,var(--nibi) 50%),
+                     linear-gradient(135deg,var(--nibi) 50%,transparent 50%);
+    background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;
+    background-size:6px 6px;background-repeat:no-repeat}
+  input::placeholder{color:rgba(141,130,109,.55)}
+  input:focus-visible,select:focus-visible{outline:1px solid var(--washi);outline-offset:2px}
+  .hint{font-family:var(--ui);font-size:10px;letter-spacing:.08em;
+    text-transform:none;color:var(--nibi);line-height:1.9}
+  .hint b{color:var(--washi);font-weight:400}
+
+  .submit-row{display:flex;align-items:center;gap:22px;margin-top:12px;flex-wrap:wrap}
+  .seal-btn{display:inline-flex;flex-direction:column;justify-content:center;align-items:center;
+    width:76px;height:76px;background:var(--shu);color:var(--washi-hi);border:0;
+    font-family:var(--ja);font-size:30px;font-weight:600;cursor:pointer;flex:none;
+    box-shadow:0 0 0 1px rgba(178,58,46,.35), inset 0 0 18px rgba(0,0,0,.22);
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1)}
+  .seal-btn small{font-size:8px;letter-spacing:.28em;font-family:var(--ui);margin-top:3px}
+  .seal-btn:hover{transform:rotate(-2.5deg) scale(1.04)}
+  .seal-btn:active{transform:scale(.94)}
+  .seal-btn:focus-visible{outline:2px solid var(--washi);outline-offset:4px}
+  .seal-btn[disabled]{opacity:.45;cursor:default;transform:none}
+  .submit-note{font-family:var(--ui);font-size:10px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--nibi);line-height:2}
+
+  .terms{border:1px solid var(--hair);background:rgba(13,18,32,.6);padding:24px 22px}
+  .terms-head{font-family:var(--ui);font-size:10px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--washi)}
+  .terms ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:12px}
+  .terms li{font-family:var(--ui);font-size:11px;letter-spacing:.04em;
+    color:var(--nibi);line-height:1.9;padding-left:14px;position:relative}
+  .terms li::before{content:"·";position:absolute;left:0;color:var(--washi)}
+  .terms li b{color:var(--washi);font-weight:400}
+  .terms .ja-line{display:block;font-size:10px;opacity:.85}
+  .agree{display:flex;flex-direction:row;align-items:center;gap:10px;margin-top:18px;
+    font-family:var(--ui);font-size:11px;letter-spacing:.1em;color:var(--washi);
+    text-transform:none;cursor:pointer}
+  .agree input{width:16px;height:16px;accent-color:var(--shu);flex:none}
+  .agree input:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
+  .turnstile-wrap{min-height:65px;display:flex;align-items:center}
+
+  .fine{border-top:1px solid var(--hair);margin-top:52px;padding-top:26px;
+    font-family:var(--ui);font-size:10px;letter-spacing:.06em;color:var(--nibi);line-height:2.1}
+  .fine b{color:var(--washi);font-weight:400}
+
+  .result{display:none;border:1px solid var(--hair);background:rgba(13,18,32,.6);
+    padding:34px 26px;margin-top:46px}
+  .result.on{display:block}
+  .result h3{font-weight:300;font-size:22px;letter-spacing:.06em;color:var(--washi-hi)}
+  .result p{font-size:14px;line-height:2;color:var(--nibi);margin-top:14px}
+  .result .id{font-family:var(--ui);letter-spacing:.1em;color:var(--washi-hi)}
+  .result .err{color:var(--shu)}
+  .status-btn{display:inline-block;margin-top:18px;color:var(--washi-hi);text-decoration:none;
+    font-family:var(--ui);font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+    border:1px solid var(--hair);padding:10px 18px;background:none;cursor:pointer}
+  .status-btn:hover{border-color:var(--washi)}
+  .status-btn:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
+  .status-out{font-family:var(--ui);font-size:11px;letter-spacing:.08em;
+    color:var(--washi);margin-top:14px;line-height:2}
+</style>
+</head>
+<body>
+<div class="an-veil" aria-hidden="true"><img src="assets/an-submit-veil.jpg" alt=""></div>
+<header>
+  <a class="brand" href="./">
+    <span class="logo" aria-hidden="true"><span>開</span><span>羯</span><span>諦</span><span>経</span></span>
+    <h1>Open Gate Sutra<small>ひらかれた般若心経の家</small></h1>
+  </a>
+  <a class="back" href="./">← Home</a>
+</header>
+
+<main>
+  <p class="eyebrow">Submission — 投稿</p>
+  <h2>Cross the gate.</h2>
+  <p class="sub-ja">門を渡る — あなたの般若心経を、この家に</p>
+
+  <form id="submit-form" novalidate>
+    <label>Track URL <span class="req">*</span> <span class="ja">曲のリンク</span>
+      <input type="url" name="url" required placeholder="https://suno.com/song/... or https://youtu.be/..."
+        inputmode="url" autocomplete="off">
+      <span class="hint">SUNO (<b>commercial-use plan</b>) or YouTube. / SUNOは商用利用可プランの曲のみ</span>
+    </label>
+
+    <label>Title <span class="req">*</span> <span class="ja">曲名</span>
+      <input type="text" name="title" required placeholder="Gyatei Loop (Phonk)">
+    </label>
+
+    <label>Artist name <span class="req">*</span> <span class="ja">名義</span>
+      <input type="text" name="artist_name" required placeholder="Your name — 堂に永久に刻まれる名">
+    </label>
+
+    <label>Country <span class="ja">国(任意)</span>
+      <input type="text" name="country" maxlength="10" placeholder="JP / BR / DE ...">
+    </label>
+
+    <label>Artist link <span class="ja">あなたのチャンネル/ストア(任意・強く推奨)</span>
+      <input type="url" name="artist_link" placeholder="https://suno.com/@you — the house sends listeners to you">
+      <span class="hint"><b>We send our audience to you.</b> 聴いた人があなたに渡れるように。</span>
+    </label>
+
+    <label>Review audio <span class="ja">AN審査用音源(任意・SUNO曲でAN選を狙うなら)</span>
+      <input type="file" name="audio" accept=".mp3,audio/mpeg">
+      <span class="hint"><b>YouTube tracks don't need this</b> — AN listens to them directly. For SUNO tracks, download the mp3 from your own SUNO account and attach it here if you want AN's weekly pick to hear you. Used only for AN's review — never published, auto-deleted after 90 days.<br>YouTube投稿は不要(ANが直接聴けます)。SUNO曲でAN選の対象になりたい場合のみ、ご自身のSUNOアカウントからmp3を書き出して添付してください。審査だけに使い、公開せず、90日後に自動削除します。</span>
+    </label>
+
+    <label>Genre <span class="ja">ジャンル(任意)</span>
+      <select name="genre">
+        <option value="">Let AN's ear decide — おまかせ</option>
+        <option value="ambient">Ambient</option>
+        <option value="anison">Anison アニソン</option>
+        <option value="blues">Blues</option>
+        <option value="bossa nova">Bossa Nova</option>
+        <option value="choir-hymn">Choir / Hymn 聖歌</option>
+        <option value="electronic">Electronic / IDM</option>
+        <option value="enka">Enka 演歌</option>
+        <option value="folk-acoustic">Folk / Acoustic</option>
+        <option value="house-edm">House / EDM</option>
+        <option value="hiphop-rap">Hip hop / Rap</option>
+        <option value="idol-kpop">Idol / K-pop</option>
+        <option value="jazz">Jazz</option>
+        <option value="latin">Latin(Tango / Samba / Flamenco)</option>
+        <option value="lo-fi">Lo-fi</option>
+        <option value="metal">Metal</option>
+        <option value="pop">Pop</option>
+        <option value="punk">Punk</option>
+        <option value="reggae-ska">Reggae / Ska</option>
+        <option value="rnb-soul">R&amp;B / Soul</option>
+        <option value="rock">Rock</option>
+        <option value="techno">Techno</option>
+        <option value="world">World(Gagaku / Bollywood / Arabian ...)</option>
+        <option value="other">Other その他</option>
+      </select>
+    </label>
+
+    <div class="terms">
+      <p class="terms-head">Before you cross — 渡る前の約束</p>
+      <ul>
+        <li>The work is <b>yours</b>, and you hold the rights to publish it — no unlicensed samples or copyrighted material in the music. <span class="ja-line">楽曲はあなた自身の作品で、公開する権利を持っていること(他者の著作物・無許諾サンプルを含まない)</span></li>
+        <li>SUNO tracks must be made on a <b>commercial-use (paid) plan</b>. <span class="ja-line">SUNO曲は商用利用可(有料)プランで制作されたものであること</span></li>
+        <li>Cover art / thumbnail is <b>safe for everyone</b> — no explicit, gory, or otherwise offensive imagery. <span class="ja-line">カバーアート・サムネイルは、エロ・グロ等を含まず、公序良俗に反しないこと</span></li>
+      </ul>
+      <label class="agree">
+        <input type="checkbox" id="agree" required>
+        <span>I confirm all of the above — 上のすべてを約束します <span class="req">*</span></span>
+      </label>
+    </div>
+
+    <div class="turnstile-wrap">
+      <div id="turnstile-widget" aria-label="Automated abuse prevention"></div>
+    </div>
+
+    <div class="submit-row">
+      <button class="seal-btn" type="submit" id="seal">渡<small>CROSS</small></button>
+      <p class="submit-note">30 seconds · no account ·<br>your track stays yours</p>
+    </div>
+  </form>
+
+  <div class="result" id="result" role="status" aria-live="polite"></div>
+
+  <p class="fine">
+    The floor inspects daily at <b>05:00 JST</b> — formal checks only (working link · not a duplicate · 40s–10min). <b>No taste judgement at the gate.</b><br>
+    Tracks over <b>4:00</b> enter the Hall permanently but sit outside AN's weekly pick.<br>
+    床の検分は毎朝5時。形式のみを見ます(リンク・重複・長さ)。良し悪しは判定しません。4分を超える曲は堂には入りますが、AN選の対象外です。
+  </p>
+</main>
+
+<script>
+  // ローカル開発時は手元のFlask、本番はRailwayのAPIを呼ぶ
+  var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://127.0.0.1:5001'
+    : 'https://open-gate-sutra-production.up.railway.app';
+
+  var form = document.getElementById('submit-form');
+  var result = document.getElementById('result');
+  var seal = document.getElementById('seal');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+
+    var data = {};
+    ['url', 'title', 'artist_name', 'country', 'artist_link', 'genre'].forEach(function (k) {
+      var v = form.elements[k].value.trim();
+      if (v) data[k] = v;
+    });
+    // 規約同意はサーバー側でも必須。チェック状態を明示的に送る
+    data.agreed = document.getElementById('agree').checked ? 'true' : 'false';
+    var turnstileToken = (
+      window.turnstile && window.ogsTurnstileWidgetId !== undefined
+    ) ? window.turnstile.getResponse(window.ogsTurnstileWidgetId) : '';
+    if (!turnstileToken) {
+      result.className = 'result on';
+      result.innerHTML =
+        '<h3 class="err">One more step. — もう一つ確認があります</h3>' +
+        '<p>不正防止の確認が完了していません。確認欄を完了してから再度お試しください。</p>';
+      return;
+    }
+    data['cf-turnstile-response'] = turnstileToken;
+
+    // 音源添付あり → multipart、なし → 従来どおりJSON
+    var audioInput = form.elements.audio;
+    var req;
+    if (audioInput && audioInput.files && audioInput.files.length > 0) {
+      var fd = new FormData();
+      Object.keys(data).forEach(function (k) { fd.append(k, data[k]); });
+      fd.append('audio', audioInput.files[0]);
+      req = { method: 'POST', body: fd };
+    } else {
+      req = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      };
+    }
+
+    seal.disabled = true;
+    fetch(API_BASE + '/api/submit', req)
+      .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, j: j }; }); })
+      .then(function (r) {
+        if (r.ok) {
+          result.className = 'result on';
+          result.innerHTML =
+            '<h3>You have crossed. — 渡りました</h3>' +
+            '<p>Submission ID <span class="id">#' + r.j.id + '</span> · status: ' + r.j.status + '</p>' +
+            '<p>The floor inspects tomorrow at 05:00 JST. Keep your ID to check the result.<br>' +
+            '結果は毎朝の検分後、このIDで確認できます。</p>' +
+            '<button class="status-btn" data-id="' + r.j.id + '">Check status — 結果を見る</button>' +
+            '<p class="status-out" id="status-out"></p>';
+          form.reset();
+          window.turnstile.reset(window.ogsTurnstileWidgetId);
+        } else {
+          result.className = 'result on';
+          result.innerHTML = '<h3 class="err">Not yet. — まだ渡れていません</h3>' +
+            '<p>' + (r.j.message || r.j.error || 'unknown error') + '</p>';
+          window.turnstile.reset(window.ogsTurnstileWidgetId);
+        }
+      })
+      .catch(function () {
+        result.className = 'result on';
+        result.innerHTML = '<h3 class="err">The gate is unreachable. — 門に届きませんでした</h3>' +
+          '<p>ネットワークまたはサーバーの問題です。時間をおいて再試行してください。</p>';
+        window.turnstile.reset(window.ogsTurnstileWidgetId);
+      })
+      .finally(function () { seal.disabled = false; });
+  });
+
+  result.addEventListener('click', function (e) {
+    var btn = e.target.closest('.status-btn');
+    if (!btn) return;
+    fetch(API_BASE + '/api/status/' + btn.dataset.id)
+      .then(function (res) { return res.json(); })
+      .then(function (j) {
+        document.getElementById('status-out').textContent =
+          'status: ' + j.status +
+          (j.reject_reason ? ' · reason: ' + j.reject_reason : '') +
+          (j.floor_checked_at ? ' · checked: ' + j.floor_checked_at : ' · 検分待ち(明朝5時)');
+      });
+  });
+</script>
+</body>
+</html>

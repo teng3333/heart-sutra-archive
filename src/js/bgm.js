@@ -23,7 +23,9 @@
     '般若心経 acid jazz (1).mp3',
     '般若心経 jazz lo-fi.mp3',
     '般若心経 odd time signature.mp3',
-    '般若心経Cloud Rap.mp3'
+    '般若心経Cloud Rap.mp3',
+    '般若心経 JAZZ waltz.mp3',
+    '般若心経 jazz waltz 2.mp3'
   ];
   var DIR = 'assets/audio/';
   var KEY = 'ogs-bgm';          // 'on' | 'off'

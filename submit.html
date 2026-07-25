@@ -27,6 +27,22 @@
 
 <!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
 <script src="src/js/consent.js" defer></script>
+<script>
+  // 本番キーはCloudflareで発行後に置換。ローカルは公式の常時成功テストキーを使う。
+  window.OGS_TURNSTILE_SITE_KEY =
+    (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? '1x00000000000000000000AA'
+      : '0x4AAAAAAD9CdMPOYThFErmn';
+  window.ogsRenderTurnstile = function () {
+    window.ogsTurnstileWidgetId = window.turnstile.render('#turnstile-widget', {
+      sitekey: window.OGS_TURNSTILE_SITE_KEY,
+      action: 'submit',
+      theme: 'dark',
+      language: 'auto'
+    });
+  };
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=ogsRenderTurnstile&amp;render=explicit" defer></script>
 
 <style>
   :root{
@@ -47,8 +63,10 @@
 
   /* ── ANはヴェールの中。フォームページなので中央に沈める(ホームの.an-veilの派生) ── */
   .an-veil{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
-  .an-veil img{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);
-    min-width:100%;min-height:100%;width:auto;height:auto;object-fit:cover;
+  /* object-position で顔(画像の 53%,34% 付近)を画面内の同じ比率に固定する。
+     以前は min-width/height 方式で、横長画面だと顔が上に見切れていた。 */
+  .an-veil img{position:absolute;inset:0;width:100%;height:100%;
+    object-fit:cover;object-position:53% 34%;
     opacity:.16;filter:contrast(.97);
     -webkit-mask-image:radial-gradient(ellipse 58% 55% at 50% 38%,#000 25%,transparent 78%);
     mask-image:radial-gradient(ellipse 58% 55% at 50% 38%,#000 25%,transparent 78%)}
@@ -132,6 +150,7 @@
     text-transform:none;cursor:pointer}
   .agree input{width:16px;height:16px;accent-color:var(--shu);flex:none}
   .agree input:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
+  .turnstile-wrap{min-height:65px;display:flex;align-items:center}
 
   .fine{border-top:1px solid var(--hair);margin-top:52px;padding-top:26px;
     font-family:var(--ui);font-size:10px;letter-spacing:.06em;color:var(--nibi);line-height:2.1}
@@ -239,6 +258,10 @@
       </label>
     </div>
 
+    <div class="turnstile-wrap">
+      <div id="turnstile-widget" aria-label="Automated abuse prevention"></div>
+    </div>
+
     <div class="submit-row">
       <button class="seal-btn" type="submit" id="seal">渡<small>CROSS</small></button>
       <p class="submit-note">30 seconds · no account ·<br>your track stays yours</p>
@@ -275,6 +298,17 @@
     });
     // 規約同意はサーバー側でも必須。チェック状態を明示的に送る
     data.agreed = document.getElementById('agree').checked ? 'true' : 'false';
+    var turnstileToken = (
+      window.turnstile && window.ogsTurnstileWidgetId !== undefined
+    ) ? window.turnstile.getResponse(window.ogsTurnstileWidgetId) : '';
+    if (!turnstileToken) {
+      result.className = 'result on';
+      result.innerHTML =
+        '<h3 class="err">One more step. — もう一つ確認があります</h3>' +
+        '<p>不正防止の確認が完了していません。確認欄を完了してから再度お試しください。</p>';
+      return;
+    }
+    data['cf-turnstile-response'] = turnstileToken;
 
     // 音源添付あり → multipart、なし → 従来どおりJSON
     var audioInput = form.elements.audio;
@@ -306,16 +340,19 @@
             '<button class="status-btn" data-id="' + r.j.id + '">Check status — 結果を見る</button>' +
             '<p class="status-out" id="status-out"></p>';
           form.reset();
+          window.turnstile.reset(window.ogsTurnstileWidgetId);
         } else {
           result.className = 'result on';
           result.innerHTML = '<h3 class="err">Not yet. — まだ渡れていません</h3>' +
             '<p>' + (r.j.message || r.j.error || 'unknown error') + '</p>';
+          window.turnstile.reset(window.ogsTurnstileWidgetId);
         }
       })
       .catch(function () {
         result.className = 'result on';
         result.innerHTML = '<h3 class="err">The gate is unreachable. — 門に届きませんでした</h3>' +
           '<p>ネットワークまたはサーバーの問題です。時間をおいて再試行してください。</p>';
+        window.turnstile.reset(window.ogsTurnstileWidgetId);
       })
       .finally(function () { seal.disabled = false; });
   });

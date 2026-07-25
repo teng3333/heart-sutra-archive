@@ -27,6 +27,8 @@
 
 <!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
 <script src="src/js/consent.js" defer></script>
+<!-- 生きた背景アート(球体生態系・最背面に固定・視差設定に配慮) -->
+<script src="src/js/living-bg.js" defer></script>
 
 <style>
   :root{
@@ -73,6 +75,9 @@
     85%{opacity:.85}
   }
   main{position:relative;z-index:1}
+  /* 生きた背景の上でも本文が読めるよう、コンテンツ側に薄い暗幕を敷く(§10.1) */
+  main::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:radial-gradient(ellipse 90% 70% at 50% 45%,rgba(4,6,11,.55),rgba(4,6,11,.78) 70%)}
 
   /* ── 落款システム(この家の署名) ── */
   .seal{display:inline-flex;flex-direction:column;justify-content:center;align-items:center;
@@ -263,8 +268,8 @@
 </style>
 </head>
 <body>
-<div class="an-veil" aria-hidden="true"><img src="assets/an-veil.jpg" alt=""></div>
-<div class="an-eye-glow" aria-hidden="true"></div>
+<!-- 生きた背景アート:球体生態系(canvasは living-bg.js が最背面に生成する)。
+     静的ヴェール(.an-veil)と瑠璃の目は、この動的背景がANを内包するため退役。 -->
 <main>
   <header>
     <a class="brand" href="./">

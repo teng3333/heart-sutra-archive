@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Living Sphere — 諸行無常 | Open Gate Sutra</title>
+<meta name="description" content="A living, ever-changing sphere of the Heart Sutra ecosystem. Nothing here repeats — impermanence, rendered. 二度と同じ姿にならない、生きた球体生態系。">
+
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Open Gate Sutra">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta property="og:title" content="The Living Sphere — 諸行無常 | Open Gate Sutra">
+<meta property="og:description" content="Nothing here repeats. A living sphere of the Heart Sutra ecosystem — impermanence, rendered.">
+<meta property="og:url" content="https://teng3333.github.io/heart-sutra-archive/art.html">
+<meta property="og:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400&family=Shippori+Mincho:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
+<script src="src/js/consent.js" defer></script>
+<!-- 生きた背景アート。このページは鑑賞用なので全画面・明度そのまま -->
+<script>window.OGS_ART_FULLSCREEN = true;</script>
+<script src="src/js/living-bg.js?v=3" defer></script>
+<!-- BGM(般若心経リミックスを流し続ける) -->
+<script src="src/js/bgm.js?v=3" defer></script>
+
+<style>
+  :root{--washi:#d9c49a;--washi-hi:#e9dcba;--nibi:#8d826d;--shu:#b23a2e;
+    --hair:rgba(217,196,154,.16);
+    --en:"Cormorant Garamond","Georgia",serif;
+    --ja:"Shippori Mincho","Hiragino Mincho ProN",serif;
+    --ui:ui-sans-serif,-apple-system,"Helvetica Neue",sans-serif;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#04060b;color:var(--washi);
+    font-family:var(--en);-webkit-font-smoothing:antialiased;overflow:hidden}
+
+  /* 鑑賞の邪魔をしない最小限のUI。数秒で静かに退く */
+  .veil-ui{position:fixed;inset:0;z-index:5;pointer-events:none;
+    transition:opacity .9s ease}
+  body.idle .veil-ui{opacity:0}
+
+  .topbar{position:fixed;top:0;left:0;right:0;display:flex;
+    justify-content:space-between;align-items:center;padding:16px 20px;
+    pointer-events:auto}
+  .back{display:inline-flex;align-items:center;gap:9px;text-decoration:none;
+    color:var(--nibi);font-family:var(--ui);font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;padding:8px 12px;
+    background:rgba(6,9,16,.55);border:1px solid var(--hair);backdrop-filter:blur(4px)}
+  .back:hover{color:var(--washi);border-color:rgba(217,196,154,.4)}
+  .back:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
+
+  .title{position:fixed;left:0;right:0;bottom:74px;text-align:center;
+    pointer-events:none;padding:0 20px}
+  .title h1{font-weight:300;font-size:clamp(20px,3.4vw,32px);
+    letter-spacing:.06em;color:var(--washi-hi);text-shadow:0 2px 24px rgba(4,6,11,.9)}
+  .title p{font-family:var(--ja);font-size:11px;letter-spacing:.34em;
+    color:var(--nibi);margin-top:10px;text-shadow:0 2px 18px rgba(4,6,11,.9)}
+  .title small{display:block;font-family:var(--ui);font-size:9px;letter-spacing:.2em;
+    color:#5c5442;margin-top:14px;text-transform:uppercase}
+  @media (max-width:700px){ .title{bottom:96px} }
+</style>
+</head>
+<body>
+
+<div class="veil-ui">
+  <div class="topbar">
+    <a class="back" href="./">← Home</a>
+  </div>
+  <div class="title">
+    <h1>Nothing here repeats.</h1>
+    <p>諸行無常 — 二度と同じ姿にならない</p>
+    <small>move the pointer to show controls</small>
+  </div>
+</div>
+
+<script>
+  // しばらく操作がなければUIを退かせ、アートだけにする
+  (function(){
+    var timer, IDLE = 4000;
+    function wake(){
+      document.body.classList.remove('idle');
+      clearTimeout(timer);
+      timer = setTimeout(function(){ document.body.classList.add('idle'); }, IDLE);
+    }
+    ['pointermove','pointerdown','keydown','touchstart','wheel'].forEach(function(e){
+      addEventListener(e, wake, {passive:true});
+    });
+    wake();
+  })();
+</script>
+</body>
+</html>

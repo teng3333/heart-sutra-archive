@@ -66,11 +66,25 @@
     audio = new Audio();
     audio.preload = 'none';
     audio.volume = 0;
-    audio.addEventListener('ended', function () {   // 終わったら別の曲へ
+    // 曲が終わったら間を空けずに次の曲へ(般若心経が流れ続ける)
+    var nextTrack = function () {
       audio.src = DIR + encodeURIComponent(pickTrack());
-      audio.play().then(function () { fadeTo(TARGET_VOL); }).catch(function () {});
-      updateUI();
+      audio.volume = 0;
+      audio.play().then(function () { fadeTo(TARGET_VOL); updateUI(); })
+        .catch(function () {                       // 失敗しても止めない。少し待って再挑戦
+          setTimeout(function () { if (started) nextTrack(); }, 2500);
+        });
+    };
+    audio.addEventListener('ended', nextTrack);
+    audio.addEventListener('error', function () {  // 読み込み失敗も次の曲で回復
+      if (started) setTimeout(nextTrack, 1500);
     });
+    // 途中で止まってしまった場合の保険(タブ復帰時など)
+    setInterval(function () {
+      if (started && audio.paused && audio.src) {
+        audio.play().catch(function () {});
+      }
+    }, 5000);
     return audio;
   }
 

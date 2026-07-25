@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "_proto_dynamic_bg.html"
 OUT = ROOT / "src/js/living-bg.js"
-BG_OPACITY = "0.62"          # 本文可読性を優先した背景の濃さ
+BG_OPACITY = "0.80"          # 背景の濃さ(高尾指示で 0.62→0.80 に明るく)
 
 CANVAS_SETUP = """// 背景レイヤーとしてcanvasを自前生成(最背面・イベントは透過)
 const cv = document.createElement('canvas');
@@ -56,7 +56,8 @@ document.addEventListener('visibilitychange', function(){
     '#motion-toggle:hover{color:#d9c49a;border-color:rgba(217,196,154,.4)}' +
     '#motion-toggle:focus-visible{outline:1px solid #d9c49a;outline-offset:3px}' +
     '#motion-toggle .dot{width:6px;height:6px;border-radius:50%;background:#4a4438;flex:none}' +
-    '#motion-toggle.on .dot{background:#6fa8d6;box-shadow:0 0 6px rgba(111,168,214,.7)}';
+    '#motion-toggle.on .dot{background:#6fa8d6;box-shadow:0 0 6px rgba(111,168,214,.7)}' +
+    '@media (max-width:700px){#motion-toggle{left:auto;right:10px;bottom:46px;padding:7px 9px;font-size:9px}}';
   document.head.appendChild(css);
 
   var b = document.createElement('button');

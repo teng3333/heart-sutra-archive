@@ -105,7 +105,7 @@
       '#bgm-toggle.on .dot{background:#b23a2e;box-shadow:0 0 6px rgba(178,58,46,.8)}' +
       '#bgm-toggle .now{max-width:15em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' +
       'text-transform:none;letter-spacing:.04em;color:#5c5442}' +
-      '@media (max-width:700px){#bgm-toggle .now{display:none}}';
+      '@media (max-width:700px){#bgm-toggle .now{display:none}#bgm-toggle{left:auto;right:10px;bottom:10px;padding:7px 9px;font-size:9px}}';
     document.head.appendChild(css);
 
     btn = document.createElement('button');

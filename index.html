@@ -28,9 +28,9 @@
 <!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
 <script src="src/js/consent.js" defer></script>
 <!-- 生きた背景アート(球体生態系・最背面に固定・視差設定に配慮) -->
-<script src="src/js/living-bg.js" defer></script>
+<script src="src/js/living-bg.js?v=2" defer></script>
 <!-- BGM(訪問ごとにランダムな般若心経リミックス・常設トグルで停止可) -->
-<script src="src/js/bgm.js" defer></script>
+<script src="src/js/bgm.js?v=2" defer></script>
 
 <style>
   :root{
@@ -79,7 +79,7 @@
   main{position:relative;z-index:1}
   /* 生きた背景の上でも本文が読めるよう、コンテンツ側に薄い暗幕を敷く(§10.1) */
   main::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
-    background:radial-gradient(ellipse 90% 70% at 50% 45%,rgba(4,6,11,.55),rgba(4,6,11,.78) 70%)}
+    background:radial-gradient(ellipse 95% 75% at 50% 45%,rgba(4,6,11,.34),rgba(4,6,11,.62) 72%)}
 
   /* ── 落款システム(この家の署名) ── */
   .seal{display:inline-flex;flex-direction:column;justify-content:center;align-items:center;

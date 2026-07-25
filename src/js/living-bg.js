@@ -20,7 +20,7 @@ const cv = document.createElement('canvas');
 cv.id = 'living-bg';
 cv.setAttribute('aria-hidden', 'true');
 Object.assign(cv.style, { position:'fixed', inset:'0', width:'100%', height:'100%',
-  display:'block', zIndex:'0', pointerEvents:'none', opacity:'0.62' });
+  display:'block', zIndex:'0', pointerEvents:'none', opacity:'0.80' });
 document.body.insertBefore(cv, document.body.firstChild);
 const ctx = cv.getContext('2d');
 const DPR = Math.min(devicePixelRatio || 1, 2);
@@ -1681,7 +1681,8 @@ document.addEventListener('visibilitychange', function(){
     '#motion-toggle:hover{color:#d9c49a;border-color:rgba(217,196,154,.4)}' +
     '#motion-toggle:focus-visible{outline:1px solid #d9c49a;outline-offset:3px}' +
     '#motion-toggle .dot{width:6px;height:6px;border-radius:50%;background:#4a4438;flex:none}' +
-    '#motion-toggle.on .dot{background:#6fa8d6;box-shadow:0 0 6px rgba(111,168,214,.7)}';
+    '#motion-toggle.on .dot{background:#6fa8d6;box-shadow:0 0 6px rgba(111,168,214,.7)}' +
+    '@media (max-width:700px){#motion-toggle{left:auto;right:10px;bottom:46px;padding:7px 9px;font-size:9px}}';
   document.head.appendChild(css);
 
   var b = document.createElement('button');

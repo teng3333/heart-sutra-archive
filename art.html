@@ -28,7 +28,7 @@
 <script>window.OGS_ART_FULLSCREEN = true;</script>
 <script src="src/js/living-bg.js?v=3" defer></script>
 <!-- BGM(般若心経リミックスを流し続ける) -->
-<script src="src/js/bgm.js?v=3" defer></script>
+<script src="src/js/bgm.js?v=4" defer></script>
 
 <style>
   :root{--washi:#d9c49a;--washi-hi:#e9dcba;--nibi:#8d826d;--shu:#b23a2e;
@@ -45,15 +45,19 @@
     transition:opacity .9s ease}
   body.idle .veil-ui{opacity:0}
 
-  .topbar{position:fixed;top:0;left:0;right:0;display:flex;
-    justify-content:space-between;align-items:center;padding:16px 20px;
-    pointer-events:auto}
-  .back{display:inline-flex;align-items:center;gap:9px;text-decoration:none;
-    color:var(--nibi);font-family:var(--ui);font-size:10px;letter-spacing:.24em;
-    text-transform:uppercase;padding:8px 12px;
-    background:rgba(6,9,16,.55);border:1px solid var(--hair);backdrop-filter:blur(4px)}
-  .back:hover{color:var(--washi);border-color:rgba(217,196,154,.4)}
-  .back:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
+  /* Homeへ戻る導線。左下(携帯は右下)の操作列 Sound(14) → Motion(56) の上に積む。
+     鑑賞UIが退いても消えないよう .veil-ui の外に置く */
+  .home-btn{position:fixed;left:14px;bottom:98px;z-index:9997;
+    display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+    color:var(--nibi);font-family:var(--ui);font-size:10px;line-height:1;
+    letter-spacing:.18em;text-transform:uppercase;padding:8px 12px;
+    background:rgba(6,9,16,.72);border:1px solid rgba(217,196,154,.16);
+    backdrop-filter:blur(4px);transition:color .3s,border-color .3s}
+  .home-btn:hover{color:var(--washi);border-color:rgba(217,196,154,.4)}
+  .home-btn:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
+  @media (max-width:700px){
+    .home-btn{left:auto;right:10px;bottom:82px;padding:7px 9px;font-size:9px}
+  }
 
   .title{position:fixed;left:0;right:0;bottom:74px;text-align:center;
     pointer-events:none;padding:0 20px}
@@ -63,19 +67,18 @@
     color:var(--nibi);margin-top:10px;text-shadow:0 2px 18px rgba(4,6,11,.9)}
   .title small{display:block;font-family:var(--ui);font-size:9px;letter-spacing:.2em;
     color:#5c5442;margin-top:14px;text-transform:uppercase}
-  @media (max-width:700px){ .title{bottom:96px} }
+  /* 携帯は操作列が3段になるぶん、キャプションを上へ逃がす */
+  @media (max-width:700px){ .title{bottom:124px} }
 </style>
 </head>
 <body>
 
+<a class="home-btn" href="./" aria-label="ホームに戻る"><span aria-hidden="true">←</span> Home</a>
+
 <div class="veil-ui">
-  <div class="topbar">
-    <a class="back" href="./">← Home</a>
-  </div>
   <div class="title">
     <h1>Nothing here repeats.</h1>
     <p>諸行無常 — 二度と同じ姿にならない</p>
-    <small>move the pointer to show controls</small>
   </div>
 </div>
 

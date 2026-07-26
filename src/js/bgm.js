@@ -25,7 +25,11 @@
     '般若心経 odd time signature.mp3',
     '般若心経Cloud Rap.mp3',
     '般若心経 JAZZ waltz.mp3',
-    '般若心経 jazz waltz 2.mp3'
+    '般若心経 jazz waltz 2.mp3',
+    '般若心経 Ambient Free JAZZ.mp3',
+    '般若心経 Ambient Free JAZZ 2.mp3',
+    '般若心経 Ambient Free JAZZ 3.mp3',
+    '般若心経 Ambient Free JAZZ 4.mp3'
   ];
   var DIR = 'assets/audio/';
   var KEY = 'ogs-bgm';          // 'on' | 'off'

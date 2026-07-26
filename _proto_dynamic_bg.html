@@ -696,11 +696,13 @@ function drawWeather(t, tint){
    4枚を同一サイズ・同じ目位置に正規化 → ライフサイクルでクロスフェード。 */
 // eye{ex,ey}=正面の両目中点(元画像px)、ipd=瞳孔間距離(px)。
 // 較正ページ(_face_calib.html)で瞳を実測。4枚を同一の目位置・同一スケールに正規化。
+// 配信画像は正面のみを切り出した無損失WebP。元の3面図は assets/an/_source/。
+// 較正で得た元画像の座標から、切り出し原点(下記コメント)を引いた値を入れている。
 const FACE_SET = [
-  {key:'human',       src:'assets/an/face-human.jpg',       eye:{ex:296, ey:426, ipd:115}, mech:0, sutra:0},
-  {key:'human_sutra', src:'assets/an/face-human-sutra.jpg', eye:{ex:295, ey:425, ipd:111}, mech:0, sutra:1},
-  {key:'mech_sutra',  src:'assets/an/face-mech-sutra.jpg',  eye:{ex:294, ey:416, ipd:114}, mech:1, sutra:1},
-  {key:'mech',        src:'assets/an/face-mech.jpg',         eye:{ex:304, ey:433, ipd:110}, mech:1, sutra:0},
+  {key:'human',       src:'assets/an/face-human.webp',       eye:{ex:264, ey:282, ipd:115}, mech:0, sutra:0}, // 原点(32,144)
+  {key:'human_sutra', src:'assets/an/face-human-sutra.webp', eye:{ex:263, ey:265, ipd:111}, mech:0, sutra:1}, // 原点(32,160)
+  {key:'mech_sutra',  src:'assets/an/face-mech-sutra.webp',  eye:{ex:262, ey:272, ipd:114}, mech:1, sutra:1}, // 原点(32,144)
+  {key:'mech',        src:'assets/an/face-mech.webp',        eye:{ex:256, ey:273, ipd:110}, mech:1, sutra:0}, // 原点(48,160)
 ];
 const FW = 470, FH = 820;
 const EYE_OUT_X = FW*0.5, EYE_OUT_Y = FH*0.30, IPD_OUT = FW*0.245; // 出力側の基準

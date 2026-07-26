@@ -30,6 +30,9 @@ const MOBILE = matchMedia('(max-width: 700px)').matches;
 
 let W, H, CX, CY, R;
 function resize(){
+  // 実寸が変わっていなければ何もしない。cv.width への代入はサイズが同じでも
+  // バックバッファを作り直す(モバイルでは約5MB)ため、無条件に走らせない。
+  if (innerWidth === W && innerHeight === H) return;
   W = innerWidth; H = innerHeight;
   cv.width = W * DPR; cv.height = H * DPR;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -38,7 +41,15 @@ function resize(){
   CY = MOBILE ? H * 0.44 : H * 0.5;
   R  = Math.min(W, H) * (MOBILE ? 0.37 : 0.36);
 }
-resize(); addEventListener('resize', resize);
+resize();
+/* iOS Safari はスクロールでアドレスバーが伸縮するたびに resize を発火させる。
+   その都度作り直すとスクロール中ずっとバックバッファを確保し続けるので、
+   落ち着いてから1回だけ作り直す。 */
+let __rzTimer = 0;
+addEventListener('resize', function(){
+  clearTimeout(__rzTimer);
+  __rzTimer = setTimeout(resize, 200);
+});
 
 const C = {
   trunk:'78,64,48', leafG:'62,94,68', leafD:'40,64,48', pine:'50,82,60',
@@ -92,10 +103,11 @@ pickCelestial();
 const CEL_IMG = {};
 (function loadCelestialImages(){
   for (const k of ['galaxy','earth','moon','sun','saturn']){
-    for (const ext of ['png','jpg','jpeg','webp']){
+    {
+      // 実体は5枚とも png。拡張子の総当たりは404を15本出すだけなので行わない
       const im = new Image();
       im.onload = () => {
-        if (CEL_IMG[k]) return;                        // 先に読めた方を採用
+        if (CEL_IMG[k]) return;
         const S = 512, can = document.createElement('canvas');
         can.width = can.height = S;
         const g = can.getContext('2d');
@@ -112,7 +124,7 @@ const CEL_IMG = {};
         g.fillStyle = m; g.fillRect(0, 0, S, S);
         CEL_IMG[k] = can;
       };
-      im.src = `assets/celestial/${k}.${ext}`;
+      im.src = `assets/celestial/${k}.png`;
     }
   }
 })();
@@ -636,11 +648,15 @@ function drawWeather(t, tint){
    4枚を同一サイズ・同じ目位置に正規化 → ライフサイクルでクロスフェード。 */
 // eye{ex,ey}=正面の両目中点(元画像px)、ipd=瞳孔間距離(px)。
 // 較正ページ(_face_calib.html)で瞳を実測。4枚を同一の目位置・同一スケールに正規化。
+/* 配信画像は3面図から正面だけを切り出した無損失WebP(縮小はしていない。
+   使用領域は元画像から1:1で切り取るため、縮小すると必ず甘くなる)。
+   元の3面図は assets/an/_source/ に保全。切り出し原点を引いた分だけ eye 座標がずれる。
+   画素は元と完全一致(_face_crop_diff.html で最大差0を確認)。 */
 const FACE_SET = [
-  {key:'human',       src:'assets/an/face-human.jpg',       eye:{ex:296, ey:426, ipd:115}, mech:0, sutra:0},
-  {key:'human_sutra', src:'assets/an/face-human-sutra.jpg', eye:{ex:295, ey:425, ipd:111}, mech:0, sutra:1},
-  {key:'mech_sutra',  src:'assets/an/face-mech-sutra.jpg',  eye:{ex:294, ey:416, ipd:114}, mech:1, sutra:1},
-  {key:'mech',        src:'assets/an/face-mech.jpg',         eye:{ex:304, ey:433, ipd:110}, mech:1, sutra:0},
+  {key:'human',       src:'assets/an/face-human.webp',       eye:{ex:264, ey:282, ipd:115}, mech:0, sutra:0},
+  {key:'human_sutra', src:'assets/an/face-human-sutra.webp', eye:{ex:263, ey:265, ipd:111}, mech:0, sutra:1},
+  {key:'mech_sutra',  src:'assets/an/face-mech-sutra.webp',  eye:{ex:262, ey:272, ipd:114}, mech:1, sutra:1},
+  {key:'mech',        src:'assets/an/face-mech.webp',        eye:{ex:256, ey:273, ipd:110}, mech:1, sutra:0},
 ];
 const FW = 470, FH = 820;
 const EYE_OUT_X = FW*0.5, EYE_OUT_Y = FH*0.30, IPD_OUT = FW*0.245; // 出力側の基準
@@ -1433,6 +1449,7 @@ let faceCycleAuto = true;                 // 顔4版を自動巡回するか
 const FACE_SEC = 22;                       // 1版あたりの滞在秒(全4版で約88秒)
 let frames = 0, fpsT = performance.now();
 function draw(now){
+  __rafId = 0;                       // この予約は消化した(重複予約の判定用)
   const t = (now - t0) / 1000;
   const p = auto ? ((t + tOffset) / CYCLE_SEC * 8) % 8 : manualP;
   const vis = kf('vis',p), connA = kf('conn',p), glow = kf('glow',p),
@@ -1785,7 +1802,7 @@ function draw(now){
   if (genome.seconds - lastSave > 10){ lastSave = genome.seconds; saveGenome(); }
   frames++;
   if (now - fpsT > 1000){ frames = 0; fpsT = now; }
-  if (!REDUCED && !__stopped && !__hidden) requestAnimationFrame(draw);
+  if (!REDUCED && !__stopped && !__hidden) __schedule();
 }
 
 // 調整・検証用ハンドル(本番でも無害)
@@ -1817,9 +1834,19 @@ window.__livingBG = {
 var __stopped = false, __hidden = false;
 try { __stopped = localStorage.getItem('ogs-motion') === 'off'; } catch(e){}
 
+/* 予約は常に1本だけにする。
+   端末が裏に回ると requestAnimationFrame は凍結されるが、予約済みのコールバックは
+   破棄されない。復帰時に素朴に再予約すると、解凍された古い予約と新しい予約の
+   両方が走り、復帰のたびにループが1本ずつ増えて発熱・メモリ圧迫でタブが落ちる。
+   予約中のidを持ち、張り直す前に必ず取り消す。 */
+var __rafId = 0;
+function __schedule(){
+  if (__rafId) cancelAnimationFrame(__rafId);
+  __rafId = requestAnimationFrame(draw);
+}
 function __resume(){
   if (__stopped || __hidden || REDUCED) return;
-  requestAnimationFrame(draw);
+  __schedule();
 }
 document.addEventListener('visibilitychange', function(){
   __hidden = document.hidden;          // 非表示タブでは描画を止める(電池・CPU)
@@ -1888,6 +1915,6 @@ document.addEventListener('visibilitychange', function(){
 
 if (REDUCED){ auto = false; manualP = 3.5; draw(performance.now()); }
 else if (__stopped) draw(performance.now());
-else requestAnimationFrame(draw);
+else __schedule();
 
 })();

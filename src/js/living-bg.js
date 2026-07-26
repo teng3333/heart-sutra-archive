@@ -20,7 +20,8 @@ const cv = document.createElement('canvas');
 cv.id = 'living-bg';
 cv.setAttribute('aria-hidden', 'true');
 Object.assign(cv.style, { position:'fixed', inset:'0', width:'100%', height:'100%',
-  display:'block', zIndex:'0', pointerEvents:'none', opacity:'0.80' });
+  display:'block', zIndex:'0', pointerEvents:'none',
+  opacity: window.OGS_ART_FULLSCREEN ? '1' : '0.80' });
 document.body.insertBefore(cv, document.body.firstChild);
 const ctx = cv.getContext('2d');
 const DPR = Math.min(devicePixelRatio || 1, 2);
@@ -1859,6 +1860,30 @@ document.addEventListener('visibilitychange', function(){
   });
   document.body.appendChild(b);
   sync();
+})();
+
+// ── ART鑑賞ページへの入口(鑑賞ページ自身には出さない) ──
+(function buildArtLink(){
+  if (window.OGS_ART_FULLSCREEN) return;
+  var css = document.createElement('style');
+  css.textContent =
+    '#art-link{position:fixed;left:14px;bottom:98px;z-index:9997;display:flex;' +
+    'align-items:center;gap:8px;padding:8px 12px;text-decoration:none;' +
+    'background:rgba(6,9,16,.72);border:1px solid rgba(217,196,154,.16);' +
+    'color:#8d826d;font:400 10px/1 ui-sans-serif,-apple-system,sans-serif;' +
+    'letter-spacing:.18em;text-transform:uppercase;backdrop-filter:blur(4px);' +
+    'transition:color .3s,border-color .3s}' +
+    '#art-link:hover{color:#d9c49a;border-color:rgba(217,196,154,.4)}' +
+    '#art-link:focus-visible{outline:1px solid #d9c49a;outline-offset:3px}' +
+    '#art-link .dot{width:6px;height:6px;border-radius:50%;background:#b23a2e;' +
+    'box-shadow:0 0 6px rgba(178,58,46,.55);flex:none}' +
+    '@media (max-width:700px){#art-link{left:auto;right:10px;bottom:82px;padding:7px 9px;font-size:9px}}';
+  document.head.appendChild(css);
+  var a = document.createElement('a');
+  a.id = 'art-link'; a.href = 'art.html';
+  a.setAttribute('aria-label', '背景アートを全画面で見る');
+  a.innerHTML = '<span class="dot" aria-hidden="true"></span><span>View art</span>';
+  document.body.appendChild(a);
 })();
 
 if (REDUCED){ auto = false; manualP = 3.5; draw(performance.now()); }

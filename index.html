@@ -28,7 +28,7 @@
 <!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
 <script src="src/js/consent.js" defer></script>
 <!-- 生きた背景アート(球体生態系・最背面に固定・視差設定に配慮) -->
-<script src="src/js/living-bg.js?v=4" defer></script>
+<script src="src/js/living-bg.js?v=5" defer></script>
 <!-- BGM(訪問ごとにランダムな般若心経リミックス・常設トグルで停止可) -->
 <script src="src/js/bgm.js?v=4" defer></script>
 
@@ -158,6 +158,26 @@
   .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:44px}
   .sec-head h3{font-weight:300;font-size:26px;letter-spacing:.1em}
   .sec-head span{font-family:var(--ja);font-size:11px;letter-spacing:.3em;color:var(--nibi)}
+
+  /* 新着の印。ネオンが強い絵なので、普段は彩度を落として藍の画面になじませ、
+     触れたときだけ本来の色に戻す(カバーアートと同じ流儀)。
+     動きは「気づく程度」に留める:4秒かけて2度だけ傾く */
+  .sec-head .new-badge{align-self:center;flex:none;width:64px;height:auto;
+    filter:saturate(.55) brightness(.9);opacity:.88;
+    transition:filter .6s ease,opacity .6s ease;transform-origin:50% 92%}
+  #latest:hover .new-badge,#latest:focus-within .new-badge{
+    filter:saturate(1) brightness(1);opacity:1}
+  @media (prefers-reduced-motion:no-preference){
+    .new-badge{animation:badgeWave 4s ease-in-out infinite}
+  }
+  /* 右下のMotionトグルで止めたら、この動きも一緒に止まる */
+  :root.motion-off .new-badge{animation:none}
+  @keyframes badgeWave{
+    0%,62%,100%{transform:rotate(0deg)}
+    72%{transform:rotate(-2deg)}
+    86%{transform:rotate(2deg)}
+  }
+  @media (max-width:700px){ .sec-head .new-badge{width:52px} }
 
   .steps{display:grid;grid-template-columns:1fr;gap:2px}
   @media (min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
@@ -347,7 +367,7 @@
   <!-- 堂に入ったばかりの投稿3件。latest.js が GET /api/latest を読んで描く。
        取れないときは hidden のまま(死んだ枠を見せない)。カバー画像は持たない -->
   <section id="latest" hidden>
-    <div class="sec-head"><h3>Just Arrived</h3><span>新着</span></div>
+    <div class="sec-head"><img class="new-badge" src="assets/an/new-badge.png?v=1" width="192" height="237" alt="" loading="lazy" decoding="async"><h3>Just Arrived</h3><span>新着</span></div>
     <div class="nine" id="latest-grid"></div>
   </section>
 

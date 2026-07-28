@@ -1874,6 +1874,8 @@ document.addEventListener('visibilitychange', function(){
   b.innerHTML = '<span class="dot" aria-hidden="true"></span><span class="txt"></span>';
   function sync(){
     var moving = !__stopped && !REDUCED;
+    // 背景以外の動きもこのトグル1つで止められるよう、状態をCSSへ流す
+    document.documentElement.classList.toggle('motion-off', !moving);
     b.classList.toggle('on', moving);
     b.setAttribute('aria-pressed', moving ? 'true' : 'false');
     b.querySelector('.txt').textContent = moving ? 'Motion on' : 'Motion off';

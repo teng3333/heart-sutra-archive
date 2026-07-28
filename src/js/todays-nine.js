@@ -1,11 +1,14 @@
 /**
- * Today's Nine — 今日の九曲(種火版)
- * 高尾の般若心経プレイリスト(SUNO・84曲)から、UTC日付をシードに毎日9曲を選ぶ。
- * 同じ日は世界中どこで見ても同じ9曲。バックエンド接続(submissions テーブル)までの暫定実装。
+ * 今日のAN三選(種火版)
+ * 高尾の般若心経プレイリスト(SUNO・84曲)から、UTC日付をシードに毎日3曲を選ぶ。
+ * 同じ日は世界中どこで見ても同じ3曲。バックエンド接続(an_selections)までの暫定実装で、
+ * 現時点の3曲はANが選んだものではない(日替わりの巡回)。
  * データ出典: https://suno.com/playlist/5ae1adc6-893c-4fce-bfec-a0114e0bd925 (2026-07-18取得)
  */
 (function () {
   'use strict';
+
+  var PICK = 3;   // 表示枚数。3列グリッドにちょうど1行で収まる
 
   var ARTIST_NAME = 'TENG3';
   var ARTIST_URL = 'https://suno.com/@rockingtreble058';
@@ -109,7 +112,7 @@
     };
   }
 
-  function todaysNine() {
+  function todaysPicks() {
     var now = new Date();
     var seed = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
     var rand = mulberry32(seed);
@@ -118,7 +121,7 @@
       var j = Math.floor(rand() * (i + 1));
       var tmp = idx[i]; idx[i] = idx[j]; idx[j] = tmp;
     }
-    return idx.slice(0, 9).map(function (i) { return TRACKS[i]; });
+    return idx.slice(0, PICK).map(function (i) { return TRACKS[i]; });
   }
 
   function fmt(sec) {
@@ -135,7 +138,7 @@
   function render() {
     var grid = document.getElementById('nine-grid');
     if (!grid) return;
-    todaysNine().forEach(function (t) {
+    todaysPicks().forEach(function (t) {
       var card = el('div', 'work');
 
       var cover = el('span', 'cover');

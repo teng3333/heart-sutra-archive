@@ -344,6 +344,13 @@
     <noscript><p style="text-align:center;margin-top:34px"><a href="https://suno.com/playlist/5ae1adc6-893c-4fce-bfec-a0114e0bd925" style="color:inherit">Listen to the Heart Sutra playlist on SUNO →</a></p></noscript>
   </section>
 
+  <!-- 堂に入ったばかりの投稿3件。latest.js が GET /api/latest を読んで描く。
+       取れないときは hidden のまま(死んだ枠を見せない)。カバー画像は持たない -->
+  <section id="latest" hidden>
+    <div class="sec-head"><h3>Just Arrived</h3><span>新着</span></div>
+    <div class="nine" id="latest-grid"></div>
+  </section>
+
   <section>
     <div class="kudoku">
       <p>Your remix stays yours — monetize it anywhere. When AN stamps her seal, <i>we send our audience to you.</i></p>
@@ -397,6 +404,7 @@
 
 <a class="sticky-gate" id="stickyGate" href="submit.html"><b>渡</b>Cross the gate</a>
 <script src="src/js/todays-nine.js?v=2"></script>
+<script src="src/js/latest.js?v=1"></script>
 <script>
   const gate = document.getElementById('stickyGate');
   const hero = document.querySelector('.hero');

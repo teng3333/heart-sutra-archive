@@ -1,6 +1,6 @@
 /**
  * 新着 — 堂に入ったばかりの投稿(3件)
- * バックエンドの GET /api/latest を読んで描く。ホームで唯一APIを叩く箇所。
+ * バックエンドの GET /api/latest を読んで描く。ホームで唯一のコンテンツAPI。
  * カバー画像は持たない(他人の投稿の画像を勝手に取りに行かない・軽い)。
  * APIが落ちている / 0件のときは枠ごと隠す(死んだ枠を見せない)。
  */
@@ -37,6 +37,8 @@
     main.href = item.url;
     main.target = '_blank';
     main.rel = 'noopener nofollow ugc';
+    main.setAttribute('data-ogs-event', 'listen_open');
+    main.setAttribute('data-ogs-placement', 'latest');
     var title = el('span', 'title');
     title.appendChild(el('span', 'play', '▶'));
     title.appendChild(document.createTextNode(item.title));

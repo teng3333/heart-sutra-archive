@@ -762,18 +762,9 @@ function saveGenome(){
 const genome = loadGenome();
 genome.visits = (genome.visits|0) + 1;
 
-// HSEの実データ(楽曲数・AN選数)。取得できれば成熟度の主軸になる。
-// 未提供時はローカルの育ち(世代・観測時間)だけで成長する。
+// HSEの実データ(楽曲数・AN選数)。公開APIが提供されるまでは、
+// 404になるリクエストを送らずローカルの育ち(世代・観測時間)だけで成長する。
 let hseStats = { tracks:0, selections:0, ok:false };
-(function fetchHSE(){
-  const base = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-    ? 'http://127.0.0.1:5001' : 'https://open-gate-sutra-production.up.railway.app';
-  fetch(base + '/api/stats', {mode:'cors'})
-    .then(r => r.ok ? r.json() : null)
-    .then(j => { if (j && typeof j.tracks === 'number'){
-      hseStats = { tracks:j.tracks|0, selections:j.selections|0, ok:true }; } })
-    .catch(() => {});   // 未実装/オフラインでも静かに続行
-})();
 
 // 成熟度: HSEデータ(最大0.5)+ 世代(最大0.28)+ 累積観測(最大0.22)
 function maturity(){

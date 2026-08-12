@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="src/css/style.css">
 
   <!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
-  <script src="src/js/consent.js" defer></script>
+  <script src="src/js/consent.js?v=2" defer></script>
 </head>
 <body>
 
@@ -269,8 +269,9 @@
   <script src="src/js/chat.js"></script>
   
   <!-- AN Mikuji Launcher -->
-  <a href="an-mikuji.html" id="mikuji-launcher" title="AN御神籤">
+  <span id="mikuji-launcher" class="mikuji-paused" aria-label="AN Mikuji is temporarily paused" title="AN神籤 — 一時休止中">
     <img src="assets/covers/mikuji_icon.webp" alt="AN Mikuji">
-  </a>
+    <span class="mikuji-pause-label" aria-hidden="true">PAUSED</span>
+  </span>
 </body>
 </html>

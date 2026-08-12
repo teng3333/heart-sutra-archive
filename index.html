@@ -31,11 +31,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
 
 <!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
-<script src="src/js/consent.js" defer></script>
+<script src="src/js/consent.js?v=2" defer></script>
 <!-- 落ちる現象の調査用(端末内に記録するだけ・送信しない)。原因特定後に削除する -->
 <script src="src/js/diag.js?v=1"></script>
 <!-- 生きた背景アート(球体生態系・最背面に固定・視差設定に配慮) -->
-<script src="src/js/living-bg.js?v=6" defer></script>
+<script src="src/js/living-bg.js?v=7" defer></script>
 <!-- BGM(訪問ごとにランダムな般若心経リミックス・常設トグルで停止可) -->
 <script src="src/js/bgm.js?v=4" defer></script>
 
@@ -104,7 +104,7 @@
 
   /* ── ヘッダー:ロゴ=開羯諦経の角印、題=Open Gate Sutra ── */
   header{display:flex;justify-content:space-between;align-items:center;
-    padding:18px 22px;border-bottom:1px solid var(--hair)}
+    padding:18px 22px;border-bottom:1px solid var(--hair);position:relative;z-index:40}
   .brand{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit}
   .logo{display:grid;grid-template-columns:1fr 1fr;width:46px;height:46px;flex:none;
     border:1px solid var(--washi);font-family:var(--ja);font-weight:500;
@@ -121,6 +121,10 @@
   nav a:focus-visible{outline:1px solid var(--washi);outline-offset:4px}
   nav .lang{border:1px solid var(--hair);padding:5px 10px}
   nav .soon{opacity:.45;cursor:default}
+  .menu-toggle{display:none;border:1px solid var(--hair);background:rgba(13,18,32,.72);
+    color:var(--washi);width:44px;height:44px;cursor:pointer;font:400 9px/1 var(--ui);
+    letter-spacing:.16em;text-transform:uppercase}
+  .menu-toggle:focus-visible{outline:2px solid var(--washi);outline-offset:3px}
 
   /* ── HERO:主旨が3秒で伝わること ── */
   .hero{min-height:86vh;display:flex;flex-direction:column;justify-content:center;
@@ -251,6 +255,8 @@
   .step .links a:hover,.step .links button:hover{color:var(--ruri);border-color:var(--ruri)}
   .step .links a:focus-visible,.step .links button:focus-visible{
     outline:1px solid var(--washi);outline-offset:3px}
+  .step .links .paused-link{color:var(--nibi);border-bottom:1px solid var(--hair);
+    padding-bottom:4px;cursor:default}
 
   /* ── 神籤の間:金はこの間にのみ許す ── */
   .oracle{text-align:center;padding:96px 22px 104px;position:relative;z-index:1}
@@ -272,6 +278,9 @@
     font-family:var(--ui);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
     border:1px solid rgba(201,165,68,.5);padding:14px 30px;transition:border-color .4s}
   .draw:hover,.draw:focus-visible{border-color:var(--kin);outline:none}
+  .draw.is-paused{color:var(--nibi);border-color:var(--hair);cursor:default}
+  .oracle-paused{display:inline-block;margin-top:14px;font-family:var(--ui);
+    font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--kin)}
 
   footer{border-top:1px solid var(--hair);padding:46px 22px 96px;text-align:center;
     font-size:11px;letter-spacing:.3em;color:var(--nibi);font-style:italic;
@@ -292,8 +301,19 @@
   .sticky-gate.on{transform:translate(-50%,0)}
   .sticky-gate b{font-family:var(--ja);font-weight:600;font-size:14px;letter-spacing:0}
   .sticky-gate:focus-visible{outline:2px solid var(--washi);outline-offset:3px}
-  @media (max-width:620px){nav a:not(.lang),nav span.nav-item{display:none}
-    .brand h1{font-size:14px}}
+  @media (max-width:620px){
+    header{padding:14px 16px}
+    .brand{gap:10px}.logo{width:42px;height:42px}.brand h1{font-size:12px;letter-spacing:.18em}
+    .brand h1 small{font-size:8px;letter-spacing:.24em}
+    .menu-toggle{display:block;flex:none}
+    header nav{display:none;position:absolute;top:calc(100% + 1px);left:12px;right:12px;
+      padding:10px;background:rgba(13,18,32,.98);border:1px solid var(--hair);
+      box-shadow:0 14px 34px rgba(0,0,0,.45);grid-template-columns:1fr 1fr;gap:2px}
+    header nav.open{display:grid}
+    header nav a,header nav .lang{display:flex;align-items:center;min-height:44px;
+      padding:10px 12px;border:1px solid var(--hair);color:var(--washi)}
+    header nav .lang{opacity:.55}
+  }
 </style>
 </head>
 <body>
@@ -314,8 +334,9 @@
       <span class="logo" aria-hidden="true"><span>開</span><span>羯</span><span>諦</span><span>経</span></span>
       <h1>Open Gate Sutra<small>ひらかれた般若心経の家</small></h1>
     </a>
-    <nav>
-      <a href="submit.html">Submit</a><a href="#nine">Listen</a><a href="kit.html">Kit</a><a href="#oracle">Oracle</a>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mainNav">Menu</button>
+    <nav id="mainNav" aria-label="Primary navigation">
+      <a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="header">Submit</a><a href="#nine" data-ogs-event="listen_open" data-ogs-placement="header">Listen</a><a href="kit.html" data-ogs-event="kit_open" data-ogs-placement="header">Kit</a><a href="#oracle">Oracle · Paused</a>
       <span class="lang soon" title="Coming soon — 準備中">日本語</span>
     </nav>
   </header>
@@ -332,10 +353,10 @@
       </div>
       <p class="hero-ja">般若心経を、あなたのジャンルで作曲して、投稿する。<br>世界中の般若心経を聴いて、作った人と語り合う。</p>
       <div class="gate-cta">
-        <a class="seal" href="submit.html">渡<small>CROSS</small></a>
+        <a class="seal" href="submit.html" data-ogs-event="submit_open" data-ogs-placement="hero">渡<small>CROSS</small></a>
         <p class="lead"><b>Cross the gate — submit your remix</b><span>30 seconds · no account · your track stays yours</span></p>
       </div>
-      <a class="listen" href="#nine">Just listening? Start with AN's three ↓</a>
+      <a class="listen" href="#nine" data-ogs-event="listen_open" data-ogs-placement="hero">Just listening? Start with AN's three ↓</a>
     </div>
   </div>
 
@@ -348,7 +369,7 @@
     <div class="steps">
       <div class="step">
         <div class="head"><span class="seal-mini">一</span><h4>Make it yours</h4></div>
-        <p>Take <a href="kit.html" style="color:var(--ruri);text-decoration:none;border-bottom:1px solid var(--hair)">the free kit</a> — <b>the 262 characters, romaji, Sanskrit, and field-tested SUNO tips</b>. Drill, bossa, gospel, gagaku. Any genre is a valid prayer.</p>
+        <p>Take <a href="kit.html" data-ogs-event="kit_open" data-ogs-placement="how_to_cross" style="color:var(--ruri);text-decoration:none;border-bottom:1px solid var(--hair)">the free kit</a> — <b>the 262 characters, romaji, Sanskrit, and field-tested SUNO tips</b>. Drill, bossa, gospel, gagaku. Any genre is a valid prayer.</p>
         <p class="free">Kit free forever · CC0</p>
       </div>
       <div class="step">
@@ -391,12 +412,12 @@
       <div class="step">
         <div class="head"><span class="seal-mini">本</span><h4>Main Hall 本堂</h4></div>
         <p>The gate and the hall. Submit your remix, and listen to <b>the world's Heart Sutra gathering here</b> — AN's three, every day.</p>
-        <p class="links"><a href="submit.html">Submit 渡る</a><a href="#nine">AN's Three 聴く</a></p>
+        <p class="links"><a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="house">Submit 渡る</a><a href="#nine" data-ogs-event="listen_open" data-ogs-placement="house">AN's Three 聴く</a></p>
       </div>
       <div class="step">
         <div class="head"><span class="seal-mini">参</span><h4>Approach 参道</h4></div>
-        <p>A small shrine on the path. <b>Draw a fortune, and AN reads you a verse for your day.</b></p>
-        <p class="links"><a href="an-mikuji.html">AN神籤 Draw</a></p>
+        <p>A small shrine on the path. <b>AN Mikuji is resting while we rebuild the experience.</b></p>
+        <p class="links"><span class="paused-link">Paused · 一時休止中</span></p>
       </div>
       <div class="step">
         <div class="head"><span class="seal-mini">脇</span><h4>Side Rooms 脇間</h4></div>
@@ -407,13 +428,14 @@
   </section>
 
   <div class="oracle" id="oracle">
-    <a class="med-link" href="an-mikuji.html" aria-label="AN神籤を引く">
+    <div class="med-link" aria-hidden="true">
       <div class="medallion"><img src="assets/mikuji-medallion.webp" alt="AN神籤 — 金彩の円相の中で坐すAN"></div>
-    </a>
+    </div>
     <h3>The Oracle</h3>
     <p class="sub">AN神籤 — 参道の小さな社</p>
-    <p class="desc">A side chapel off the main hall. <b>Draw a fortune, and AN reads you a verse for your day.</b></p>
-    <a class="draw" href="an-mikuji.html">Draw today's fortune — 籤を引く</a>
+    <p class="desc">A side chapel off the main hall. <b>AN Mikuji is resting while we rebuild the experience.</b></p>
+    <span class="oracle-paused">Service paused · 一時休止中</span><br>
+    <span class="draw is-paused" aria-disabled="true">The oracle is resting — 休止中</span>
   </div>
 
   <footer>
@@ -421,7 +443,7 @@
       <a href="about.html">About</a>
       <a href="kit.html">Kit</a>
       <a href="archive.html">The First Twenty-Three</a>
-      <a href="an-mikuji.html">AN神籤</a>
+      <span>AN神籤 · Paused</span>
       <a href="terms.html">Terms</a>
       <a href="privacy.html">Privacy</a>
     </p>
@@ -429,10 +451,33 @@
   </footer>
 </main>
 
-<a class="sticky-gate" id="stickyGate" href="submit.html"><b>渡</b>Cross the gate</a>
-<script src="src/js/todays-nine.js?v=2"></script>
-<script src="src/js/latest.js?v=1"></script>
+<a class="sticky-gate" id="stickyGate" href="submit.html" data-ogs-event="submit_open" data-ogs-placement="sticky"><b>渡</b>Cross the gate</a>
+<script src="src/js/todays-nine.js?v=3"></script>
+<script src="src/js/latest.js?v=2"></script>
 <script>
+  const menuToggle = document.getElementById('menuToggle');
+  const mainNav = document.getElementById('mainNav');
+  function closeMenu() {
+    mainNav.classList.remove('open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+  }
+  menuToggle.addEventListener('click', function () {
+    const open = mainNav.classList.toggle('open');
+    menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) mainNav.querySelector('a').focus();
+  });
+  mainNav.addEventListener('click', function (event) {
+    if (event.target.closest('a')) closeMenu();
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && mainNav.classList.contains('open')) {
+      closeMenu(); menuToggle.focus();
+    }
+  });
+  document.addEventListener('click', function (event) {
+    if (!mainNav.contains(event.target) && event.target !== menuToggle) closeMenu();
+  });
+
   const gate = document.getElementById('stickyGate');
   const hero = document.querySelector('.hero');
   new IntersectionObserver(([e])=>{

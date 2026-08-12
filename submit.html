@@ -31,7 +31,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
 
 <!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
-<script src="src/js/consent.js" defer></script>
+<script src="src/js/consent.js?v=2" defer></script>
 <script>
   // 本番キーはCloudflareで発行後に置換。ローカルは公式の常時成功テストキーを使う。
   window.OGS_TURNSTILE_SITE_KEY =
@@ -331,11 +331,13 @@
       };
     }
 
+    if (window.ogsTrack) window.ogsTrack('submit_start', { placement: 'submit_form' });
     seal.disabled = true;
     fetch(API_BASE + '/api/submit', req)
       .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, j: j }; }); })
       .then(function (r) {
         if (r.ok) {
+          if (window.ogsTrack) window.ogsTrack('submit_success', { placement: 'submit_form' });
           result.className = 'result on';
           result.innerHTML =
             '<h3>You have crossed. — 渡りました</h3>' +

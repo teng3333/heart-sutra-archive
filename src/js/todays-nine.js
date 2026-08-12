@@ -158,6 +158,8 @@
       main.href = 'https://suno.com/song/' + t[0];
       main.target = '_blank';
       main.rel = 'noopener';
+      main.setAttribute('data-ogs-event', 'listen_open');
+      main.setAttribute('data-ogs-placement', 'ans_three');
       var title = el('span', 'title');
       title.appendChild(el('span', 'play', '▶'));
       title.appendChild(document.createTextNode(t[1]));

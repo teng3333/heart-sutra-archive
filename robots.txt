@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /an-mikuji.html
+
+Sitemap: https://teng3333.github.io/heart-sutra-archive/sitemap.xml

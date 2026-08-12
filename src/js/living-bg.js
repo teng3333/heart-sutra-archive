@@ -104,7 +104,8 @@ const CEL_IMG = {};
 (function loadCelestialImages(){
   for (const k of ['galaxy','earth','moon','sun','saturn']){
     {
-      // 実体は5枚とも png。拡張子の総当たりは404を15本出すだけなので行わない
+      // 実体は5枚ともwebp(600px級に縮小済み。どのみちS=512へ正規化されるため
+      // 元画像がそれ以上大きくても無駄になるだけ。元のpngはassets/celestial/_sourceに保全)
       const im = new Image();
       im.onload = () => {
         if (CEL_IMG[k]) return;
@@ -124,7 +125,7 @@ const CEL_IMG = {};
         g.fillStyle = m; g.fillRect(0, 0, S, S);
         CEL_IMG[k] = can;
       };
-      im.src = `assets/celestial/${k}.png`;
+      im.src = `assets/celestial/${k}.webp`;
     }
   }
 })();

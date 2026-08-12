@@ -1,0 +1,15 @@
+{
+  "name": "Open Gate Sutra — the Heart Sutra, recomposed by the world",
+  "short_name": "Open Gate Sutra",
+  "description": "A worldwide remix platform for the Heart Sutra. One sutra, 262 characters — recomposed by the world.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "browser",
+  "lang": "en",
+  "background_color": "#131a26",
+  "theme_color": "#131a26",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

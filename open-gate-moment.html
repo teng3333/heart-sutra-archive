@@ -137,7 +137,9 @@
       position: relative;
       overflow: hidden;
       border-right: 1px solid var(--hair);
-      background: linear-gradient(180deg, rgba(111, 168, 214, .1), rgba(13, 18, 32, .4));
+      background:
+        linear-gradient(180deg, rgba(13, 18, 32, .05), rgba(13, 18, 32, .2)),
+        url("assets/an/an-guided-listening-bg.jpg") center 39% / cover no-repeat;
     }
 
     .an-presence::after {
@@ -146,16 +148,6 @@
       inset: 0;
       background: linear-gradient(180deg, transparent 44%, rgba(13, 18, 32, .28) 68%, var(--ai-deep));
       pointer-events: none;
-    }
-
-    .an-presence img {
-      width: 100%;
-      height: 100%;
-      min-height: 540px;
-      object-fit: cover;
-      object-position: center 13%;
-      opacity: .76;
-      filter: saturate(.72) contrast(.98);
     }
 
     .an-id {
@@ -303,9 +295,18 @@
     @media (max-width: 780px) {
       main { padding-top: 26px; }
       .experience { grid-template-columns: 1fr; min-height: auto; }
-      .an-presence { min-height: 190px; height: 190px; border-right: 0; border-bottom: 1px solid var(--hair); }
-      .an-presence img { min-height: 0; height: 270px; object-position: center 15%; transform: translateY(-22px); }
-      .an-presence::after { background: linear-gradient(90deg, rgba(13, 18, 32, .08), var(--ai-deep)); }
+      .an-presence {
+        min-height: 210px;
+        height: 210px;
+        border-right: 0;
+        border-bottom: 1px solid var(--hair);
+        background-position: center 36%;
+      }
+      .an-presence::after {
+        background:
+          linear-gradient(90deg, rgba(13, 18, 32, .18), transparent 58%),
+          linear-gradient(180deg, transparent 45%, rgba(13, 18, 32, .72));
+      }
       .an-id { left: 20px; right: 20px; bottom: 19px; }
       .an-id strong { font-size: 25px; }
       .conversation { padding: 31px 22px 34px; }
@@ -344,7 +345,6 @@
     <main>
       <div class="experience">
         <aside class="an-presence" aria-label="案内役のAN">
-          <img src="assets/an/face-human-sutra.webp" alt="般若心経の文字をまとった案内役AN">
           <div class="an-id"><strong>AN</strong><span>Quiet guide at the gate</span></div>
         </aside>
 

@@ -315,8 +315,9 @@
     header nav .lang{opacity:.55}
   }
 </style>
+<link rel="stylesheet" href="src/css/home-listen.css?v=1">
 </head>
-<body>
+<body class="home-page">
 <!-- 生きた背景アート:球体生態系(canvasは living-bg.js が最背面に生成する)。
      静的ヴェール(.an-veil)と瑠璃の目は、この動的背景がANを内包するため退役。 -->
 <!-- §9.6 JSが使えない環境でも背景が成立するよう、静止画にフォールバックする -->
@@ -336,27 +337,63 @@
     </a>
     <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mainNav">Menu</button>
     <nav id="mainNav" aria-label="Primary navigation">
-      <a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="header">Submit</a><a href="#nine" data-ogs-event="listen_open" data-ogs-placement="header">Listen</a><a href="kit.html" data-ogs-event="kit_open" data-ogs-placement="header">Kit</a><a href="#oracle">Oracle · Paused</a>
+      <a href="#listen" data-ogs-event="listen_open" data-ogs-placement="header">Listen</a><a href="kit.html" data-ogs-event="kit_open" data-ogs-placement="header">For Creators</a><a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="header">Submit</a><a href="archive.html">Archive</a><a href="about.html">About</a>
       <span class="lang soon" title="Coming soon — 準備中">日本語</span>
     </nav>
   </header>
 
   <div class="hero">
-    <div class="hero-inner">
+    <div class="hero-inner" id="homeScene">
       <p class="eyebrow">A worldwide remix platform for the Heart Sutra</p>
       <h2>One sutra, 262 characters.<br><em>Recomposed by the world.</em></h2>
-      <div class="verbs" role="list">
-        <span role="listitem">作る<b>MAKE</b></span>
-        <span role="listitem">渡す<b>SUBMIT</b></span>
-        <span role="listitem">聴く<b>LISTEN</b></span>
-        <span role="listitem">語らう<b>CONNECT</b></span>
+      <p class="hero-ja">世界の般若心経を、聴く人と創る人が循環させる場所。<br>Made by artists. Carried by listeners.</p>
+      <div class="home-entry-row">
+        <section class="home-listen-entry" id="listen" aria-labelledby="homeListenLabel">
+          <div class="home-listen-copy">
+            <p id="homeListenLabel"><b>LISTEN</b><span>聴く</span></p>
+            <small>What do you need now?<br><span lang="ja">今、どんな時間がほしい？</span></small>
+          </div>
+          <div class="home-mini-gates" aria-label="Choose a listening gate — 静と動から選ぶ">
+            <button class="home-mini-gate" type="button" data-playlist="sei" aria-pressed="false" aria-label="Still gate — Focus and relax — 静、整えたい・ほどきたい">
+              <span class="home-mini-gate__door"><b aria-hidden="true">静</b><span>STILL</span><small>FOCUS<br>&amp; RELAX</small></span>
+            </button>
+            <button class="home-mini-gate" type="button" data-playlist="dou" aria-pressed="false" aria-label="Move gate — Energy and inspire — 動、動きたい・ひらきたい">
+              <span class="home-mini-gate__door"><b aria-hidden="true">動</b><span>MOVE</span><small>ENERGY<br>&amp; INSPIRE</small></span>
+            </button>
+          </div>
+          <p class="home-playlist-status" id="playlistStatus" role="status" aria-live="polite"><span id="playlistStatusText">Choose a gate. ／ 門を選ぶ。</span><span id="playlistStatusMeta">Playlists in preparation</span></p>
+        </section>
+        <section class="home-creator-entry" aria-labelledby="homeCreatorLabel">
+          <div class="home-creator-copy">
+            <p id="homeCreatorLabel"><b>FOR CREATORS</b><span>創る人へ</span></p>
+            <small>START OR SUBMIT<br><span lang="ja">素材から始める・作品を渡す</span></small>
+          </div>
+          <div class="home-creator-gates" aria-label="Choose a creator gate — 素と渡から選ぶ">
+            <a class="home-mini-gate" href="kit.html" data-ogs-event="kit_open" data-ogs-placement="hero" aria-label="Kit gate — 素、制作素材を受け取る">
+              <span class="home-mini-gate__door"><b aria-hidden="true">素</b><span>KIT</span><small>GET<br>MATERIALS</small></span>
+            </a>
+            <a class="home-mini-gate" href="submit.html" data-ogs-event="submit_open" data-ogs-placement="hero" aria-label="Submit gate — 渡、完成した作品を投稿する">
+              <span class="home-mini-gate__door"><b aria-hidden="true">渡</b><span>SUBMIT</span><small>SHARE<br>YOUR WORK</small></span>
+            </a>
+          </div>
+          <p class="home-creator-flow"><span>Kit → Create elsewhere → Submit</span><span>素材 → 外部で創作 → 渡す</span></p>
+        </section>
+        <div class="home-secondary-gates" aria-label="Community and AN Mikuji — 対話と御神籤">
+          <div class="home-secondary-item">
+            <span class="home-mini-gate home-mini-gate--secondary home-mini-gate--pending" role="img" aria-label="Community gate — 語、Discordで対話する">
+              <span class="home-mini-gate__door"><b aria-hidden="true">語</b><span>TALK</span><small>ON<br>DISCORD</small></span>
+            </span>
+            <span class="home-secondary-copy"><b>COMMUNITY</b><span>アーティストとリスナーが語らう</span><small>ARTISTS × LISTENERS · DISCORD</small></span>
+          </div>
+          <a class="home-secondary-item home-secondary-item--link" href="an-mikuji.html" aria-label="AN Mikuji — AN御神籤、一時休止中">
+            <span class="home-mini-gate home-mini-gate--secondary" aria-hidden="true">
+              <span class="home-mini-gate__door"><b>籤</b><span>ORACLE</span><small>AN<br>MIKUJI</small></span>
+            </span>
+            <span class="home-secondary-copy"><b>AN MIKUJI</b><span>ANの御神籤</span><small>PAUSED · 一時休止中</small></span>
+          </a>
+        </div>
       </div>
-      <p class="hero-ja">般若心経を、あなたのジャンルで作曲して、投稿する。<br>世界中の般若心経を聴いて、作った人と語り合う。</p>
-      <div class="gate-cta">
-        <a class="seal" href="submit.html" data-ogs-event="submit_open" data-ogs-placement="hero">渡<small>CROSS</small></a>
-        <p class="lead"><b>Cross the gate — submit your remix</b><span>30 seconds · no account · your track stays yours</span></p>
-      </div>
-      <a class="listen" href="#nine" data-ogs-event="listen_open" data-ogs-placement="hero">Just listening? Start with AN's three ↓</a>
+      <p class="home-direct-note">Already know the house? <a href="#nine" data-ogs-event="listen_open" data-ogs-placement="hero_direct">AN's Three</a> · <a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="hero_direct">Submit</a> · <a href="archive.html">Archive</a></p>
     </div>
   </div>
 
@@ -406,44 +443,11 @@
     </div>
   </section>
 
-  <section id="house">
-    <div class="sec-head"><h3>The House</h3><span>家の間取り</span></div>
-    <div class="steps">
-      <div class="step">
-        <div class="head"><span class="seal-mini">本</span><h4>Main Hall 本堂</h4></div>
-        <p>The gate and the hall. Submit your remix, and listen to <b>the world's Heart Sutra gathering here</b> — AN's three, every day.</p>
-        <p class="links"><a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="house">Submit 渡る</a><a href="#nine" data-ogs-event="listen_open" data-ogs-placement="house">AN's Three 聴く</a></p>
-      </div>
-      <div class="step">
-        <div class="head"><span class="seal-mini">参</span><h4>Approach 参道</h4></div>
-        <p>A small shrine on the path. <b>AN Mikuji is resting while we rebuild the experience.</b></p>
-        <p class="links"><span class="paused-link">Paused · 一時休止中</span></p>
-      </div>
-      <div class="step">
-        <div class="head"><span class="seal-mini">脇</span><h4>Side Rooms 脇間</h4></div>
-        <p>Let the sutra play on — <b>the first twenty-three tracks, the ambient playlist, and the film</b> rest in the first archive.</p>
-        <p class="links"><a href="archive.html">Playlist &amp; Film 聞き流す</a></p>
-      </div>
-    </div>
-  </section>
-
-  <div class="oracle" id="oracle">
-    <div class="med-link" aria-hidden="true">
-      <div class="medallion"><img src="assets/mikuji-medallion.webp" alt="AN神籤 — 金彩の円相の中で坐すAN"></div>
-    </div>
-    <h3>The Oracle</h3>
-    <p class="sub">AN神籤 — 参道の小さな社</p>
-    <p class="desc">A side chapel off the main hall. <b>AN Mikuji is resting while we rebuild the experience.</b></p>
-    <span class="oracle-paused">Service paused · 一時休止中</span><br>
-    <span class="draw is-paused" aria-disabled="true">The oracle is resting — 休止中</span>
-  </div>
-
   <footer>
     <p class="foot-links">
       <a href="about.html">About</a>
       <a href="kit.html">Kit</a>
       <a href="archive.html">The First Twenty-Three</a>
-      <span>AN神籤 · Paused</span>
       <a href="terms.html">Terms</a>
       <a href="privacy.html">Privacy</a>
     </p>
@@ -454,6 +458,7 @@
 <a class="sticky-gate" id="stickyGate" href="submit.html" data-ogs-event="submit_open" data-ogs-placement="sticky"><b>渡</b>Cross the gate</a>
 <script src="src/js/todays-nine.js?v=3"></script>
 <script src="src/js/latest.js?v=2"></script>
+<script src="src/js/home-listen.js?v=1"></script>
 <script>
   const menuToggle = document.getElementById('menuToggle');
   const mainNav = document.getElementById('mainNav');

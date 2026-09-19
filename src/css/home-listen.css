@@ -8,7 +8,9 @@
 .home-listen-copy p span{color:var(--nibi);font:500 10px/1 var(--ja);letter-spacing:.18em}
 .home-listen-copy>small{display:block;margin-top:10px;color:var(--nibi);font:500 8px/1.65 var(--ui);letter-spacing:.1em;text-transform:uppercase}
 .home-listen-copy>small span{font-family:var(--ja);letter-spacing:.12em;text-transform:none}
-.home-mini-gates{display:flex;align-items:flex-start;align-self:start;justify-self:end;gap:10px}
+/* 門が3つになったので折り返しを許す(2026-09-19)。
+   静・動・全で 82px×3＋隙間となり、狭い枠では収まりきらないことがある */
+.home-mini-gates{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:flex-start;align-self:start;justify-self:end;gap:10px}
 .home-mini-gate{position:relative;display:inline-block;flex:0 0 82px;width:82px;height:102px;padding:0;border:0;border-radius:45% 45% 3px 3px;background:linear-gradient(180deg,rgba(10,16,25,.96),rgba(4,7,12,.98));color:var(--washi-hi);font:inherit;text-align:center;text-decoration:none;cursor:pointer;perspective:520px;isolation:isolate}
 .home-mini-gate::before{content:"";position:absolute;inset:-3px;z-index:2;border:1px solid rgba(217,196,154,.42);border-radius:45% 45% 3px 3px;pointer-events:none}
 .home-mini-gate::after{content:"OPEN";position:absolute;inset:0;z-index:0;display:grid;place-items:center;color:rgba(111,168,214,.72);font:600 5px/1 var(--ui);letter-spacing:.18em;text-indent:.18em}

@@ -315,7 +315,7 @@
     header nav .lang{opacity:.55}
   }
 </style>
-<link rel="stylesheet" href="src/css/home-listen.css?v=1">
+<link rel="stylesheet" href="src/css/home-listen.css?v=2">
 </head>
 <body class="home-page">
 <!-- 生きた背景アート:球体生態系(canvasは living-bg.js が最背面に生成する)。
@@ -353,12 +353,15 @@
             <p id="homeListenLabel"><b>LISTEN</b><span>聴く</span></p>
             <small>What do you need now?<br><span lang="ja">今、どんな時間がほしい？</span></small>
           </div>
-          <div class="home-mini-gates" aria-label="Choose a listening gate — 静と動から選ぶ">
-            <button class="home-mini-gate" type="button" data-playlist="sei" aria-pressed="false" aria-label="Still gate — Focus and relax — 静、整えたい・ほどきたい">
-              <span class="home-mini-gate__door"><b aria-hidden="true">静</b><span>STILL</span><small>FOCUS<br>&amp; RELAX</small></span>
+          <!-- ホームの門は「任せるか、選ぶか」の2つ(2026-09-19 高尾さん指示)。
+               中身の分類(静・動、今後のジャンル)は聞き流しページ側に集約する。
+               ここに分類を直接置くと、棚やジャンルが増えたときに一等地が破綻する -->
+          <div class="home-mini-gates" aria-label="Choose how to listen — 流と棚から選ぶ">
+            <button class="home-mini-gate" type="button" data-playlist="flow" aria-pressed="false" aria-label="Flow gate — Every track, shuffled — 流、全曲を混ぜてそのまま流す">
+              <span class="home-mini-gate__door"><b aria-hidden="true">流</b><span>FLOW</span><small>JUST<br>PLAY</small></span>
             </button>
-            <button class="home-mini-gate" type="button" data-playlist="dou" aria-pressed="false" aria-label="Move gate — Energy and inspire — 動、動きたい・ひらきたい">
-              <span class="home-mini-gate__door"><b aria-hidden="true">動</b><span>MOVE</span><small>ENERGY<br>&amp; INSPIRE</small></span>
+            <button class="home-mini-gate" type="button" data-playlist="shelf" aria-pressed="false" aria-label="Shelves gate — Choose a shelf — 棚、静と動から選ぶ">
+              <span class="home-mini-gate__door"><b aria-hidden="true">棚</b><span>SHELVES</span><small>CHOOSE<br>A SHELF</small></span>
             </button>
           </div>
           <p class="home-playlist-status" id="playlistStatus" role="status" aria-live="polite"><span id="playlistStatusText">Choose a gate. ／ 門を選ぶ。</span><span id="playlistStatusMeta">Playlists in preparation</span></p>
@@ -458,7 +461,7 @@
 <a class="sticky-gate" id="stickyGate" href="submit.html" data-ogs-event="submit_open" data-ogs-placement="sticky"><b>渡</b>Cross the gate</a>
 <script src="src/js/todays-nine.js?v=3"></script>
 <script src="src/js/latest.js?v=2"></script>
-<script src="src/js/home-listen.js?v=2"></script>
+<script src="src/js/home-listen.js?v=4"></script>
 <script>
   const menuToggle = document.getElementById('menuToggle');
   const mainNav = document.getElementById('mainNav');

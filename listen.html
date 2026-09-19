@@ -72,9 +72,12 @@
   .stage{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
 
   .bar{display:flex;align-items:center;gap:14px;padding:14px 20px;flex:none}
-  .home{font-family:var(--en);font-size:11px;letter-spacing:.24em;text-transform:uppercase;
-    color:var(--nibi);text-decoration:none}
-  .home:hover{color:var(--washi)}
+  /* 戻り口。くすませすぎると背景に溶けて気づけない(2026-09-19 高尾さん指摘)。
+     字を少し大きく、色を明るくし、押せる面も広げる */
+  .home{font-family:var(--en);font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--washi);text-decoration:none;padding:6px 10px 6px 0;
+    opacity:.85;transition:opacity .2s}
+  .home:hover,.home:focus-visible{opacity:1;color:var(--washi-hi)}
   .seal{font-family:var(--ja);font-size:15px;color:var(--washi-hi);letter-spacing:.3em}
 
   .center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;
@@ -215,7 +218,9 @@
 <body>
 <div class="stage">
   <div class="bar">
-    <a class="home" href="./">← Open Gate Sutra</a>
+    <!-- 他のページと同じ「← Home」に揃える(2026-09-19 高尾さん指摘)。
+         「← Open Gate Sutra」は題名に見え、戻れると読み取れなかった -->
+    <a class="home" href="./">← Home</a>
     <span class="seal" aria-hidden="true">開羯諦経</span>
   </div>
 
@@ -228,6 +233,11 @@
       <button class="gate" type="button" data-axis="do">
         <b aria-hidden="true">動</b><span class="en">MOVE</span>
         <small>ENERGY<br>&amp; INSPIRE</small>
+      </button>
+      <!-- 静も動も混ぜて流す門(2026-09-19 高尾さん指示) -->
+      <button class="gate" type="button" data-axis="all">
+        <b aria-hidden="true">全</b><span class="en">ALL</span>
+        <small>EVERY<br>SHELF</small>
       </button>
     </div>
 
@@ -1481,8 +1491,24 @@
     }
     var ctrl = new AbortController();
     var timer = setTimeout(function(){ ctrl.abort(); }, TIMEOUT);
+
+    /* 「混ぜて聴く」。静も動も分けずに全曲を流す(2026-09-19 高尾さん指示)。
+       棚のAPIは片側しか返さないので、全曲を返すアーカイブのAPIを使う */
+    if (axis === 'all'){
+      return fetch(API.replace('/api/shelf/', '/api/archive'), { signal: ctrl.signal })
+        .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); });
+    }
+
     return fetch(API + axis, { signal: ctrl.signal })
-      .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); });
+      .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); })
+      .then(function(d){
+        /* 主たる棚の曲だけを流す(2026-09-19 高尾さん指示)。
+           棚のAPIは副次の棚でも曲を拾うため、静と動の両方に出る曲が11曲あり、
+           動を聴いていたのに静の曲が来る、という混ざりが起きていた。
+           t.axis はその曲の主たる棚を指すので、これで純粋な流れになる */
+        var items = (d.items || []).filter(function(t){ return t.axis === axis; });
+        return { axis: d.axis, count: items.length, items: items };
+      });
   }
 
   function start(axis){
@@ -1873,7 +1899,7 @@
   var q = params.get('gate');
   if (q === 'dou') q = 'do';
   var fromTrack = trackParam && /^\d+$/.test(trackParam) && !DEMO;
-  var fromGate = (q === 'sei' || q === 'do');
+  var fromGate = (q === 'sei' || q === 'do' || q === 'all');
   if (fromTrack || fromGate){
     /* ホームの門から来た人に、ここでもう一度門を見せない。
        棚の一覧を取り終えるまで門が出たままで、「また門が出た」と見えていた(2026-09-16) */

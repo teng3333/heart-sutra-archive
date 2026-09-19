@@ -3,16 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AN神籤 — 一時休止中</title>
+<title>AN神籤 — ANが占う今日の運勢 ｜ Open Gate Sutra</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<!-- 一時休止中のため検索に出さない(robots.txtのDisallowと二重で担保) -->
+<!-- 検索には出していない(robots.txt の Disallow と二重で担保)。
+     休止していたときの名残で、再開後に出すかどうかは高尾さん判断待ち。
+     出すなら、この行と robots.txt の Disallow を両方外す -->
 <meta name="robots" content="noindex, nofollow">
-<meta property="og:title" content="AN神籤 — 一時休止中">
-<meta property="og:description" content="AN神籤は、ただいま一時休止しています。">
+<meta property="og:title" content="AN神籤 — ANが占う今日の運勢">
+<meta property="og:description" content="ツンデレAI「AN」が、般若心経の智慧であなたの今日の運勢を占います。">
 <meta property="og:type" content="website">
 <script src="src/js/consent.js?v=2" defer></script>
 <style>
@@ -174,27 +176,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
 </style>
 </head>
 <body>
-<style>
-body > :not(.mikuji-pause):not(#privacy-settings):not(#cookie-consent){display:none!important}
-.mikuji-pause{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;background:#0b0b0b;color:#d4d0c8;text-align:center}
-.mikuji-pause__inner{max-width:560px}
-.mikuji-pause__eyebrow{font-family:var(--fe);font-size:13px;letter-spacing:5px;color:#7a776e;text-transform:uppercase;margin-bottom:24px}
-.mikuji-pause h1{font-family:var(--fj);font-size:36px;letter-spacing:8px;margin-bottom:28px}
-.mikuji-pause p{font-size:16px;line-height:2.2;margin-bottom:12px}
-.mikuji-pause__en{font-family:var(--fe);font-style:italic;color:#a09890}
-.mikuji-pause a{display:inline-block;margin-top:28px;padding:12px 22px;border:1px solid #9a8c7a;color:#c4b8a6;text-decoration:none;letter-spacing:2px}
-.mikuji-pause a:hover{background:#9a8c7a;color:#0b0b0b}
-</style>
-<main class="mikuji-pause">
-  <div class="mikuji-pause__inner">
-    <div class="mikuji-pause__eyebrow">temporary pause</div>
-    <h1>AN神籤</h1>
-    <p>AN神籤は、ただいま一時休止しています。</p>
-    <p>記憶と記録はそのまま保管し、再開に向けて整えています。</p>
-    <p class="mikuji-pause__en">AN Mikuji is temporarily paused.</p>
-    <a href="./">般若心経生態系へ戻る</a>
-  </div>
-</main>
 <div class="gold-fx" id="gfx"></div>
 <div class="overlay" id="ov"><div class="stick"></div><div class="ov-t">占っています</div></div>
 <section class="hero">
@@ -232,6 +213,8 @@ body > :not(.mikuji-pause):not(#privacy-settings):not(#cookie-consent){display:n
         <div class="fi-te" id="fMe" style="padding-left:48px;margin-top:12px"></div>
       </div>
       <!-- チャットセクション（BGMの上） -->
+      <!-- チャットは閉じたまま。籤を引くことだけ再開する(2026-09-20 高尾さん指示)。
+           開けるときは、この display:none を外す。中の作りはそのまま残してある -->
       <div class="chat-section" id="chatSection" style="display:none">
         <div class="chat-invite" id="chatInvite">
           <p class="chat-invite-t" id="chatInviteText">ANに覚えてもらった？<br><span style="font-family:var(--fe);font-style:italic;font-size:14px;color:var(--accent-l)">名前と4桁のPINだけ。10秒で登録できる。</span></p>
@@ -470,6 +453,11 @@ function cp(){var r=document.getElementById('rT').textContent,m=document.getElem
 document.getElementById('dd').textContent=ds();
 
 // ===== AN神籤 チャットAPI =====
+/* チャットは閉じている(2026-09-20 高尾さん指示)。籤を引くことだけ再開した。
+   作りはすべて残してあるので、開けるときは、この false を true にして、
+   chatSection の style="display:none" を外すだけでよい */
+var CHAT_OPEN = false;
+
 var API = 'https://discord-an-bot-production.up.railway.app';
 var _token = localStorage.getItem('an_token');
 var _name  = localStorage.getItem('an_name');
@@ -489,7 +477,8 @@ show = function() {
   var idx = Math.floor(sr(s*7+13)*d.p.length);
   _currentVerse = d.p[idx].g.substring(0, 10);
   // チャットセクションを表示するだけ。スクロールはしない。
-  document.getElementById('chatSection').style.display = 'block';
+  // 閉じている間は出さない。ここを通すと、隠したはずのチャットが籤のあとに現れる
+  if (CHAT_OPEN) document.getElementById('chatSection').style.display = 'block';
 };
 
 function openAuth() {

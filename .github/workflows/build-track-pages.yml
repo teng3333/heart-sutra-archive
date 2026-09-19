@@ -1,0 +1,44 @@
+name: Build track pages
+
+# 曲ごとの共有ページ(t/<id>.html)を、公開中の曲に合わせて作り直す(2026-09-16)。
+# 投稿はサーバー側で自動公開される。ここではAPIから公開中の曲を読み、
+# SNSのカード用のページを作り直して、変わったときだけコミットする。
+# 曲ページ(track.html)・棚・アーカイブはAPIを直接読むので、このワークフローを待たずに載る。
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-track-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build track pages from the public API
+        run: python3 tools/build_track_pages.py
+      # 安全装置(関門)に掛かると上の手順が失敗で止まるので、ここまで来ない。
+      # 書き出した分も一緒に捨てられるが、次の回に全曲取れればまとめて載る。
+      - name: Commit and push if changed
+        run: |
+          if [ -z "$(git status --porcelain t/)" ]; then
+            echo "変更なし"
+            exit 0
+          fi
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add t/
+          git commit -m "chore: rebuild track pages [$(date -u '+%Y-%m-%d %H:%M')]"
+          git push

@@ -185,22 +185,67 @@ def main():
         print("track.html からCSSを取り出せません"); return 1
     tmpl = {"css": m.group(1)}
 
+    """ここから下は、30分ごとに無人で走る(.github/workflows/build-track-pages.yml)。
+    この処理は「一覧に無いページは消してよい」と信じて削除するので、
+    一覧が不完全なまま進むと、公開中の曲ページを巻き添えで消してしまう。
+    実際、2026-09-19 の試行で 1曲ずつ取り直す途中に読み取りが時間切れになった。
+    そのとき削除まで進んでいれば、取れなかったぶんのページが消えていた。
+
+    そこで、消す前に三つの関門を置く。
+      ① 一覧が空なら何もしない  … 「公開0曲」は現実には起こらない。APIの不調と見なす
+      ② 半分以上減っていたら消さない … 本当に減らしたなら運営が知っている。
+                                     知らないうちの半減は異常なので、人の目を通す
+      ③ 1曲でも取得に失敗したら消さない … 不完全な一覧を「全部」として扱わない
+    いずれも「書くことはする、消すことだけ見送る」。次の回に全部取れれば正しく消える。
+    """
     items = {}
-    for axis in ("sei", "do"):
-        for t in get("/api/shelf/" + axis).get("items", []):
-            items[t["id"]] = t
+    try:
+        for axis in ("sei", "do"):
+            for t in get("/api/shelf/" + axis).get("items", []):
+                items[t["id"]] = t
+    except Exception as exc:                      # 棚が読めなければ、この回は何もしない
+        print("棚を読めませんでした(%s: %s)。この回は何もしません" % (type(exc).__name__, exc))
+        return 1
+
     print("公開中の曲: %d曲" % len(items))
     if args.dry_run:
         print("※書き出しません")
         return 0
 
+    # ── 関門① 一覧が空
+    if not items:
+        print("★公開中の曲が0曲と返りました。ありえない答えなので、この回は何もしません")
+        return 1
+
     OUT.mkdir(exist_ok=True)
-    keep = set()
+    before = {f.name for f in OUT.glob("*.html")}
+
+    # ── 関門② 前回より半分以上減った
+    if before and len(items) * 2 < len(before):
+        print("★曲数が %d枚 → %d曲 へ半分以下に減りました。取り違えの疑いがあるので、"
+              "この回は何もしません。意図した削除なら、手で実行してください"
+              % (len(before), len(items)))
+        return 1
+
+    keep, failed = set(), []
     for tid in sorted(items):
         # 棚の一覧には曲評が付かないので、1曲ずつ取り直す
-        t = get("/api/track/%d" % tid)
+        try:
+            t = get("/api/track/%d" % tid)
+        except Exception as exc:                  # 1曲の失敗で全体を止めない。書ける分は書く
+            failed.append(tid)
+            print("  id=%s を取れませんでした(%s)" % (tid, type(exc).__name__))
+            continue
         (OUT / ("%d.html" % tid)).write_text(page(t, args.base, tmpl), encoding="utf-8")
         keep.add("%d.html" % tid)
+
+    # ── 関門③ 1曲でも取れなかった
+    if failed:
+        print("★%d曲を取れなかったので、この回は削除を見送ります(書き出し %d枚)。"
+              "取れなかった曲: %s" % (len(failed), len(keep),
+                                      "、".join(str(x) for x in failed[:10])))
+        return 1
+
     # 取り下げられた曲のページは残さない
     removed = 0
     for f in OUT.glob("*.html"):

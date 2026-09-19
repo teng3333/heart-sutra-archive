@@ -183,6 +183,20 @@
   .status-btn:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
   .status-out{font-family:var(--ui);font-size:11px;letter-spacing:.08em;
     color:var(--washi);margin-top:14px;line-height:2}
+
+  /* ── 堂に入った報せ ──
+     投稿者が、自分の曲とANの言葉に初めて出会う場所(2026-09-20 高尾さん指示)。
+     以前はここが status の文字列で終わっていて、自分の曲へ行く線が1本も無かった。 */
+  .landed{margin-top:20px;border-top:1px solid var(--hair);padding-top:20px}
+  .landed .tagline{font-family:var(--ja);font-size:17px;line-height:1.9;letter-spacing:.04em;
+    color:var(--washi-hi);margin:0}
+  .landed .song{font-family:var(--ui);font-size:12px;letter-spacing:.08em;
+    color:var(--nibi);margin:10px 0 0}
+  .landed .quote{font-family:var(--ja);font-size:13.5px;line-height:2.05;letter-spacing:.02em;
+    color:var(--washi);border-left:2px solid var(--shu);padding:2px 0 2px 16px;margin:18px 0 0}
+  .landed .acts{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:22px}
+  .landed .acts .status-btn{margin-top:0}
+  .landed .note{font-family:var(--ja);font-size:12px;line-height:2;color:var(--nibi);margin:18px 0 0}
   /* ── 音源を置く枠 ── 必須の一点なので、いちばん大きく取る */
   .drop{position:relative;border:1px dashed var(--hair2,rgba(217,196,154,.34));
     background:rgba(13,18,32,.4);padding:26px 20px;margin:0 0 18px;
@@ -377,6 +391,8 @@
     ? 'http://127.0.0.1:5001'
     : 'https://open-gate-sutra-production.up.railway.app';
 
+  var SAVED_ID = 'ogs_submission_id';   // 受付IDをこの端末に覚えておく鍵
+
   var form = document.getElementById('submit-form');
   var result = document.getElementById('result');
   var seal = document.getElementById('seal');
@@ -436,6 +452,8 @@
       .then(function (r) {
         if (r.ok) {
           if (window.ogsTrack) window.ogsTrack('submit_success', { placement: 'submit_form' });
+          /* IDを控え忘れると、自分の曲に二度と辿り着けない。この端末に覚えておく */
+          try { localStorage.setItem(SAVED_ID, r.j.id); } catch (err) {}
           result.className = 'result on';
           result.innerHTML =
             '<h3>You have crossed. — 渡りました</h3>' +
@@ -462,18 +480,129 @@
       .finally(function () { seal.disabled = false; });
   });
 
+  /* ── 投稿者が、自分の曲に出会う場所 ────────────────────────────
+     床を通ると t/<id>.html に曲のページができる(投稿ID = 曲ページの番号。2026-09-20に実測で確認)。
+     以前はここが 'status: floor_passed' の一行で終わっていて、そこへ行く線が無かった。
+     作った人がいちばん見せたいのは、リンクではなく「ANが自分の曲をどう聴いたか」。
+     自慢は気恥ずかしいが、他人が自分を評した言葉なら貼れる。だから曲評を渡す。 */
+  var SITE = 'https://teng3333.github.io/heart-sutra-archive';
+  var TAGS = '#般若心経 #HeartSutra #OpenGateSutra';
+
+  function esc(v) {
+    var d = document.createElement('div');
+    d.textContent = (v == null) ? '' : String(v);
+    return d.innerHTML;
+  }
+
+  /* Xは日本語を2文字と数える(上限280)。URLは長さにかかわらず23。
+     引用を45字に抑えて、全体が収まるようにしてある */
+  function shareText(t, quoteLen) {
+    var head = t.tagline ? t.tagline + '\n\n' : '';
+    var body = '';
+    if (t.an_comment) {
+      var c = t.an_comment.replace(/^[…\s]+/, '');
+      body = 'ANが私の曲を聴いて、こう書いた。\n──' +
+             c.slice(0, quoteLen || 45) + (c.length > (quoteLen || 45) ? '…' : '') + '\n\n';
+    }
+    return head + body + t.title + ' ／ ' + t.artist_name + '\n' +
+           SITE + '/t/' + t.id + '.html\n\n' + TAGS;
+  }
+
+  function landedHTML(t) {
+    var c = (t.an_comment || '').replace(/^[…\s]+/, '');
+    return '<div class="landed">' +
+      '<p class="tagline">' + esc(t.tagline || t.title) + '</p>' +
+      '<p class="song">' + esc(t.title) + ' ／ ' + esc(t.artist_name) + '</p>' +
+      (c ? '<p class="quote">' + esc(c.slice(0, 130)) + (c.length > 130 ? '…' : '') + '</p>' : '') +
+      '<div class="acts">' +
+        '<a class="status-btn" href="' + SITE + '/t/' + t.id + '.html" ' +
+          'target="_blank" rel="noopener noreferrer">あなたの曲のページ</a>' +
+        '<a class="status-btn" id="shareX" href="#" target="_blank" rel="noopener noreferrer">𝕏 ポストする</a>' +
+        '<button class="status-btn" id="shareCopy" type="button">文章をコピー</button>' +
+      '</div>' +
+      '<p class="note">もう二度と同じようには鳴らない一曲が、ANに聴かれました。<br>' +
+      'この住所が、あなたの曲の住所です。</p>' +
+      '</div>';
+  }
+
+  function showLanded(t) {
+    var out = document.getElementById('status-out');
+    out.innerHTML = landedHTML(t);
+    var sx = document.getElementById('shareX');
+    if (sx) {
+      sx.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText(t));
+      sx.addEventListener('click', function () {
+        if (window.ogsTrack) window.ogsTrack('share_click', { placement: 'submit_landed' });
+      });
+    }
+    var sc = document.getElementById('shareCopy');
+    if (sc) {
+      sc.addEventListener('click', function () {
+        /* コピーする方は字数の縛りが無いので、曲評を長めに渡す */
+        navigator.clipboard.writeText(shareText(t, 130)).then(function () {
+          sc.textContent = 'コピーしました ✓';
+          if (window.ogsTrack) window.ogsTrack('share_copy', { placement: 'submit_landed' });
+          setTimeout(function () { sc.textContent = '文章をコピー'; }, 1800);
+        }).catch(function () { sc.textContent = 'コピーできませんでした'; });
+      });
+    }
+  }
+
   result.addEventListener('click', function (e) {
     var btn = e.target.closest('.status-btn');
-    if (!btn) return;
-    fetch(API_BASE + '/api/status/' + btn.dataset.id)
+    /* 着地点の中の釦にも同じ見た目を使っている。IDを持つものだけが状態確認 */
+    if (!btn || !btn.dataset.id) return;
+    var id = btn.dataset.id;
+    var out = document.getElementById('status-out');
+    out.textContent = '……確かめています';
+    fetch(API_BASE + '/api/status/' + id)
       .then(function (res) { return res.json(); })
       .then(function (j) {
-        document.getElementById('status-out').textContent =
-          'status: ' + j.status +
-          (j.reject_reason ? ' · reason: ' + j.reject_reason : '') +
-          (j.floor_checked_at ? ' · checked: ' + j.floor_checked_at : ' · 検分待ち(明朝5時)');
+        if (j.error || !j.status) {
+          /* 404。IDの打ち間違いか、取り下げられた投稿 */
+          out.textContent = 'このIDの投稿が見つかりません。番号をお確かめください。';
+          return;
+        }
+        if (j.status !== 'floor_passed') {
+          out.textContent = 'status: ' + j.status +
+            (j.reject_reason ? ' · reason: ' + j.reject_reason : '') +
+            (j.floor_checked_at ? ' · checked: ' + j.floor_checked_at : ' · 検分待ち(明朝5時)');
+          return;
+        }
+        /* 床は通った。ANの曲評まで付いて公開されているかを見る */
+        return fetch(API_BASE + '/api/track/' + id).then(function (r) {
+          if (!r.ok) {
+            /* 床を通っても公開に至らない投稿が実在する(2026-09-20 時点で #117・#118)。
+               検分から2か月近く経っているので、「数分で出ます」と言ってはいけない。
+               待たせている相手に嘘をつかないよう、経過時間で言い方を変える */
+            var waited = j.floor_checked_at
+              ? (Date.now() - new Date(j.floor_checked_at).getTime()) / 3600000 : 0;
+            out.textContent = (waited > 6)
+              ? '床は通りましたが、まだ公開されていません。運営が確認しています。' +
+                'お待たせして申し訳ありません。お急ぎの場合は teng3teng3@gmail.com までご連絡ください。'
+              : '床は通りました。いま ANが聴いています(数分〜1時間)。';
+            return;
+          }
+          return r.json().then(showLanded);
+        });
+      })
+      .catch(function () {
+        out.textContent = '確かめられませんでした。時間をおいて、もう一度お試しください。';
       });
   });
+
+  /* 前に投稿していれば、IDを打ち直さずに結果へ戻れるようにする */
+  (function () {
+    var saved;
+    try { saved = localStorage.getItem(SAVED_ID); } catch (err) { return; }
+    if (!saved) return;
+    result.className = 'result on';
+    result.innerHTML =
+      '<h3>Your last submission. — 前回の投稿</h3>' +
+      '<p>Submission ID <span class="id">#' + esc(saved) + '</span></p>' +
+      '<button class="status-btn" data-id="' + esc(saved) + '">Check status — 結果を見る</button>' +
+      '<p class="status-out" id="status-out"></p>';
+  })();
 </script>
 <script src="src/js/submit-audio.js?v=3" defer></script>
 </body>

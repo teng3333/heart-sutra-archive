@@ -56,7 +56,7 @@ p{font-size:15px;line-height:2;color:var(--washi);margin-top:16px;letter-spacing
 p.ja{font-family:var(--ja);font-size:13px;color:var(--nibi);line-height:2.1}
 a.link{color:var(--ruri);text-decoration:none;border-bottom:1px solid var(--hair)}
 a.link:hover{border-color:var(--ruri)}
-ul{margin:16px 0 0 0;padding-left:20px}
+ul,ol{margin:16px 0 0 0;padding-left:20px}
 li{font-size:14px;line-height:1.95;color:var(--washi);margin-top:8px}
 li b{color:var(--washi-hi);font-weight:400}
 .note{border:1px solid rgba(178,58,46,.4);background:rgba(13,18,32,.6);

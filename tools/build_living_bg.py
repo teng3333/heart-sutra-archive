@@ -119,16 +119,32 @@ window.__livingBG = {
   setWeather(w){ const tn=(performance.now()-t0)/1000;
     weather=w; wStart=tn-6; wEnd=tn+120; wNext=1e9;
     WP.forEach(p=>{ respawnP(p);
-      if(w==='bubbles') p.ny=1.15+Math.random()*0.3;
-      if(w==='stars'){p.nx=(Math.random()*2-1)*1.15;p.ny=(Math.random()*2-1)*1.15;
+      if(w==='bubbles') p.ny=(1.15+Math.random()*0.3)*WFIELD;
+      if(w==='stars'){p.nx=(Math.random()*2-1)*1.15*WFIELD;p.ny=(Math.random()*2-1)*1.15*WFIELD;
         p.tw=Math.random()*6.28;p.tws=0.6+Math.random()*2.2;p.spike=Math.random()<0.35;}
       if(w==='digital'){p.glyph=Math.random()<0.5?'0':'1';p.flip=Math.random()*9;p.trail=3+(Math.random()*5|0);} }); },
   setCelestial(k){ celestial.kind = k; celestialPrev = null; celFadeT0 = -1; },
+  /* 生態系の動きと見た目。曲ごとに表情を変えるための窓口。
+     spin:回る速さ tilt:傾きの揺れ幅 swellAmp:拡大収縮の幅
+     swellRate:その速さ scale:アイコンの大きさ hue:色相のずれ(度)
+     渡さなかった項目はそのまま。いずれも1が既定、hueだけ0が既定。 */
+  setMotion(m){ for (const k in m) if (k in MOT && isFinite(m[k])) MOT[k] = m[k]; },
+  get motion(){ return Object.assign({}, MOT); },
   swapCelestial(){ pickCelestial((performance.now()-t0)/1000); },   // フェード検証用
   get celFade(){ return celFadeT0 < 0 ? 1 :
     Math.min(1, ((performance.now()-t0)/1000 - celFadeT0) / CEL_FADE); },
   get celPair(){ return [celestialPrev && celestialPrev.kind, celestial.kind]; },
   rebuild(){ rebuild(); },
+  /* 曲ごとの地形の偏りを渡して、球を組み立て直す(2026-09-16)。
+     例: setBiomeBias({city:3, mech:1.4, crystal:1, forest:0.5, flower:0.4, leaf:0.4})
+     null を渡すと、この端末の遺伝子の重みへ戻る。 */
+  setBiomeBias(b){ setBiomeBias(b); },
+  get biomeTypes(){ return BIOME_TYPES.slice(); },
+  /* 球の中心に宿る絵を差し替える(2026-09-17)。曲ページから1曲を指定して
+     聴くときだけ、ANの代わりにジャケットを置く。null を渡すとANへ戻る。
+     後光・呼吸する光・胸のコアは、どちらでもそのまま残る。 */
+  setCenterImage(u){ setCenterImage(u); },
+  get centerImage(){ return CIMG.url; },
 };
 
 """

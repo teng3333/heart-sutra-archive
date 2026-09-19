@@ -579,6 +579,23 @@
     showTyping();
     setInputDisabled(true);
 
+    // English users get a hardcoded tsundere opening
+    const lang = (navigator.language || navigator.userLanguage || 'ja').toLowerCase();
+    const isEnglish = !lang.startsWith('ja');
+
+    if (isEnglish) {
+      setTimeout(() => {
+        hideTyping();
+        const greeting = "...You're here.\nDidn't think you'd actually show up.\n\nI don't do small talk — tell me how you're really feeling. I can take it.\nI'll find the right Heart Sutra for you.";
+        conversationHistory.push({ role: 'assistant', content: greeting });
+        addMessage('assistant', greeting);
+        setInputDisabled(false);
+        const input = document.getElementById('ann-input');
+        if (input) input.focus();
+      }, 1200);
+      return;
+    }
+
     try {
       const response = await fetch(WORKER_URL, {
         method: 'POST',

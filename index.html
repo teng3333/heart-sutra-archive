@@ -31,7 +31,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
 
 <!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
-<script src="src/js/consent.js" defer></script>
+<script src="src/js/consent.js?v=2" defer></script>
 <!-- 落ちる現象の調査用(端末内に記録するだけ・送信しない)。原因特定後に削除する -->
 <script src="src/js/diag.js?v=1"></script>
 <!-- 生きた背景アート(球体生態系・最背面に固定・視差設定に配慮) -->
@@ -337,7 +337,7 @@
     </a>
     <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mainNav">Menu</button>
     <nav id="mainNav" aria-label="Primary navigation">
-      <a href="#listen">Listen</a><a href="kit.html">For Creators</a><a href="submit.html">Submit</a><a href="archive.html">Archive</a><a href="about.html">About</a>
+      <a href="#listen" data-ogs-event="listen_open" data-ogs-placement="header">Listen</a><a href="kit.html" data-ogs-event="kit_open" data-ogs-placement="header">For Creators</a><a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="header">Submit</a><a href="archive.html">Archive</a><a href="about.html">About</a>
       <span class="lang soon" title="Coming soon — 準備中">日本語</span>
     </nav>
   </header>
@@ -369,10 +369,10 @@
             <small>START OR SUBMIT<br><span lang="ja">素材から始める・作品を渡す</span></small>
           </div>
           <div class="home-creator-gates" aria-label="Choose a creator gate — 素と渡から選ぶ">
-            <a class="home-mini-gate" href="kit.html" aria-label="Kit gate — 素、制作素材を受け取る">
+            <a class="home-mini-gate" href="kit.html" data-ogs-event="kit_open" data-ogs-placement="hero" aria-label="Kit gate — 素、制作素材を受け取る">
               <span class="home-mini-gate__door"><b aria-hidden="true">素</b><span>KIT</span><small>GET<br>MATERIALS</small></span>
             </a>
-            <a class="home-mini-gate" href="submit.html" aria-label="Submit gate — 渡、完成した作品を投稿する">
+            <a class="home-mini-gate" href="submit.html" data-ogs-event="submit_open" data-ogs-placement="hero" aria-label="Submit gate — 渡、完成した作品を投稿する">
               <span class="home-mini-gate__door"><b aria-hidden="true">渡</b><span>SUBMIT</span><small>SHARE<br>YOUR WORK</small></span>
             </a>
           </div>
@@ -393,7 +393,7 @@
           </a>
         </div>
       </div>
-      <p class="home-direct-note">Already know the house? <a href="#nine">AN's Three</a> · <a href="submit.html">Submit</a> · <a href="archive.html">Archive</a></p>
+      <p class="home-direct-note">Already know the house? <a href="#nine" data-ogs-event="listen_open" data-ogs-placement="hero_direct">AN's Three</a> · <a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="hero_direct">Submit</a> · <a href="archive.html">Archive</a></p>
     </div>
   </div>
 
@@ -406,7 +406,7 @@
     <div class="steps">
       <div class="step">
         <div class="head"><span class="seal-mini">一</span><h4>Make it yours</h4></div>
-        <p>Take <a href="kit.html" style="color:var(--ruri);text-decoration:none;border-bottom:1px solid var(--hair)">the free kit</a> — <b>the 262 characters, romaji, Sanskrit, and field-tested SUNO tips</b>. Drill, bossa, gospel, gagaku. Any genre is a valid prayer.</p>
+        <p>Take <a href="kit.html" data-ogs-event="kit_open" data-ogs-placement="how_to_cross" style="color:var(--ruri);text-decoration:none;border-bottom:1px solid var(--hair)">the free kit</a> — <b>the 262 characters, romaji, Sanskrit, and field-tested SUNO tips</b>. Drill, bossa, gospel, gagaku. Any genre is a valid prayer.</p>
         <p class="free">Kit free forever · CC0</p>
       </div>
       <div class="step">
@@ -455,9 +455,9 @@
   </footer>
 </main>
 
-<a class="sticky-gate" id="stickyGate" href="submit.html"><b>渡</b>Cross the gate</a>
-<script src="src/js/todays-nine.js?v=2"></script>
-<script src="src/js/latest.js?v=1"></script>
+<a class="sticky-gate" id="stickyGate" href="submit.html" data-ogs-event="submit_open" data-ogs-placement="sticky"><b>渡</b>Cross the gate</a>
+<script src="src/js/todays-nine.js?v=3"></script>
+<script src="src/js/latest.js?v=2"></script>
 <script src="src/js/home-listen.js?v=2"></script>
 <script>
   const menuToggle = document.getElementById('menuToggle');

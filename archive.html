@@ -19,7 +19,6 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="src/js/consent.js" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -120,6 +119,8 @@
     .grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:16px 12px}
   }
 </style>
+  <!-- Cookie同意 + GA4(同意後にのみ読み込む・GDPR) -->
+  <script src="src/js/consent.js?v=2" defer></script>
 </head>
 <body>
 <header>
@@ -377,5 +378,13 @@
   window.addEventListener('popstate', function(){ readUrl(); apply(); });
 })();
 </script>
+  <script src="src/js/app.js"></script>
+  <script src="src/js/chat.js"></script>
+  
+  <!-- AN Mikuji Launcher -->
+  <span id="mikuji-launcher" class="mikuji-paused" aria-label="AN Mikuji is temporarily paused" title="AN神籤 — 一時休止中">
+    <img src="assets/covers/mikuji_icon.webp" alt="AN Mikuji">
+    <span class="mikuji-pause-label" aria-hidden="true">PAUSED</span>
+  </span>
 </body>
 </html>

@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="description" content="Submit your Heart Sutra remix to Open Gate Sutra. Paste your SUNO or YouTube link — 30 seconds, no account, your track stays yours.">
+<meta name="description" content="Submit your Heart Sutra remix to Open Gate Sutra. Drop your mp3 — 30 seconds, no account, your track stays yours.">
 
 <!-- Open Graph / Twitter -->
 <meta property="og:type" content="website">
@@ -17,7 +17,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="ja_JP">
 <meta property="og:title" content="Cross the Gate — Submit your remix | Open Gate Sutra">
-<meta property="og:description" content="Paste your SUNO or YouTube link — 30 seconds, no account, your track stays yours.">
+<meta property="og:description" content="Drop your mp3 — 30 seconds, no account, your track stays yours.">
 <meta property="og:url" content="https://teng3333.github.io/heart-sutra-archive/submit.html">
 <meta property="og:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
 <meta property="og:image:width" content="1200">
@@ -25,7 +25,7 @@
 <meta property="og:image:alt" content="Open Gate Sutra — the Heart Sutra recomposed by the world">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Cross the Gate — Submit your remix">
-<meta name="twitter:description" content="Paste your SUNO or YouTube link — 30 seconds, no account, your track stays yours.">
+<meta name="twitter:description" content="Drop your mp3 — 30 seconds, no account, your track stays yours.">
 <meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
 
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
@@ -104,16 +104,16 @@
 
   form{margin-top:46px;display:flex;flex-direction:column;gap:26px}
   label{display:flex;flex-direction:column;gap:9px;
-    font-family:var(--ui);font-size:10px;letter-spacing:.26em;
+    font-family:var(--ui);font-size:12px;letter-spacing:.2em;
     text-transform:uppercase;color:var(--nibi)}
-  label .ja{font-family:var(--ja);letter-spacing:.2em;font-size:10px}
+  label .ja{font-family:var(--ja);letter-spacing:.14em;font-size:12px}
   label .req{color:var(--shu)}
   input,select{background:rgba(13,18,32,.6);border:1px solid var(--hair);
     color:var(--washi-hi);font-family:var(--en);font-size:16px;
     padding:13px 14px;width:100%;border-radius:0;-webkit-appearance:none;appearance:none}
-  input[type=file]{font-family:var(--ui);font-size:12px;letter-spacing:.04em;padding:11px 14px}
+  input[type=file]{font-family:var(--ui);font-size:13px;letter-spacing:.04em;padding:11px 14px}
   input[type=file]::file-selector-button{background:none;border:1px solid var(--hair);
-    color:var(--washi);font-family:var(--ui);font-size:10px;letter-spacing:.2em;
+    color:var(--washi);font-family:var(--ui);font-size:12px;letter-spacing:.16em;
     text-transform:uppercase;padding:7px 14px;margin-right:14px;cursor:pointer}
   input[type=file]::file-selector-button:hover{border-color:var(--washi)}
   select{font-family:var(--ui);font-size:13px;letter-spacing:.06em;
@@ -123,7 +123,7 @@
     background-size:6px 6px;background-repeat:no-repeat}
   input::placeholder{color:rgba(141,130,109,.55)}
   input:focus-visible,select:focus-visible{outline:1px solid var(--washi);outline-offset:2px}
-  .hint{font-family:var(--ui);font-size:10px;letter-spacing:.08em;
+  .hint{font-family:var(--ui);font-size:12px;letter-spacing:.06em;
     text-transform:none;color:var(--nibi);line-height:1.9}
   .hint b{color:var(--washi);font-weight:400}
 
@@ -149,16 +149,24 @@
     color:var(--nibi);line-height:1.9;padding-left:14px;position:relative}
   .terms li::before{content:"·";position:absolute;left:0;color:var(--washi)}
   .terms li b{color:var(--washi);font-weight:400}
-  .terms .ja-line{display:block;font-size:10px;opacity:.85}
-  .agree{display:flex;flex-direction:row;align-items:center;gap:10px;margin-top:18px;
+  .terms .ja-line{display:block;font-size:12px;opacity:.85;line-height:1.9}
+  /* 画面下に固定されるCookieの帯(高さ約100px)に隠れて、規約同意のチェックが押せなかった。
+     フォームの下に余白を取り、帯の上へ出す(2026-09-16) */
+  form{padding-bottom:132px}
+  .agree{display:flex;flex-direction:row;align-items:center;gap:12px;margin-top:18px;
+    cursor:pointer;padding:12px 14px;border-radius:8px;
     font-family:var(--ui);font-size:11px;letter-spacing:.1em;color:var(--washi);
     text-transform:none;cursor:pointer}
-  .agree input{width:16px;height:16px;accent-color:var(--shu);flex:none}
+  .agree:hover{background:rgba(217,196,154,.06)}
+  /* 共通の入力欄の指定(padding:13px/appearance:none)がチェックにも効いて、
+     四角が30x28pxに膨らみ、チェックマークの描画まで消えていた。ここだけ元に戻す(2026-09-16) */
+  .agree input{-webkit-appearance:checkbox;appearance:auto;padding:0;border:0;border-radius:0;
+    width:22px;height:22px;min-width:22px;background:none;accent-color:var(--shu);flex:none;cursor:pointer}
   .agree input:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
   .turnstile-wrap{min-height:65px;display:flex;align-items:center}
 
   .fine{border-top:1px solid var(--hair);margin-top:52px;padding-top:26px;
-    font-family:var(--ui);font-size:10px;letter-spacing:.06em;color:var(--nibi);line-height:2.1}
+    font-family:var(--ui);font-size:11px;letter-spacing:.06em;color:var(--nibi);line-height:2.1}
   .fine b{color:var(--washi);font-weight:400}
 
   .result{display:none;border:1px solid var(--hair);background:rgba(13,18,32,.6);
@@ -169,12 +177,51 @@
   .result .id{font-family:var(--ui);letter-spacing:.1em;color:var(--washi-hi)}
   .result .err{color:var(--shu)}
   .status-btn{display:inline-block;margin-top:18px;color:var(--washi-hi);text-decoration:none;
-    font-family:var(--ui);font-size:10px;letter-spacing:.26em;text-transform:uppercase;
+    font-family:var(--ui);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
     border:1px solid var(--hair);padding:10px 18px;background:none;cursor:pointer}
   .status-btn:hover{border-color:var(--washi)}
   .status-btn:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
   .status-out{font-family:var(--ui);font-size:11px;letter-spacing:.08em;
     color:var(--washi);margin-top:14px;line-height:2}
+  /* ── 音源を置く枠 ── 必須の一点なので、いちばん大きく取る */
+  .drop{position:relative;border:1px dashed var(--hair2,rgba(217,196,154,.34));
+    background:rgba(13,18,32,.4);padding:26px 20px;margin:0 0 18px;
+    transition:border-color .2s,background .2s}
+  .drop.over,.drop:hover{border-color:var(--washi,#d9c49a);background:rgba(13,18,32,.65)}
+  .drop input[type=file]{position:absolute;inset:0;width:100%;height:100%;
+    opacity:0;cursor:pointer}
+  /* hidden属性より display 指定が強いので、明示的に打ち消す */
+  .drop-face[hidden],.drop-got[hidden],.drop-err[hidden],.hint[hidden],
+  .drop-got img[hidden]{display:none!important}
+  .drop-face{display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;
+    pointer-events:none}
+  .drop-face b{font-size:15px}
+  .drop-face small{font-size:11px;opacity:.6}
+  .drop-got{display:flex;gap:14px;align-items:center}
+  .drop-got img{object-fit:cover;border:1px solid var(--hair2,rgba(217,196,154,.34));flex:none}
+  .drop-got b{display:block;font-size:14px;word-break:break-all}
+  .drop-got span{display:block;font-size:11.5px;opacity:.65;margin-top:3px}
+  .drop-clear{position:relative;z-index:1;margin-top:8px;background:none;
+    border:1px solid var(--hair2,rgba(217,196,154,.34));color:inherit;font:inherit;
+    font-size:11px;padding:4px 10px;cursor:pointer}
+  .drop-err{color:#e08a7a;font-size:12.5px;margin:-10px 0 16px}
+
+  /* 自動で入った欄は、そう分かるようにする。勝手に決められた感じを残さない */
+  .hint.filled{color:#8fbf9a}
+  .hint.filled::before{content:"✓ "}
+
+  /* 任意の欄は畳んでおく。フォームが短く見えることが、出しやすさに直結する */
+  .more{margin:4px 0 22px;border-top:1px solid var(--hair2,rgba(217,196,154,.34));
+    padding-top:14px}
+  .more summary{cursor:pointer;font-size:13px;letter-spacing:.06em;list-style:none;
+    padding:6px 0;opacity:.8}
+  .more summary:hover{opacity:1}
+  .more summary::-webkit-details-marker{display:none}
+  .more summary::before{content:"＋ ";opacity:.6}
+  .more[open] summary::before{content:"− "}
+  .more textarea{width:100%;background:rgba(13,18,32,.5);color:inherit;font:inherit;
+    font-size:13.5px;line-height:1.9;border:1px solid var(--hair2,rgba(217,196,154,.34));
+    padding:10px 12px;resize:vertical}
 </style>
 </head>
 <body>
@@ -193,62 +240,101 @@
   <p class="sub-ja">門を渡る — あなたの般若心経を、この家に</p>
 
   <form id="submit-form" novalidate>
-    <label>Track URL <span class="req">*</span> <span class="ja">曲のリンク</span>
-      <input type="url" name="url" required placeholder="https://suno.com/song/... or https://youtu.be/..."
-        inputmode="url" autocomplete="off">
-      <span class="hint">SUNO (<b>commercial-use plan</b>) or YouTube. / SUNOは商用利用可プランの曲のみ</span>
-    </label>
+    <!-- 必須は音源・曲名・作者名の3つだけ。
+         音源はOGSが預かって世界に流すものなので、ここが本体。
+         残りは畳んでおく。フォームが短く見えることが、出しやすさに直結する。 -->
+
+    <div class="drop" id="drop">
+      <input type="file" name="audio" id="audioInput" accept=".mp3,audio/mpeg" required>
+      <div class="drop-face" id="dropFace">
+        <b>Drop your mp3 here <span class="req">*</span></b>
+        <span class="ja">音源をここに置く ／ 押して選ぶ</span>
+        <small>mp3 · 25MB まで · 8分まで</small>
+      </div>
+      <div class="drop-got" id="dropGot" hidden>
+        <img id="dropArt" alt="" width="72" height="72" hidden>
+        <div>
+          <b id="dropName"></b>
+          <span id="dropMeta"></span>
+          <button type="button" class="drop-clear" id="dropClear">選び直す</button>
+        </div>
+      </div>
+    </div>
+    <p class="drop-err" id="dropErr" hidden></p>
 
     <label>Title <span class="req">*</span> <span class="ja">曲名</span>
       <input type="text" name="title" required placeholder="Gyatei Loop (Phonk)">
+      <span class="hint filled" id="hintTitle" hidden>音源から読み取りました。直せます。</span>
     </label>
 
-    <label>Artist name <span class="req">*</span> <span class="ja">名義</span>
-      <input type="text" name="artist_name" required placeholder="Your name — 堂に永久に刻まれる名">
+    <label>Artist name <span class="req">*</span> <span class="ja">名義 — 堂に永久に刻まれる名</span>
+      <input type="text" name="artist_name" required placeholder="Your name">
+      <span class="hint filled" id="hintArtist" hidden>音源から読み取りました。直せます。</span>
     </label>
 
-    <label>Country <span class="ja">国(任意)</span>
-      <input type="text" name="country" maxlength="10" placeholder="JP / BR / DE ...">
+    <label>Artist link <span class="ja">あなたのチャンネル / ストア</span>
+      <input type="url" name="artist_link" placeholder="https://suno.com/@you">
+      <span class="hint"><b>Your link stays on screen while your track plays.</b> 再生中、あなたのリンクが画面に出ます。聴いた人があなたに辿り着ける唯一の道です。</span>
     </label>
 
-    <label>Artist link <span class="ja">あなたのチャンネル/ストア(任意・強く推奨)</span>
-      <input type="url" name="artist_link" placeholder="https://suno.com/@you — the house sends listeners to you">
-      <span class="hint"><b>We send our audience to you.</b> 聴いた人があなたに渡れるように。</span>
+    <label>Cover art <span class="ja">ジャケット画像 — 任意</span>
+      <input type="file" name="artwork" id="artInput" accept="image/jpeg,image/png,image/webp">
+      <span class="hint">JPEG / PNG / WebP · 2MBまで。音源に埋め込まれていれば自動で入ります。<span class="ja-line">再生画面、曲のページ、SNSに貼ったときのカードに出ます。</span></span>
     </label>
 
-    <label>Review audio <span class="ja">AN審査用音源(任意・SUNO曲でAN選を狙うなら)</span>
-      <input type="file" name="audio" accept=".mp3,audio/mpeg">
-      <span class="hint"><b>YouTube tracks don't need this</b> — AN listens to them directly. For SUNO tracks, download the mp3 from your own SUNO account and attach it here if you want AN's weekly pick to hear you. Used only for AN's review — never published, auto-deleted after 90 days.<br>YouTube投稿は不要(ANが直接聴けます)。SUNO曲でAN選の対象になりたい場合のみ、ご自身のSUNOアカウントからmp3を書き出して添付してください。審査だけに使い、公開せず、90日後に自動削除します。</span>
-    </label>
+    <details class="more">
+      <summary>Add more <span class="ja">もっと添える（すべて任意）</span></summary>
 
-    <label>Genre <span class="ja">ジャンル(任意)</span>
-      <select name="genre">
-        <option value="">Let AN's ear decide — おまかせ</option>
-        <option value="ambient">Ambient</option>
-        <option value="anison">Anison アニソン</option>
-        <option value="blues">Blues</option>
-        <option value="bossa nova">Bossa Nova</option>
-        <option value="choir-hymn">Choir / Hymn 聖歌</option>
-        <option value="electronic">Electronic / IDM</option>
-        <option value="enka">Enka 演歌</option>
-        <option value="folk-acoustic">Folk / Acoustic</option>
-        <option value="house-edm">House / EDM</option>
-        <option value="hiphop-rap">Hip hop / Rap</option>
-        <option value="idol-kpop">Idol / K-pop</option>
-        <option value="jazz">Jazz</option>
-        <option value="latin">Latin(Tango / Samba / Flamenco)</option>
-        <option value="lo-fi">Lo-fi</option>
-        <option value="metal">Metal</option>
-        <option value="pop">Pop</option>
-        <option value="punk">Punk</option>
-        <option value="reggae-ska">Reggae / Ska</option>
-        <option value="rnb-soul">R&amp;B / Soul</option>
-        <option value="rock">Rock</option>
-        <option value="techno">Techno</option>
-        <option value="world">World(Gagaku / Bollywood / Arabian ...)</option>
-        <option value="other">Other その他</option>
-      </select>
-    </label>
+      <label>Lyrics <span class="ja">歌詞</span>
+        <textarea name="lyrics" id="lyricsInput" rows="6" maxlength="5000"
+          placeholder="観自在菩薩 行深般若波羅蜜多時 ..."></textarea>
+        <span class="hint"><span id="lyricsCount">0</span> / 5000字。<b>ANの曲評は歌詞に触れません。</b>聴き手が読むためのものです。</span>
+      </label>
+
+      <label>Lyrics language <span class="ja">歌詞の言語</span>
+        <input type="text" name="lyrics_lang" maxlength="40" placeholder="漢文 / English / सनस्कृत ...">
+      </label>
+
+      <label>Where it lives <span class="ja">曲の出どころ</span>
+        <input type="url" name="url" placeholder="https://suno.com/song/... / https://youtu.be/..."
+          inputmode="url" autocomplete="off">
+        <span class="hint">SUNOやYouTubeで公開しているなら。<b>DAWで作った方は空のままで構いません。</b></span>
+      </label>
+
+      <label>Country <span class="ja">国</span>
+        <input type="text" name="country" maxlength="10" placeholder="JP / BR / DE ...">
+      </label>
+
+      <label>Genre <span class="ja">ジャンル</span>
+        <select name="genre">
+          <option value="">Let AN's ear decide — おまかせ（推奨）</option>
+          <option value="ambient">Ambient</option>
+          <option value="anison">Anison アニソン</option>
+          <option value="blues">Blues</option>
+          <option value="bossa nova">Bossa Nova</option>
+          <option value="choir-hymn">Choir / Hymn 聖歌</option>
+          <option value="electronic">Electronic / IDM</option>
+          <option value="enka">Enka 演歌</option>
+          <option value="folk-acoustic">Folk / Acoustic</option>
+          <option value="house-edm">House / EDM</option>
+          <option value="hiphop-rap">Hip hop / Rap</option>
+          <option value="idol-kpop">Idol / K-pop</option>
+          <option value="jazz">Jazz</option>
+          <option value="latin">Latin(Tango / Samba / Flamenco)</option>
+          <option value="lo-fi">Lo-fi</option>
+          <option value="metal">Metal</option>
+          <option value="pop">Pop</option>
+          <option value="punk">Punk</option>
+          <option value="reggae-ska">Reggae / Ska</option>
+          <option value="rnb-soul">R&amp;B / Soul</option>
+          <option value="rock">Rock</option>
+          <option value="techno">Techno</option>
+          <option value="world">World(Gagaku / Bollywood / Arabian ...)</option>
+          <option value="other">Other その他</option>
+        </select>
+        <span class="hint">選ばなければ、ANの耳が聴いて判断します。</span>
+      </label>
+    </details>
 
     <div class="terms">
       <p class="terms-head">Before you cross — 渡る前の約束</p>
@@ -256,6 +342,9 @@
         <li>The work is <b>yours</b>, and you hold the rights to publish it — no unlicensed samples or copyrighted material in the music. <span class="ja-line">楽曲はあなた自身の作品で、公開する権利を持っていること(他者の著作物・無許諾サンプルを含まない)</span></li>
         <li>SUNO tracks must be made on a <b>commercial-use (paid) plan</b>. <span class="ja-line">SUNO曲は商用利用可(有料)プランで制作されたものであること</span></li>
         <li>Cover art / thumbnail is <b>safe for everyone</b> — no explicit, gory, or otherwise offensive imagery. <span class="ja-line">カバーアート・サムネイルは、エロ・グロ等を含まず、公序良俗に反しないこと</span></li>
+        <li>Any <b>cover art and lyrics</b> you attach are yours too, or you hold the rights to publish them — note that a modern translation carries the translator's rights. <span class="ja-line">添えるジャケット画像と歌詞も、あなたの著作物であるか、公開する権利を持っていること（現代語訳には訳者の権利があります）</span></li>
+        <li>You are <b>16 or over</b>. If you are a minor, you have your guardian's consent. <span class="ja-line">あなたは16歳以上であること。未成年の場合は保護者の同意を得ていること</span></li>
+        <li>OGS may <b>publish and stream</b> your track, with your name and link. You can ask us to take it down at any time. <span class="ja-line">OGSがこの曲を、あなたの名前とリンクとともに公開・配信すること。取り下げはいつでも申し出られます</span></li>
       </ul>
       <label class="agree">
         <input type="checkbox" id="agree" required>
@@ -278,7 +367,7 @@
   <p class="fine">
     The floor inspects daily at <b>05:00 JST</b> — formal checks only (working link · not a duplicate · 40s–10min). <b>No taste judgement at the gate.</b><br>
     Tracks over <b>4:00</b> enter the Hall permanently but sit outside AN's weekly pick.<br>
-    床の検分は毎朝5時。形式のみを見ます(リンク・重複・長さ)。良し悪しは判定しません。4分を超える曲は堂には入りますが、AN選の対象外です。
+    投稿のあと、自動で検分します。形式のみを見ます(曲名・名義・音源・重複・長さ)。良し悪しは判定しません。通れば、ANの曲評と一言を添えて数分〜1時間ほどで公開されます。4分を超える曲は堂には入りますが、AN選の対象外です。
   </p>
 </main>
 
@@ -297,8 +386,11 @@
     if (!form.reportValidity()) return;
 
     var data = {};
-    ['url', 'title', 'artist_name', 'country', 'artist_link', 'genre'].forEach(function (k) {
-      var v = form.elements[k].value.trim();
+    ['url', 'title', 'artist_name', 'country', 'artist_link', 'genre',
+     'lyrics', 'lyrics_lang'].forEach(function (k) {
+      var el = form.elements[k];
+      if (!el) return;
+      var v = el.value.trim();
       if (v) data[k] = v;
     });
     // 規約同意はサーバー側でも必須。チェック状態を明示的に送る
@@ -315,21 +407,27 @@
     }
     data['cf-turnstile-response'] = turnstileToken;
 
-    // 音源添付あり → multipart、なし → 従来どおりJSON
+    /* 音源は必須になったので、常に multipart で送る。
+       ジャケットは、自分で選んだものが最優先。無ければ音源から取り出したものを使う。 */
     var audioInput = form.elements.audio;
-    var req;
-    if (audioInput && audioInput.files && audioInput.files.length > 0) {
-      var fd = new FormData();
-      Object.keys(data).forEach(function (k) { fd.append(k, data[k]); });
-      fd.append('audio', audioInput.files[0]);
-      req = { method: 'POST', body: fd };
-    } else {
-      req = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      };
+    if (!audioInput || !audioInput.files || !audioInput.files.length) {
+      result.className = 'result on';
+      result.innerHTML =
+        '<h3 class="err">Your track is missing. — 音源がありません</h3>' +
+        '<p>mp3を置いてから、もう一度お試しください。</p>';
+      return;
     }
+    var fd = new FormData();
+    Object.keys(data).forEach(function (k) { fd.append(k, data[k]); });
+    fd.append('audio', audioInput.files[0]);
+    var artEl = form.elements.artwork;
+    var picked = window.OGS_pickedArtwork && window.OGS_pickedArtwork();
+    if (artEl && artEl.files && artEl.files.length) {
+      fd.append('artwork', artEl.files[0]);
+    } else if (picked) {
+      fd.append('artwork', picked, 'cover.jpg');
+    }
+    var req = { method: 'POST', body: fd };
 
     seal.disabled = true;
     fetch(API_BASE + '/api/submit', req)
@@ -375,5 +473,6 @@
       });
   });
 </script>
+<script src="src/js/submit-audio.js?v=3" defer></script>
 </body>
 </html>

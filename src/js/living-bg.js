@@ -28,11 +28,8 @@ const DPR = Math.min(devicePixelRatio || 1, 2);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const MOBILE = matchMedia('(max-width: 700px)').matches;
 
-let W, H, CX, CY, R;
+let W, H, CX, CY, R, WFIELD = 1;
 function resize(){
-  // 実寸が変わっていなければ何もしない。cv.width への代入はサイズが同じでも
-  // バックバッファを作り直す(モバイルでは約5MB)ため、無条件に走らせない。
-  if (innerWidth === W && innerHeight === H) return;
   W = innerWidth; H = innerHeight;
   cv.width = W * DPR; cv.height = H * DPR;
   cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -40,16 +37,12 @@ function resize(){
   CX = MOBILE ? W * 0.5 : W * 0.63;
   CY = MOBILE ? H * 0.44 : H * 0.5;
   R  = Math.min(W, H) * (MOBILE ? 0.37 : 0.36);
+  /* 天候の粒子は球の半径Rを単位に散る。ホームでは球のまわりに留めるが、
+     聞き流し画面(全画面)では画面の隅まで届かせたい。
+     画面の対角の半分がRの何倍かを出して、その倍率で撒く範囲を広げる。 */
+  WFIELD = window.OGS_ART_FULLSCREEN ? Math.hypot(W, H) / (2 * R) : 1;
 }
-resize();
-/* iOS Safari はスクロールでアドレスバーが伸縮するたびに resize を発火させる。
-   その都度作り直すとスクロール中ずっとバックバッファを確保し続けるので、
-   落ち着いてから1回だけ作り直す。 */
-let __rzTimer = 0;
-addEventListener('resize', function(){
-  clearTimeout(__rzTimer);
-  __rzTimer = setTimeout(resize, 200);
-});
+resize(); addEventListener('resize', resize);
 
 const C = {
   trunk:'78,64,48', leafG:'62,94,68', leafD:'40,64,48', pine:'50,82,60',
@@ -103,12 +96,10 @@ pickCelestial();
 const CEL_IMG = {};
 (function loadCelestialImages(){
   for (const k of ['galaxy','earth','moon','sun','saturn']){
-    {
-      // 実体は5枚ともwebp(600px級に縮小済み。どのみちS=512へ正規化されるため
-      // 元画像がそれ以上大きくても無駄になるだけ。元のpngはassets/celestial/_sourceに保全)
+    for (const ext of ['png','jpg','jpeg','webp']){
       const im = new Image();
       im.onload = () => {
-        if (CEL_IMG[k]) return;
+        if (CEL_IMG[k]) return;                        // 先に読めた方を採用
         const S = 512, can = document.createElement('canvas');
         can.width = can.height = S;
         const g = can.getContext('2d');
@@ -116,16 +107,24 @@ const CEL_IMG = {};
         const sc = Math.max(S/im.naturalWidth, S/im.naturalHeight);
         const dw = im.naturalWidth*sc, dh = im.naturalHeight*sc;
         g.drawImage(im, (S-dw)/2, (S-dh)/2, dw, dh);
-        // 縁を透明に(黒背景へ同化)
+        /* 縁を透明に(黒背景へ同化)。
+           ぼかす円は正方形の内側に収める(2026-09-17 高尾さん指摘)。
+           以前は半径が S*0.5 ちょうどで、円が正方形の辺に接する上下左右の4点では
+           薄めきる前に画像の端に達し、月が直線ですっぱり切れて見えていた。
+           さらに 0.72 まで濃さ0.95を保っていたため、落ちしろが外周の28%しかなかった。
+           円を小さくし、早くから薄め始めて、どの向きでも闇へ溶けるようにする。 */
         g.globalCompositeOperation = 'destination-in';
-        const m = g.createRadialGradient(S/2, S/2, S*0.10, S/2, S/2, S*0.5);
-        m.addColorStop(0, 'rgba(0,0,0,1)');
-        m.addColorStop(0.72, 'rgba(0,0,0,0.95)');
-        m.addColorStop(1, 'rgba(0,0,0,0)');
+        const m = g.createRadialGradient(S/2, S/2, S*0.06, S/2, S/2, S*0.42);
+        m.addColorStop(0,    'rgba(0,0,0,1)');
+        m.addColorStop(0.44, 'rgba(0,0,0,0.97)');
+        m.addColorStop(0.66, 'rgba(0,0,0,0.72)');
+        m.addColorStop(0.82, 'rgba(0,0,0,0.32)');
+        m.addColorStop(0.92, 'rgba(0,0,0,0.10)');
+        m.addColorStop(1,    'rgba(0,0,0,0)');
         g.fillStyle = m; g.fillRect(0, 0, S, S);
         CEL_IMG[k] = can;
       };
-      im.src = `assets/celestial/${k}.webp`;
+      im.src = `assets/celestial/${k}.${ext}`;
     }
   }
 })();
@@ -140,7 +139,10 @@ function drawCelestial(t, vis, glow, tintArr){
 }
 function drawCelestialOne(c, t, vis, glow, tintArr, mul){
   if (!c || c.kind === 'none' || mul <= 0.004) return;
-  const a0 = (0.10 + vis*0.16) * (0.85 + Math.sin(t*0.12 + c.seed)*0.15) * mul;  // 呼吸+フェード
+  /* 天体の濃さは段階に連れる。以前は 0.10 の下駄があり、球が散っている段階でも
+     天体だけがはっきり残っていた(2026-09-17 高尾さん指示で、散った状態では天体も薄くする)。
+     闇から世界が立ち上がる流れを保つため、下駄も vis に連動させる */
+  const a0 = (0.012 + vis*0.24) * (0.85 + Math.sin(t*0.12 + c.seed)*0.15) * mul;  // 呼吸+フェード
   if (a0 < 0.012) return;
   const x = CX + c.nx*R*1.5, y = CY + c.ny*R*1.4, rad = R * c.r;
   // 画像版(用意されていれば優先)
@@ -341,11 +343,14 @@ function drawRare(t){
 /* ── 天候イベント:雨・桜・雪・落ち葉。球体の円内(nx,ny∈[-1.2,1.2])を
    ゆっくり舞い落ちる。位置は球体基準なので、球のまわりに散る。 ── */
 let weather = 'none', wStart = 0, wEnd = 0, wNext = 5 + Math.random()*8;
-function respawnP(p){ p.nx = (Math.random()*2-1)*1.15; p.ny = -1.15 - Math.random()*0.3; }
-const WP = Array.from({length: MOBILE ? 55 : 110}, () => {
+function respawnP(p){ p.nx = (Math.random()*2-1)*1.15*WFIELD;
+                     p.ny = (-1.15 - Math.random()*0.3)*WFIELD; }
+/* 広く撒くぶん、粒の数も増やさないと画面がすかすかになる */
+const WPN = Math.round((MOBILE ? 55 : 110) * Math.min(2.4, WFIELD));
+const WP = Array.from({length: WPN}, () => {
   const p = { s: Math.random(), rot: Math.random()*7, sway: Math.random()*9,
               swf: 0.006 + Math.random()*0.01, spd: 0.7 + Math.random()*0.6 };
-  p.nx = (Math.random()*2-1)*1.15; p.ny = (Math.random()*2-1)*1.15; return p;
+  p.nx = (Math.random()*2-1)*1.15*WFIELD; p.ny = (Math.random()*2-1)*1.15*WFIELD; return p;
 });
 function pickWeather(t){
   const r = Math.random();
@@ -356,17 +361,17 @@ function pickWeather(t){
   wStart = t; wEnd = t + 18 + Math.random()*26; wNext = wEnd + 5 + Math.random()*16;
   WP.forEach(p => {
     respawnP(p);
-    if (weather === 'bubbles') p.ny = 1.15 + Math.random()*0.3;   // 下から出す
+    if (weather === 'bubbles') p.ny = (1.15 + Math.random()*0.3)*WFIELD;   // 下から出す
     if (weather === 'digital'){ p.glyph = Math.random() < 0.5 ? '0' : '1';
       p.flip = Math.random()*9; p.trail = 3 + (Math.random()*5|0); }
     if (weather === 'stars'){                                      // 動かない星
-      p.nx = (Math.random()*2-1)*1.15; p.ny = (Math.random()*2-1)*1.15;
+      p.nx = (Math.random()*2-1)*1.15*WFIELD; p.ny = (Math.random()*2-1)*1.15*WFIELD;
       p.tw = Math.random()*Math.PI*2;                              // 点滅位相
       p.tws = 0.6 + Math.random()*2.2;                             // 点滅の速さ
       p.spike = Math.random() < 0.35;                              // 十字の光条
     }
     if (weather === 'fish'){                                       // 左右に泳ぐ小魚
-      p.nx = (Math.random()*2-1)*1.2; p.ny = (Math.random()*2-1)*1.0;
+      p.nx = (Math.random()*2-1)*1.2*WFIELD; p.ny = (Math.random()*2-1)*1.0*WFIELD;
       p.dir = Math.random() < 0.5 ? 1 : -1;                        // 泳ぐ向き
       p.fsp = 0.0016 + Math.random()*0.0030;                       // 遊泳速度
       p.wig = Math.random()*9;                                     // 尾びれの位相
@@ -375,7 +380,7 @@ function pickWeather(t){
       p.turn = 4 + Math.random()*10;                               // 向きを変えるまでの秒
     }
     if (weather === 'butterfly'){                                  // ひらひら舞う蝶
-      p.nx = (Math.random()*2-1)*1.15; p.ny = (Math.random()*2-1)*1.15;
+      p.nx = (Math.random()*2-1)*1.15*WFIELD; p.ny = (Math.random()*2-1)*1.15*WFIELD;
       p.hue = (Math.random()*360)|0;                               // 色とりどり
       p.flap = Math.random()*9;                                    // 羽ばたきの位相
       p.flapS = 7 + Math.random()*7;                               // 羽ばたきの速さ
@@ -384,9 +389,9 @@ function pickWeather(t){
       p.wys = 0.16 + Math.random()*0.30;
     }
     if (weather === 'ripple'){                                     // 水滴と広がる波紋
-      p.nx = (Math.random()*2-1)*1.05;
-      p.tgt = (Math.random()*2-1)*0.95;                            // 着水点
-      p.dropY = p.tgt - 0.5 - Math.random()*1.1;                   // 落下開始の高さ
+      p.nx = (Math.random()*2-1)*1.05*WFIELD;
+      p.tgt = (Math.random()*2-1)*0.95*WFIELD;                     // 着水点
+      p.dropY = p.tgt - (0.5 + Math.random()*1.1)*WFIELD;          // 落下開始の高さ
       p.state = 0;                                                 // 0=落下中 1=波紋
       p.rt = 0;                                                    // 波紋の経過
       p.delay = Math.random()*7;                                   // 落ち始めるまで
@@ -406,7 +411,7 @@ function drawWeather(t, tint){
     for (const p of WP){
       p.tw += 0.02 * p.tws;
       const nx = p.nx, ny = p.ny;
-      if (nx*nx + ny*ny > 1.35) continue;
+      if (nx*nx + ny*ny > 1.35*WFIELD*WFIELD) continue;
       const px = CX + nx*R, py = CY + ny*R;
       const blink = Math.pow(0.5 + 0.5*Math.sin(p.tw), 2.2);   // 鋭く明滅
       const a = 0.85 * intens * blink * (0.35 + p.s*0.65);
@@ -440,7 +445,7 @@ function drawWeather(t, tint){
       p.nx += p.dir * p.fsp * p.spd;
       if (p.nx > 1.3) p.nx = -1.3; else if (p.nx < -1.3) p.nx = 1.3;
       const ny = p.ny + Math.sin(p.bob)*0.03;
-      if (p.nx*p.nx + ny*ny > 1.35) continue;
+      if (p.nx*p.nx + ny*ny > 1.35*WFIELD*WFIELD) continue;
       const px = CX + p.nx*R, py = CY + ny*R;
       const s = (2.6 + p.s*3.4) * (0.6 + p.s*0.5);
       const a = 0.62 * intens * (0.45 + p.s*0.55);
@@ -481,7 +486,7 @@ function drawWeather(t, tint){
       p.ny += (Math.cos(p.wy) * 0.0013 + Math.sin(p.wy*1.7) * 0.0008);
       if (p.nx > 1.25) p.nx = -1.25; else if (p.nx < -1.25) p.nx = 1.25;
       if (p.ny > 1.25) p.ny = -1.25; else if (p.ny < -1.25) p.ny = 1.25;
-      if (p.nx*p.nx + p.ny*p.ny > 1.35) continue;
+      if (p.nx*p.nx + p.ny*p.ny > 1.35*WFIELD*WFIELD) continue;
       const px = CX + p.nx*R, py = CY + p.ny*R;
       const s = 4.2 + p.s*5.6;                     // 目立つ大きさに
       const a = 0.88 * intens * (0.6 + p.s*0.4);
@@ -512,7 +517,7 @@ function drawWeather(t, tint){
         if (p.dropY >= p.tgt){ p.state = 1; p.rt = 0; }
         else {
           const ny = p.dropY;
-          if (p.nx*p.nx + ny*ny > 1.35) continue;
+          if (p.nx*p.nx + ny*ny > 1.35*WFIELD*WFIELD) continue;
           const px = CX + p.nx*R, py = CY + ny*R;
           const a = 0.6 * intens;
           ctx.fillStyle = `rgba(${tint},${a})`;
@@ -522,7 +527,7 @@ function drawWeather(t, tint){
       } else {                                              // 着水後:広がる波紋
         p.rt += 0.016;
         const ny = p.tgt;
-        if (p.nx*p.nx + ny*ny > 1.35){ p.state = 0; p.delay = Math.random()*5; continue; }
+        if (p.nx*p.nx + ny*ny > 1.35*WFIELD*WFIELD){ p.state = 0; p.delay = Math.random()*5; continue; }
         const px = CX + p.nx*R, py = CY + ny*R;
         for (let k = 0; k < p.rings; k++){
           const age = p.rt - k*0.42;                         // 輪を時間差で出す
@@ -568,12 +573,12 @@ function drawWeather(t, tint){
                 : weather==='digital' ? 0 : 0.07;   // digitalは揺れず真っ直ぐ
   for (const p of WP){
     p.ny += fall * p.spd; p.sway += p.swf;
-    if (fall > 0 ? p.ny > 1.2 : p.ny < -1.2){       // 上昇時は上端で撒き直し
+    if (fall > 0 ? p.ny > 1.2*WFIELD : p.ny < -1.2*WFIELD){   // 上昇時は上端で撒き直し
       respawnP(p);
-      if (fall < 0) p.ny = 1.15 + Math.random()*0.25;
+      if (fall < 0) p.ny = (1.15 + Math.random()*0.25)*WFIELD;
     }
     const nx = p.nx + Math.sin(p.sway)*swayAmp, ny = p.ny;
-    if (nx*nx + ny*ny > 1.35) continue;          // 球体の円の外は描かない
+    if (nx*nx + ny*ny > 1.35*WFIELD*WFIELD) continue;          // 球体の円の外は描かない
     const px = CX + nx*R, py = CY + ny*R;
     const near = 0.5 + p.s*0.5;
     if (weather === 'rain'){
@@ -649,15 +654,13 @@ function drawWeather(t, tint){
    4枚を同一サイズ・同じ目位置に正規化 → ライフサイクルでクロスフェード。 */
 // eye{ex,ey}=正面の両目中点(元画像px)、ipd=瞳孔間距離(px)。
 // 較正ページ(_face_calib.html)で瞳を実測。4枚を同一の目位置・同一スケールに正規化。
-/* 配信画像は3面図から正面だけを切り出した無損失WebP(縮小はしていない。
-   使用領域は元画像から1:1で切り取るため、縮小すると必ず甘くなる)。
-   元の3面図は assets/an/_source/ に保全。切り出し原点を引いた分だけ eye 座標がずれる。
-   画素は元と完全一致(_face_crop_diff.html で最大差0を確認)。 */
+// 配信画像は正面のみを切り出した無損失WebP。元の3面図は assets/an/_source/。
+// 較正で得た元画像の座標から、切り出し原点(下記コメント)を引いた値を入れている。
 const FACE_SET = [
-  {key:'human',       src:'assets/an/face-human.webp',       eye:{ex:264, ey:282, ipd:115}, mech:0, sutra:0},
-  {key:'human_sutra', src:'assets/an/face-human-sutra.webp', eye:{ex:263, ey:265, ipd:111}, mech:0, sutra:1},
-  {key:'mech_sutra',  src:'assets/an/face-mech-sutra.webp',  eye:{ex:262, ey:272, ipd:114}, mech:1, sutra:1},
-  {key:'mech',        src:'assets/an/face-mech.webp',        eye:{ex:256, ey:273, ipd:110}, mech:1, sutra:0},
+  {key:'human',       src:'assets/an/face-human.webp',       eye:{ex:264, ey:282, ipd:115}, mech:0, sutra:0}, // 原点(32,144)
+  {key:'human_sutra', src:'assets/an/face-human-sutra.webp', eye:{ex:263, ey:265, ipd:111}, mech:0, sutra:1}, // 原点(32,160)
+  {key:'mech_sutra',  src:'assets/an/face-mech-sutra.webp',  eye:{ex:262, ey:272, ipd:114}, mech:1, sutra:1}, // 原点(32,144)
+  {key:'mech',        src:'assets/an/face-mech.webp',        eye:{ex:256, ey:273, ipd:110}, mech:1, sutra:0}, // 原点(48,160)
 ];
 const FW = 470, FH = 820;
 const EYE_OUT_X = FW*0.5, EYE_OUT_Y = FH*0.30, IPD_OUT = FW*0.245; // 出力側の基準
@@ -692,14 +695,109 @@ function buildFace(def){
       [0.72, 'rgb(64,68,80)'], [1, 'rgb(14,16,24)']]);
     // ビネット: 端を透明化して黒へ同化(1回のみ)
     fc.globalCompositeOperation = 'destination-in';
-    fillEllipseGrad(0.36, FW*0.52, FH*0.50, [
-      [0, 'rgba(0,0,0,1)'], [0.62, 'rgba(0,0,0,0.96)'],
-      [0.85, 'rgba(0,0,0,0.32)'], [1, 'rgba(0,0,0,0)']]);
+    /* 端のぼかしを広く取る。狭いと、頭の上で画像が四角く切れた線が見えた
+       (2026-09-16 高尾さん指摘)。楕円を画面の内側に収め、早くから薄め始める */
+    fillEllipseGrad(0.40, FW*0.46, FH*0.44, [
+      [0, 'rgba(0,0,0,1)'], [0.40, 'rgba(0,0,0,0.98)'],
+      [0.62, 'rgba(0,0,0,0.72)'], [0.78, 'rgba(0,0,0,0.34)'],
+      [0.90, 'rgba(0,0,0,0.10)'], [1, 'rgba(0,0,0,0)']]);
     def.can = can; facesReady++;
   };
   img.src = def.src;
 }
 FACE_SET.forEach(buildFace);
+
+/* ── 球の中心に宿る絵の差し替え(2026-09-17 高尾さん指示) ──
+   曲ページから1曲を指定して聴くときだけ、ANの顔の代わりにジャケットを宿す。
+   聞き流し(棚を流す)とホームの背景では、今までどおりANのまま。
+
+   顔と同じ下ごしらえを掛ける。そのまま貼ると絵が明るすぎて球から浮き、
+   四角い縁が切れて見える(顔で同じことが起きた 2026-09-16 高尾さん指摘)。
+     1) 中央を正方形に切る(縦横の長い方を切る。作者の絵を歪めない)
+     2) 夜に沈める(中心は残し、周辺だけ暗く)
+     3) 縁をぼかして黒へ同化させる
+   R2のジャケットは別の住所にあるので crossOrigin を付ける。
+   付けないと canvas が汚れ、背景全体が二度と描けなくなる。 */
+const CIMG_S = 720;                                  // 下ごしらえ後の一辺
+const CIMG = { can: null, url: null };
+
+function buildCenterImage(url, src){
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    if (CIMG.url !== url) return;                    // 待つ間に曲が変わった
+    /* 1) 切り抜かず、絵を丸ごと入れる(2026-09-18 高尾さん指示)。
+          ジャケットは縦長が多い(実測30枚すべて。最多は459x800 ≒ 9:16)。
+          正方形に切ると上下を170画素ずつ捨てることになり、顔が切れる絵があった。
+          「明るくて描き込みの多い場所を探して切る」方式も試したが、
+          顔より背景のほうが明るく細かい絵が多く、12枚のうち6枚で外した
+          (月面の絵は地面の質感に、夜景の絵は街の灯りに引っ張られた)。
+          切らなければ、そもそも外しようがない。 */
+    const LONG = CIMG_S;                     // 長いほうの辺をこの大きさに揃える
+    const k = LONG / Math.max(img.width, img.height);
+    const W = Math.max(1, Math.round(img.width * k));
+    const H = Math.max(1, Math.round(img.height * k));
+    const can = document.createElement('canvas');
+    can.width = W; can.height = H;
+    const c = can.getContext('2d');
+    c.drawImage(img, 0, 0, W, H);
+
+    /* 縁の処理は、絵の形に沿った楕円で行う。正円で抜くと、縦長の絵では
+       左右だけが早く消えて歪んで見える。横と縦を別々に指定して形を合わせる */
+    const ring = (rx, ry, stops) => {
+      c.save();
+      c.translate(W * 0.5, H * 0.5);
+      c.scale(rx, ry);
+      const g = c.createRadialGradient(0, 0, 0.02, 0, 0, 1);
+      for (const [o, col] of stops) g.addColorStop(o, col);
+      c.fillStyle = g;
+      c.fillRect(-4, -4, 8, 8);
+      c.restore();
+    };
+    /* 2) 夜に沈める。浅くする。ジャケットは作者が選んだ絵なので、
+          暗くしすぎると何が描いてあるか分からなくなる */
+    c.globalCompositeOperation = 'multiply';
+    ring(W * 0.86, H * 0.86, [
+      [0, 'rgb(255,255,255)'], [0.62, 'rgb(240,242,246)'],
+      [0.88, 'rgb(168,172,184)'], [1, 'rgb(64,68,82)']]);
+    /* 3) 縁を闇へ溶かす。二度直している(2026-09-18)。
+          一度目は 0.78 の楕円に緩い落とし方。角が27%残り、四角い紙に見えた。
+          二度目は 0.70 に縮めて角を0%に。数値どおり角は消えたが、
+          辺が直線のまま残るため、やはり紙を貼ったように見えた(高尾さん指摘)。
+          角を消すだけでは足りず、辺が直線である限り紙に見える、と分かった。
+
+          そこで辺も溶かす(高尾さん指示)。楕円を 0.54 まで縮めると、
+          辺の中央の残りは約1割、四隅は0になり、絵は楕円の靄として浮かぶ。
+          引き換えに、絵の外側2割ほどは闇に沈む。中央の6割強はそのまま残るので、
+          中央付近にある顔は保たれる。 */
+    c.globalCompositeOperation = 'destination-in';
+    ring(W * 0.54, H * 0.54, [
+      [0, 'rgba(0,0,0,1)'], [0.58, 'rgba(0,0,0,0.99)'],
+      [0.74, 'rgba(0,0,0,0.88)'], [0.84, 'rgba(0,0,0,0.44)'],
+      [0.92, 'rgba(0,0,0,0.12)'], [0.98, 'rgba(0,0,0,0.02)'],
+      [1, 'rgba(0,0,0,0)']]);
+    CIMG.can = can;
+  };
+  img.onerror = () => {
+    if (CIMG.url !== url) return;
+    /* 同じ絵を印なし(crossOriginなし)で先に読んだ記憶がブラウザに残っていると、
+       印つきの読み込みが遮断される(2026-09-17 実測)。住所に印を足して
+       一度だけ取り直す。これで利用者の古い記憶も自力で越えられる。 */
+    if (src === url){
+      buildCenterImage(url, url + (url.indexOf('?') < 0 ? '?' : '&') + 'ogs=1');
+      return;
+    }
+    CIMG.url = null; CIMG.can = null;   // それでも駄目ならANのまま流し続ける
+  };
+  img.src = src;
+}
+function setCenterImage(url){
+  if (!url){ CIMG.url = null; CIMG.can = null; return; }   // ANへ戻す
+  if (CIMG.url === url) return;                            // 同じ絵なら作り直さない
+  CIMG.url = url;
+  CIMG.can = null;                                         // 出来るまではANのまま
+  buildCenterImage(url, url);
+}
 
 const PHASES = [
   {jp:'種 — Seed', en:'seed'}, {jp:'発芽 — Sprout', en:'sprout'},
@@ -807,11 +905,17 @@ function evolve(){
   genome.hueShift = (genome.hueShift + (Math.random()*2-1)*18 + 360) % 360;
   saveGenome();
 }
-// 形質の重み付き抽選
+// 形質の重み付き抽選。
+// biasOverride があるときは、そちらの重みで選ぶ(曲ごとに森寄り・都市寄りなどを変えるため)。
+// 2026-09-16 高尾さん指摘: 球のアイコンが同じ種類ばかりに見えた。遺伝子の重みは端末に保存され、
+// 世代交代で特定の地形へ寄ったまま固定されるうえ、配合の作り直しは一周に一度しか起きなかった。
+let biasOverride = null;
+function setBiomeBias(b){ biasOverride = b || null; rebuild(); }
 function pickTrait(){
-  let tot = 0; for (const b of BIOME_TYPES) tot += genome.traits[b];
+  const src = biasOverride || genome.traits;
+  let tot = 0; for (const b of BIOME_TYPES) tot += (src[b] || 0.2);
   let r = Math.random()*tot;
-  for (const b of BIOME_TYPES){ r -= genome.traits[b]; if (r <= 0) return b; }
+  for (const b of BIOME_TYPES){ r -= (src[b] || 0.2); if (r <= 0) return b; }
   return 'forest';
 }
 
@@ -982,6 +1086,13 @@ rebuild();
 
 const PERSP = 3.2;
 let userRy = 0, userRx = 0;
+
+/* ── 外から与える動きと見た目の指定 ──
+   曲ごとに生態系の表情を変えるため、聞き流し画面から窓口越しに差し替える。
+   既定値は従来の動きそのままなので、指定しなければホームは何も変わらない。
+   速さを途中で変えても角度が飛ばないよう、回転と息づかいは角度を積み上げる。 */
+const MOT = { spin:1, tilt:1, swellAmp:1, swellRate:1, scale:1, hue:0 };
+let ryAcc = 0, swAcc = 0, motLast = 0;
 function project(p, ry, rx, breath, scatter){
   const sc = 1 + scatter * 0.9;
   let x = p.x + (p.jx||0)*scatter*1.4, y = p.y + (p.jy||0)*scatter*1.4, z = p.z + (p.jz||0)*scatter*1.4;
@@ -1262,6 +1373,40 @@ function drawANCenter(t, aBase, facePos, eyes, mouth){
   ctx.fillStyle = aura;
   ctx.beginPath(); ctx.arc(x, y + hr*0.3, hr*2.4, 0, 7); ctx.fill();
 
+  /* 中心にジャケットを宿しているときは、顔の代わりにそれを貼る(2026-09-17)。
+     後光・呼吸する光・胸のコアはそのまま残す。球の中心に何かが宿っている、
+     という気配はANのときと変わらない。正方形なので縦横の比だけが顔と違う。 */
+  if (CIMG.can){
+    /* 顔(縦820×横470)より横に広いので、同じ幅で貼ると絵が小さく見える。
+       SNSへ出す画面なので、何が描かれているか分かる大きさにする
+       (2026-09-17 実測: hr*2.5・暗く沈めた版では中心の塊にしか見えなかった)。
+       濃さも顔より上げる。背景全体が opacity:0.80 で薄まる分を見込む。 */
+    /* 絵の縦横比はそのまま保つ。長いほうの辺を cw2 に合わせるので、
+       縦長のジャケットは縦長のまま、横長は横長のまま宿る(2026-09-18) */
+    const cw2 = hr * 3.4;
+    const iw = CIMG.can.width, ih = CIMG.can.height;
+    const k2 = cw2 / Math.max(iw, ih);
+    const dw = iw * k2, dh = ih * k2;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, a * 2.6);
+    ctx.drawImage(CIMG.can, x - dw * 0.5, y - dh * 0.5, dw, dh);
+    ctx.restore();
+
+    const wa2 = a * 0.14 * (0.8 + Math.sin(t * 0.5) * 0.2);   // 呼吸する光
+    const warm2 = ctx.createRadialGradient(x, y, 0, x, y, hr * 1.0);
+    warm2.addColorStop(0, `rgba(${C.skin},${wa2})`);
+    warm2.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = warm2; ctx.beginPath(); ctx.arc(x, y, hr*1.0, 0, 7); ctx.fill();
+
+    const coreA2 = a * 0.45 * (0.8 + Math.sin(t*1.3) * 0.2);  // 胸の動力コア
+    const cg2 = ctx.createRadialGradient(x, y + hr*1.55, 0, x, y + hr*1.55, hr*0.32);
+    cg2.addColorStop(0, `rgba(${C.an},${coreA2})`);
+    cg2.addColorStop(0.5, `rgba(${C.lotusCore},${coreA2*0.5})`);
+    cg2.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = cg2; ctx.beginPath(); ctx.arc(x, y + hr*1.55, hr*0.32, 0, 7); ctx.fill();
+    return;
+  }
+
   if (FACE_SET[0].can && FACE_SET[i1].can){
     // ── 4バージョンの正面顔をクロスフェード(ぼんやり) ──
     const fw = hr*2.9, fh = fw * (FH/FW);            // v0.5: 大きめ
@@ -1450,13 +1595,17 @@ let faceCycleAuto = true;                 // 顔4版を自動巡回するか
 const FACE_SEC = 22;                       // 1版あたりの滞在秒(全4版で約88秒)
 let frames = 0, fpsT = performance.now();
 function draw(now){
-  __rafId = 0;                       // この予約は消化した(重複予約の判定用)
   const t = (now - t0) / 1000;
   const p = auto ? ((t + tOffset) / CYCLE_SEC * 8) % 8 : manualP;
   const vis = kf('vis',p), connA = kf('conn',p), glow = kf('glow',p),
         scatter = kf('scatter',p), riverA = kf('river',p), anA = kf('an',p);
-  const ry = t * 0.045 + userRy, rx = 0.35 + Math.sin(t*0.03)*0.10 + userRx;
-  const breath = 1 + Math.sin(t*0.25)*0.013;
+  const mdt = motLast ? Math.min(0.1, t - motLast) : 0;   // 描画が飛んでも暴れない
+  motLast = t;
+  ryAcc += mdt * 0.045 * MOT.spin;
+  swAcc += mdt * 0.25  * MOT.swellRate;
+  const ry = ryAcc + userRy;
+  const rx = 0.35 + Math.sin(t*0.03)*0.10*MOT.tilt + userRx;
+  const breath = 1 + Math.sin(swAcc)*0.013*MOT.swellAmp;
 
   // ANの顔(4バージョン: 人間→経文→メカ経文→メカ)の巡回位置。
   // auto=自動巡回(諸行無常) / スライダー操作時はその値へ寄せる。
@@ -1473,7 +1622,7 @@ function draw(now){
   const TH = THEMES[themeIdx];               // 今ループの統一色
   // 世代の色相ドリフトを重ね、進化するほど原色から離れた固有色になる
   TINT = TH.plain ? 0 : 1;
-  const hs = TH.plain ? 0 : genome.hueShift;
+  const hs = (TH.plain ? 0 : genome.hueShift) + MOT.hue;
   TW = hueRot(TH.wash.split(',').map(Number), hs);
   const mistC = hueRot(TH.mist.split(',').map(Number), hs).join(',');
   const glowC = hueRot(TH.glow.split(',').map(Number), hs).join(',');
@@ -1716,7 +1865,7 @@ function draw(now){
     const a = (0.12 + depth*0.8) * (1 - scatter*0.6) * (app*app*(3-2*app));
     if (a < 0.02) return;
     // 発生初期は少し小さく → 生長して定寸(ふわっと現れる)
-    const s = n.size * q.s * R * 0.030 * (0.85 + glow*0.3) * (0.6 + 0.4*app);
+    const s = n.size * q.s * R * 0.030 * (0.85 + glow*0.3) * (0.6 + 0.4*app) * MOT.scale;
     switch(n.type){
       case 'forest':  tree(q.sx, q.sy, s*1.25, a, n.vari, n.vari2); break;
       case 'flower':  flower(q.sx, q.sy, s*0.8, a, n.vari, n.vari2, Math.max(0,(glow-0.4)*1.6)); break;
@@ -1803,7 +1952,7 @@ function draw(now){
   if (genome.seconds - lastSave > 10){ lastSave = genome.seconds; saveGenome(); }
   frames++;
   if (now - fpsT > 1000){ frames = 0; fpsT = now; }
-  if (!REDUCED && !__stopped && !__hidden) __schedule();
+  if (!REDUCED && !__stopped && !__hidden) requestAnimationFrame(draw);
 }
 
 // 調整・検証用ハンドル(本番でも無害)
@@ -1818,16 +1967,32 @@ window.__livingBG = {
   setWeather(w){ const tn=(performance.now()-t0)/1000;
     weather=w; wStart=tn-6; wEnd=tn+120; wNext=1e9;
     WP.forEach(p=>{ respawnP(p);
-      if(w==='bubbles') p.ny=1.15+Math.random()*0.3;
-      if(w==='stars'){p.nx=(Math.random()*2-1)*1.15;p.ny=(Math.random()*2-1)*1.15;
+      if(w==='bubbles') p.ny=(1.15+Math.random()*0.3)*WFIELD;
+      if(w==='stars'){p.nx=(Math.random()*2-1)*1.15*WFIELD;p.ny=(Math.random()*2-1)*1.15*WFIELD;
         p.tw=Math.random()*6.28;p.tws=0.6+Math.random()*2.2;p.spike=Math.random()<0.35;}
       if(w==='digital'){p.glyph=Math.random()<0.5?'0':'1';p.flip=Math.random()*9;p.trail=3+(Math.random()*5|0);} }); },
   setCelestial(k){ celestial.kind = k; celestialPrev = null; celFadeT0 = -1; },
+  /* 生態系の動きと見た目。曲ごとに表情を変えるための窓口。
+     spin:回る速さ tilt:傾きの揺れ幅 swellAmp:拡大収縮の幅
+     swellRate:その速さ scale:アイコンの大きさ hue:色相のずれ(度)
+     渡さなかった項目はそのまま。いずれも1が既定、hueだけ0が既定。 */
+  setMotion(m){ for (const k in m) if (k in MOT && isFinite(m[k])) MOT[k] = m[k]; },
+  get motion(){ return Object.assign({}, MOT); },
   swapCelestial(){ pickCelestial((performance.now()-t0)/1000); },   // フェード検証用
   get celFade(){ return celFadeT0 < 0 ? 1 :
     Math.min(1, ((performance.now()-t0)/1000 - celFadeT0) / CEL_FADE); },
   get celPair(){ return [celestialPrev && celestialPrev.kind, celestial.kind]; },
   rebuild(){ rebuild(); },
+  /* 曲ごとの地形の偏りを渡して、球を組み立て直す(2026-09-16)。
+     例: setBiomeBias({city:3, mech:1.4, crystal:1, forest:0.5, flower:0.4, leaf:0.4})
+     null を渡すと、この端末の遺伝子の重みへ戻る。 */
+  setBiomeBias(b){ setBiomeBias(b); },
+  get biomeTypes(){ return BIOME_TYPES.slice(); },
+  /* 球の中心に宿る絵を差し替える(2026-09-17)。曲ページから1曲を指定して
+     聴くときだけ、ANの代わりにジャケットを置く。null を渡すとANへ戻る。
+     後光・呼吸する光・胸のコアは、どちらでもそのまま残る。 */
+  setCenterImage(u){ setCenterImage(u); },
+  get centerImage(){ return CIMG.url; },
 };
 
 // ── §9.6 動きの停止ボタン + タブ非表示時の休止 ──
@@ -1835,19 +2000,9 @@ window.__livingBG = {
 var __stopped = false, __hidden = false;
 try { __stopped = localStorage.getItem('ogs-motion') === 'off'; } catch(e){}
 
-/* 予約は常に1本だけにする。
-   端末が裏に回ると requestAnimationFrame は凍結されるが、予約済みのコールバックは
-   破棄されない。復帰時に素朴に再予約すると、解凍された古い予約と新しい予約の
-   両方が走り、復帰のたびにループが1本ずつ増えて発熱・メモリ圧迫でタブが落ちる。
-   予約中のidを持ち、張り直す前に必ず取り消す。 */
-var __rafId = 0;
-function __schedule(){
-  if (__rafId) cancelAnimationFrame(__rafId);
-  __rafId = requestAnimationFrame(draw);
-}
 function __resume(){
   if (__stopped || __hidden || REDUCED) return;
-  __schedule();
+  requestAnimationFrame(draw);
 }
 document.addEventListener('visibilitychange', function(){
   __hidden = document.hidden;          // 非表示タブでは描画を止める(電池・CPU)
@@ -1875,8 +2030,6 @@ document.addEventListener('visibilitychange', function(){
   b.innerHTML = '<span class="dot" aria-hidden="true"></span><span class="txt"></span>';
   function sync(){
     var moving = !__stopped && !REDUCED;
-    // 背景以外の動きもこのトグル1つで止められるよう、状態をCSSへ流す
-    document.documentElement.classList.toggle('motion-off', !moving);
     b.classList.toggle('on', moving);
     b.setAttribute('aria-pressed', moving ? 'true' : 'false');
     b.querySelector('.txt').textContent = moving ? 'Motion on' : 'Motion off';
@@ -1918,6 +2071,6 @@ document.addEventListener('visibilitychange', function(){
 
 if (REDUCED){ auto = false; manualP = 3.5; draw(performance.now()); }
 else if (__stopped) draw(performance.now());
-else __schedule();
+else requestAnimationFrame(draw);
 
 })();

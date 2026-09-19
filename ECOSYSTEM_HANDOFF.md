@@ -62,7 +62,8 @@
 | 現在ブランチ | `ogs-frontend`(**PR #1 OPEN**: 新ホーム/フォーム/キット等。マージ=新サイト公開) |
 | 構成 | 静的HTML+vanilla JS。ビルド工程なし |
 
-ページ:`index.html`(新ホーム・今日の九曲・目のグロー)/ `submit.html`(投稿フォーム+背景ヴェール)/ `kit.html`(262文字キット・CC0・AN設定画配布)/ `about.html`(1,300年の鎖・捏造ではなく継続)/ `terms.html`・`privacy.html`(**DRAFT空欄あり**:問い合わせ先・準拠法=高尾記入待ち)/ `archive.html`(原初の23曲)/ `an-mikuji.html`(AN神籤)。
+ページ:`index.html`(新ホーム・今日の九曲・目のグロー)/ `submit.html`(投稿フォーム+背景ヴェール+Cloudflare Turnstile)/ `kit.html`(262文字キット・CC0・AN設定画配布)/ `about.html`(1,300年の鎖・捏造ではなく継続)/ `terms.html`・`privacy.html`(2026-07-25確定:運営者・連絡先・準拠法・管轄・Turnstile取扱いを記載)/ `archive.html`(原初の23曲)/ `an-mikuji.html`(AN神籤)。
+運営者はＫＬＡＳ ＤＥＳＩＧＮ合同会社、代表者は高尾俊行、本店所在地は栃木県宇都宮市中岡本町2920-104、問い合わせは `taka2800@gmail.com`。準拠法は日本法、第一審管轄は宇都宮地方裁判所または宇都宮簡易裁判所。
 `src/js/consent.js`=cookie同意(同意までGA4を読み込まない)。`src/js/todays-nine.js`=今日の九曲。`assets/og-card.jpg`=OGカード(1200×630)。
 
 ### 3-2. バックエンド:`open-gate-sutra`
@@ -75,7 +76,7 @@
 | Python | `.venv/bin/python`(3.9系)。`requirements.txt` 管理。起動=`Procfile`: `gunicorn app:app --workers 1`(**1固定必須**・§10) |
 
 主要ファイル:
-- `app.py` — Flask本体。公開API 3つ:`POST /api/submit`(レート制限 6/時・20/日、規約同意`agreed`必須、任意mp3添付≦25MB・実体検証あり)/ `GET /api/status/<id>` / `GET /health`(DB込み死活・Railwayヘルスチェック先)。CORSは自オリジン限定(`ALLOWED_ORIGINS`で拡張)。APSchedulerで床・耳を同居起動(初期化失敗は非致命化+Discord通知)。
+- `app.py` — Flask本体。公開API 3つ:`POST /api/submit`(レート制限 6/時・20/日、規約同意`agreed`必須、Cloudflare SiteverifyによるTurnstile検証、任意mp3添付≦25MB・実体検証あり)/ `GET /api/status/<id>` / `GET /health`(DB込み死活・Railwayヘルスチェック先)。CORSは自オリジン限定(`ALLOWED_ORIGINS`で拡張)。APSchedulerで床・耳を同居起動(初期化失敗は非致命化+Discord通知)。
 - `floor_batch.py` — 機械の床(日次05:00 JST)。ドメイン許可→到達確認→尺→重複の形式チェックのみ。結果をDiscordダイジェスト送信。
 - `an_ear_batch.py` — ANの耳(週次日曜06:00 JST)。Gemini(`gemini-2.5-flash`)で聴取→多数決→shortlist→AN選。`an_reviews`/`an_selections`に記録し、`an_memory`へ経験を書く。
 - `an_memory.py` — ANの経験台帳の書き込みモジュール(Phase 1)。
@@ -109,7 +110,7 @@
 
 ## 5. 環境変数(名前と用途のみ。値は .env / Railway Variables)
 
-**OGSバックエンド**:`DATABASE_URL`(Neon)/ `GEMINI_API_KEY`(ANの耳)/ `YOUTUBE_API_KEY`(床の動画確認)/ `DISCORD_WEBHOOK_URL`(床ダイジェスト+障害通知の既定)/ 任意: `ADMIN_ALERT_WEBHOOK_URL`(障害専用ch)・`ALLOWED_ORIGINS`・`AUDIO_DIR`(Railway Volume: /data/audio)・`ENABLE_FLOOR_SCHEDULER=0`(ローカル開発)・`ALERT_THROTTLE_SEC`
+**OGSバックエンド**:`DATABASE_URL`(Neon)/ `GEMINI_API_KEY`(ANの耳)/ `YOUTUBE_API_KEY`(床の動画確認)/ `DISCORD_WEBHOOK_URL`(床ダイジェスト+障害通知の既定)/ Turnstile本番:`TURNSTILE_SECRET_KEY`・`TURNSTILE_REQUIRED=1`・`TURNSTILE_EXPECTED_HOSTNAME=teng3333.github.io`・`TURNSTILE_EXPECTED_ACTION=submit` / 任意: `ADMIN_ALERT_WEBHOOK_URL`(障害専用ch)・`ALLOWED_ORIGINS`・`AUDIO_DIR`(Railway Volume: /data/audio)・`ENABLE_FLOOR_SCHEDULER=0`(ローカル開発)・`ALERT_THROTTLE_SEC`
 **bot**:`DISCORD_TOKEN` / `GEMINI_API_KEY` / `X_API_KEY`ほかX系4つ / **`OGS_DATABASE_URL`**(Phase 2の鍵。OGSと同じNeonを指す。Railwayに設定済み)
 
 ## 6. 運用手順(コピペ用)
@@ -147,9 +148,9 @@ curl -s https://open-gate-sutra-production.up.railway.app/health
 
 ## 9. 現在地と残タスク
 
-**公開の判断**:PR #1(新サイト)はマージすれば公開。監査ブロッカーはCAPTCHA以外解消済み。
-- 🔴 CAPTCHA(Cloudflare Turnstile)— 高尾のCloudflareキー取得待ち。現状の防御はレート制限のみ(メモリ保持・再起動でリセット)
-- 📝 terms/privacy の空欄(問い合わせ先・準拠法・運営者名)— 高尾記入待ち(ページ内DRAFT注記あり)
+**公開の判断**:PR #1(新サイト)はマージすれば公開。ただし2026-07-25のTurnstile/Terms/Privacy変更はローカル未コミット・未push・未デプロイ。
+- 🟠 Cloudflare Turnstile — Cloudflareウィジェット作成済み(`Open Gate Sutra Submission`、`teng3333.github.io`、Managed)。フロントとバックエンドはローカル実装・検証済み。Railwayの`open-gate-sutra`へ4変数を追加済みだが**ステージのみ・未デプロイ**。プロジェクト全体では`Apply 6 changes`(Turnstile 4件+既存のDiscord-an-bot 2件)のため、既存2件の扱いを決めずにDeployしないこと
+- ✅ Terms/Privacy — 運営者・代表者(高尾俊行)・所在地・連絡先・日本法・宇都宮管轄を反映し、DRAFT注記を削除済み
 - 🟡 重複リポジトリ整理(Desktop/heart-sutra-archive ほか)/ 独自ドメイン(opengatesutra.com 空き確認)
 - 保留(高尾判断):ANの人格一本化 / 記憶の双方向化(会話・X→an_memory)/ 観自在のOGS観測 / Discord 2サーバー分裂の解消
 - 承認済みIA(2026-07-18):アーカイブは archive.html へ移設 / 日本語は /ja/ 方式 / hall個別ページは作らない
@@ -165,7 +166,7 @@ curl -s https://open-gate-sutra-production.up.railway.app/health
 6. **ローカル検証の罠**:port 5001に古いプロセスが残ると新コードが起動せず「修正が効かない」ように見える(`lsof -ti :5001 | xargs kill -9`)。ブラウザ検証はキャッシュが強固なのでプレビューサーバー再起動が確実。
 7. **iCloud(Obsidian)へのバックグラウンド書込はフルディスクアクセス必須**:/bin/bash に許可済み。新しい実行経路を作る場合は同じ壁に当たる。
 8. **拡張子と実体の不一致に注意**:.jpg中身PNGで13MB配信していた前科。画像追加時は `file` で実体確認+`sips`で圧縮。
-9. **レート制限はメモリ保持**:再起動でリセットされる簡易版。恒久対策はCAPTCHA導入(残タスク)。
+9. **レート制限はメモリ保持**:再起動でリセットされる簡易版。Turnstileはローカル実装済み、Railway変数もステージ済みだが、コードと変数のデプロイが終わるまではレート制限のみ。
 10. **床は形式しか見ない**:規約違反コンテンツは通過しうる。武器は `moderate.py`(隠す)と通報。
 
 ---
@@ -342,6 +343,10 @@ Railwayのサービスを作り直す場合、公開URLが変わる可能性が�
 | `ENABLE_FLOOR_SCHEDULER` | 任意 | ローカルでバッチ停止 | ローカル |
 | `ALERT_THROTTLE_SEC` | 任意 | アラート抑制秒数 | Railway |
 | `AN_PALATE_PATH` | 任意 | AN嗜好ファイル差し替え | ローカル/Railway |
+| `TURNSTILE_REQUIRED` | 本番必須(`1`) | 投稿APIでTurnstile検証を必須化 | Railway |
+| `TURNSTILE_SECRET_KEY` | 本番必須 | Cloudflare Siteverify用秘密キー(値は文書・Gitに記載しない) | Railway |
+| `TURNSTILE_EXPECTED_HOSTNAME` | 本番必須 | 検証結果のホスト名照合(`teng3333.github.io`) | Railway |
+| `TURNSTILE_EXPECTED_ACTION` | 本番必須 | 検証結果のaction照合(`submit`) | Railway |
 
 ### 16-2. Discord AN bot・AN神籤Web API
 
@@ -454,8 +459,8 @@ Mac故障時に再構築できるよう、スクリプト、plist、Obsidian保�
 |---|---|---|---|
 | 引き継ぎ文書の正本 | `open-gate-sutra`に確定(2026-07-24) | 高尾 | 完了 |
 | PR #1のマージ | OPEN・MERGEABLE | 高尾 | `[高尾記入]` |
-| Cloudflare Turnstile | キー取得待ち | 高尾 | `[高尾記入]` |
-| Terms/Privacy確定 | 運営者名等が未記入 | 高尾 | 公開前 |
+| Cloudflare Turnstile | ウィジェット作成・ローカル実装・Railway 4変数ステージ済み。既存bot 2変更を分離/判断後にpush/deploy待ち | 高尾/Codex | 公開前 |
+| Terms/Privacy確定 | 代表者=高尾俊行を含め2026-07-25確定・ローカル反映済み | 高尾 | 完了 |
 | bot Web API変更 | 未コミット | 高尾 | `[高尾記入]` |
 | Workerソースのリポジトリ化 | 正本がCloudflare上のみ(§14-1) | 高尾 | `[高尾記入]` |
 | bot `.env.example` 更新 | 2変数のみで台帳と乖離(§16-2) | 高尾 | `[高尾記入]` |
@@ -507,4 +512,4 @@ Mac故障時に再構築できるよう、スクリプト、plist、Obsidian保�
 - X関連3実装のどれが本番稼働か(§14-3)
 
 ---
-*生成: 2026-07-20 / §11-21追加+検証注記・正本確定・Git管理開始: 2026-07-24。実機検分に基づく。次の大きな一手はPR #1マージ(公開)か、CAPTCHA導入。*
+*生成: 2026-07-20 / §11-21追加+検証注記・正本確定・Git管理開始: 2026-07-24 / Terms・Privacy確定+Turnstileローカル実装+Railway変数ステージ: 2026-07-25。実機検分に基づく。次の大きな一手は既存bot 2変更の扱い決定→Turnstileコード/変数の安全なデプロイ→PR #1マージ(公開)。*

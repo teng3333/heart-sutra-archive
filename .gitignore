@@ -6,3 +6,35 @@ ogs-handoff/
 
 # Local Claude Code settings (permissions etc.)
 .claude/settings.local.json
+
+# 開発用の道具。公開しない(一言の候補選びなど)
+_dev/
+
+# 手元で確認するためだけの道具。サイトからは使わない
+serve_local.py
+_face_calib.html
+
+# 見比べのための試作。利用者には見せない(2026-09-19)。
+# ただし _proto_dynamic_bg.html は除く。あれは背景アートの正本で、
+# tools/build_living_bg.py が src/js/living-bg.js を作る元になっている。
+_proto_wave_styles.html
+_proto_crop_check.html
+
+# 開発用の見本データ。listen.html?demo=1 のときだけ使う。
+# 本番は常にAPIから引くので、利用者には見えない
+src/js/demo-tracks.json
+assets/covers/demo/
+
+# macOSが作る隠しファイル
+.DS_Store
+**/.DS_Store
+
+# 規約・プライバシーポリシーの下書き。正文は terms.html / privacy.html
+規約_日本語正文_下書き.md
+規約_英訳_下書き.md
+規約改定_下書き_v2_公開音源とプレイリスト.md
+プライバシーポリシー_日本語正文_下書き.md
+プライバシーポリシー_英訳_下書き.md
+
+# 引き継ぎ用の内部メモ
+OGS_HOMEPAGE_HANDOFF.md

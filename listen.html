@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listen — Open Gate Sutra</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="description" content="Listen to the world's Heart Sutra. Choose a gate — still or moving — and let it play.">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Open Gate Sutra">
+<meta property="og:title" content="Listen — Open Gate Sutra">
+<meta property="og:description" content="Choose a gate — still or moving — and let it play.">
+<meta property="og:url" content="https://teng3333.github.io/heart-sutra-archive/listen.html">
+<meta property="og:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="src/js/consent.js" defer></script>
+<!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
+<script>window.OGS_ART_FULLSCREEN = true;</script>
+<script src="src/js/living-bg.js?v=18" defer></script>
+<style>
+  :root{
+    --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
+    --shu:#b23a2e; --ruri:#6fa8d6; --nibi:#8d826d;
+    --hair:rgba(217,196,154,.18); --hair2:rgba(217,196,154,.34);
+    --ja:"Shippori Mincho","Hiragino Mincho ProN",serif;
+    --en:"Cormorant Garamond",Georgia,serif;
+    --ui:ui-sans-serif,-apple-system,"Hiragino Sans",sans-serif;
+    --c:var(--washi);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  /* 背景canvasは #04060b を地に、周辺減光で端を rgb(3,5,10) まで落とす。
+     絵を中央へ寄せた分だけ右端に素の背景が覗くので、bodyをその色ちょうどに合わせる。
+     近い色ではなく実測値に合わせているので、継ぎ目の線は出ない */
+  body{margin:0;background:#03050a;color:var(--washi);font-family:var(--ui);
+    -webkit-font-smoothing:antialiased;overflow:hidden}
+  /* 音の強さはCSS変数で渡す。canvasを描き直さずに呼吸させられる */
+  #living-bg{transform:translateX(var(--art-x,0)) scale(var(--breath,1));transform-origin:50% 50%;
+    filter:brightness(var(--glow,1));will-change:transform,filter}
+  /* living-bg.js は絵の中心を横 63% に置く。自動生成なので触らず、canvasごと左へ寄せて中央に合わせる */
+  :root{--art-x:-13vw}
+  @media (max-width:700px){ :root{--art-x:0} }
+  @media (prefers-reduced-motion:reduce){ #living-bg{transform:translateX(var(--art-x,0));filter:none} }
+
+  /* 音を表す波。背景の上、UIの下に重ねる */
+  #waves{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;
+    pointer-events:none;opacity:0;transition:opacity .6s ease}
+  .stage.playing ~ #waves, body.playing #waves{opacity:1}
+  /* 曲が変わるとき、絵をいったん闇へ還してから、次の曲の姿が現れる(2026-09-16 高尾さん指示)。
+     早送りでは暗転させない(聴いている途中で切れるため)。
+     透明度を下げる方式では暗転中も0.08ほど残り、球と波の輪郭が見えていたため、
+     背景と波の上に黒い幕を重ねる方式にした(2026-09-17 高尾さん指摘) */
+  #blackout{position:fixed;inset:0;z-index:0;background:#03050a;opacity:0;
+    pointer-events:none;transition:opacity 1.35s ease}
+  html.swap #blackout{opacity:1}
+  /* 幕だけでは、幕が引いた瞬間に波が満開で現れ、その奥に球の影も見えていた
+     (2026-09-17 高尾さん指摘)。波と最背面の背景も一緒に沈め、戻りは幕より遅くする。
+     幕が引いたときには、まだ薄いところから立ち上がっている状態にする */
+  #living-bg,#waves{transition:opacity 2.2s ease}
+  html.swap #living-bg,html.swap #waves{opacity:0 !important;transition:opacity 1.1s ease}
+  /* 背景canvas(living-bg)は z-index:0。UIはその上に乗せる */
+  .stage{position:relative;z-index:1;height:100%;display:flex;flex-direction:column}
+
+  .bar{display:flex;align-items:center;gap:14px;padding:14px 20px;flex:none}
+  .home{font-family:var(--en);font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--nibi);text-decoration:none}
+  .home:hover{color:var(--washi)}
+  .seal{font-family:var(--ja);font-size:15px;color:var(--washi-hi);letter-spacing:.3em}
+
+  .center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;
+    padding:20px;text-align:center;min-height:0;overflow-y:auto}
+  /* 曲が流れている間は絵が主役。文字は左の柱にまとめ、画面の中心を絵に明け渡す */
+  .stage.playing .center{display:block;padding:0;text-align:left;overflow:visible}
+  .stage.playing .np{position:fixed;left:22px;top:56px;z-index:2;
+    max-width:min(28rem,46vw);text-align:left}
+  .stage.playing .np .ctl{position:fixed;left:22px;bottom:22px;margin:0;
+    justify-content:flex-start;transition:bottom .28s ease}
+  .stage.playing.an-on .np .ctl{bottom:66px}
+  /* 案内文は曲名と重なるので、操作列の真上へ逃がす */
+  .stage.playing .state{position:fixed;left:22px;bottom:78px;margin:0;z-index:2;
+    max-width:22rem;text-align:left;transition:bottom .28s ease}
+  .stage.playing.an-on .state{bottom:122px}
+  /* 左に寄せた文字が絵に埋もれないよう、左側だけ暗幕を垂らす */
+  .stage.playing::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;
+    background:linear-gradient(100deg,rgba(8,11,20,.92) 0%,rgba(8,11,20,.62) 24%,
+                               rgba(8,11,20,.18) 42%,transparent 58%)}
+  @media (max-width:700px){
+    .art img{width:60px;height:60px}
+    .lyr{max-height:34vh}
+    .stage.playing .np{left:16px;right:16px;max-width:none;top:52px}
+    .stage.playing .np .ctl{left:16px;bottom:16px}
+    .stage.playing .state{left:16px;right:16px;bottom:72px;max-width:none}
+    .stage.playing::before{
+      background:linear-gradient(to top,rgba(8,11,20,.9),rgba(8,11,20,.35) 34%,
+                                rgba(8,11,20,.55) 72%,rgba(8,11,20,.85))}
+  }
+
+  /* 門 */
+  .gates{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .gate{background:rgba(13,18,32,.55);border:1px solid var(--hair2);color:inherit;font:inherit;
+    width:150px;padding:26px 12px;cursor:pointer;display:flex;flex-direction:column;gap:8px;
+    align-items:center;backdrop-filter:blur(3px);transition:border-color .2s,background .2s}
+  .gate:hover,.gate:focus-visible{border-color:var(--washi);background:rgba(13,18,32,.75)}
+  .gate:focus-visible{outline:2px solid var(--ruri);outline-offset:3px}
+  .gate b{font-family:var(--ja);font-size:34px;font-weight:500;line-height:1;color:var(--washi-hi)}
+  .gate .en{font-family:var(--en);font-size:13px;letter-spacing:.3em}
+  .gate small{font-family:var(--en);font-size:9.5px;letter-spacing:.18em;color:var(--nibi);line-height:1.7}
+
+  /* いま鳴っているもの */
+  .np{display:none;max-width:34rem}
+  .np.on{display:block}
+  .np-shelf{font-family:var(--en);font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--c)}
+  .np-title{font-family:var(--ja);font-size:clamp(20px,4.4vw,30px);color:var(--washi-hi);
+    margin:12px 0 0;line-height:1.45;text-wrap:balance;
+    /* 背景の絵は曲ごとに変わる。どんな絵の上でも読めるよう、文字の後ろだけ暗くする */
+    text-shadow:0 1px 14px rgba(8,11,20,.95),0 0 4px rgba(8,11,20,.8)}
+  .np-shelf,.np-by,.np-meta{text-shadow:0 1px 10px rgba(8,11,20,.9)}
+  .np-title-link{color:inherit;text-decoration:none;border-bottom:1px solid transparent}
+  .np-title-link:hover,.np-title-link:focus-visible{border-bottom-color:var(--hair2)}
+  .np-tagline{font-family:var(--ja);font-size:clamp(13px,2.2vw,16px);color:var(--washi-hi);
+    margin:8px 0 0;letter-spacing:.08em;line-height:1.6;opacity:.9;text-shadow:0 1px 10px rgba(8,11,20,.9)}
+  .np-by{font-size:12.5px;color:var(--washi);margin-top:10px}
+  .np-by a{color:var(--ruri);text-decoration:none;border-bottom:1px solid var(--hair2)}
+  .np-meta{font-size:10.5px;color:var(--nibi);margin-top:6px;letter-spacing:.06em}
+
+  .ctl{display:flex;gap:8px;justify-content:center;margin-top:22px;flex-wrap:wrap;align-items:center}
+  .ctl button{background:rgba(13,18,32,.55);border:1px solid var(--hair2);color:var(--washi);
+    font:inherit;font-size:11px;letter-spacing:.12em;padding:9px 16px;cursor:pointer;backdrop-filter:blur(3px)}
+  .ctl button:hover{border-color:var(--washi)}
+  .ctl button:focus-visible{outline:2px solid var(--ruri);outline-offset:2px}
+  /* 行き先が無いときは鈍らせる。押せなくはしない(頭出しには使える) */
+  .ctl button.dim{opacity:.42}
+  /* ANアイコン。押すと下の帯に語りが流れる */
+  .an-btn{width:42px;height:42px;padding:0!important;border-radius:50%;overflow:hidden;
+    border:1px solid var(--hair2)!important;background:var(--ai)!important}
+  .an-btn img{width:100%;height:100%;object-fit:cover;display:block;opacity:.85}
+  .an-btn[aria-pressed="true"]{border-color:var(--shu)!important}
+  .an-btn[aria-pressed="true"] img{opacity:1}
+
+  /* ジャケット。左の柱の頭に、小さく置く。絵の主役は生態系なので大きくしない */
+  .art{display:block;padding:0;margin:0 0 14px;background:none;border:1px solid var(--hair2);
+    line-height:0;cursor:pointer;transition:border-color .2s}
+  .art:hover,.art:focus-visible{border-color:var(--washi)}
+  .art:focus-visible{outline:2px solid var(--ruri);outline-offset:3px}
+  .art img{width:76px;height:76px;object-fit:cover;display:block}
+
+  /* ジャケットを大きく見る。押した人だけに開く */
+  .art-full[hidden],.lyr[hidden],#btnLyr[hidden],.art[hidden]{display:none}
+  .art-full{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;cursor:pointer;
+    background:rgba(4,6,11,.93);backdrop-filter:blur(6px)}
+  .art-full img{max-width:min(74vw,560px);max-height:72vh;object-fit:contain;
+    border:1px solid var(--hair2)}
+  .art-full-hint{font-family:var(--en);font-size:9.5px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--nibi);margin:0}
+
+  /* 歌詞。押した時だけ左の柱に開く。聞き流しの邪魔をしない */
+  .lyr{margin-top:18px;max-height:min(42vh,340px);overflow-y:auto;
+    border-left:1px solid var(--hair2);padding:2px 0 2px 14px}
+  .lyr-head{font-family:var(--en);font-size:9.5px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--nibi);margin:0 0 8px}
+  .lyr-body{font-family:var(--ja);font-size:13.5px;line-height:2.1;color:var(--washi);
+    white-space:pre-wrap;text-shadow:0 1px 10px rgba(8,11,20,.9)}
+  .ctl button[aria-pressed="true"]{border-color:var(--shu);color:var(--washi-hi)}
+  #btnLyr{font-family:var(--ja);font-size:13px;letter-spacing:0;padding:7px 14px}
+  /* 画像として持ち帰る釦。押している間だけ文言が変わる */
+  #btnShot[disabled]{opacity:.55;cursor:default}
+
+  .state{font-size:12.5px;color:var(--nibi);line-height:1.9;max-width:30rem}
+  .state b{color:var(--washi)}
+
+  /* 電子掲示板 */
+  .ticker{flex:none;height:0;overflow:hidden;border-top:1px solid transparent;
+    background:rgba(13,18,32,.9);transition:height .28s ease,border-color .28s ease}
+  .ticker.on{height:46px;border-top-color:var(--shu)}
+  .ticker.open{height:auto;max-height:44vh;overflow-y:auto}
+  .tick-track{display:flex;align-items:center;height:46px;white-space:nowrap;cursor:pointer}
+  .ticker.open .tick-track{height:auto;white-space:normal;padding:16px 20px;display:block}
+  .tick-text{font-family:var(--ja);font-size:14.5px;color:#ffb9a6;letter-spacing:.04em;
+    padding-left:100%;animation:flow 26s linear infinite;text-shadow:0 0 12px rgba(178,58,46,.55)}
+  .ticker.open .tick-text{padding-left:0;animation:none;line-height:2;color:var(--washi-hi);text-shadow:none}
+  .ticker.paused .tick-text{animation-play-state:paused}
+  @keyframes flow{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+  .tick-hint{font-family:var(--en);font-size:9px;letter-spacing:.2em;color:var(--nibi);
+    text-transform:uppercase;padding:0 0 10px}
+  .ticker.open .tick-hint{display:block}
+  .ticker:not(.open) .tick-hint{display:none}
+
+  /* living-bg が自前で置く動き停止ボタン。この画面では操作列と重なるので上へ逃がす。
+     living-bg.js は自動生成なので、あちらは触らず見た目だけ上書きする */
+  #motion-toggle{top:11px!important;right:14px!important;left:auto!important;bottom:auto!important;
+    transform:scale(.82);transform-origin:100% 0;opacity:.7}
+  #motion-toggle:hover{opacity:1}
+  @media (max-width:700px){
+    #motion-toggle{top:10px!important;right:10px!important;bottom:auto!important}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .tick-text{animation:none;padding-left:20px}
+    .ticker.on{height:auto;max-height:40vh;overflow-y:auto}
+    .tick-track{height:auto;white-space:normal;padding:14px 20px;display:block}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="bar">
+    <a class="home" href="./">← Open Gate Sutra</a>
+    <span class="seal" aria-hidden="true">開羯諦経</span>
+  </div>
+
+  <div class="center">
+    <div class="gates" id="gates">
+      <button class="gate" type="button" data-axis="sei">
+        <b aria-hidden="true">静</b><span class="en">STILL</span>
+        <small>FOCUS<br>&amp; RELAX</small>
+      </button>
+      <button class="gate" type="button" data-axis="do">
+        <b aria-hidden="true">動</b><span class="en">MOVE</span>
+        <small>ENERGY<br>&amp; INSPIRE</small>
+      </button>
+    </div>
+
+    <div class="np" id="np">
+      <button class="art" type="button" id="npArtBtn" hidden
+              aria-label="ジャケットを大きく見る">
+        <!-- crossorigin は背景の球と条件を揃えるため(2026-09-17)。同じジャケットを
+             印なしで先に読むと、後から印つきで読む背景側がCORSで弾かれる(実測) -->
+        <img id="npArt" alt="" width="76" height="76" crossorigin="anonymous">
+      </button>
+      <p class="np-shelf" id="npShelf"></p>
+      <p class="np-title" id="npTitle"></p>
+      <p class="np-tagline" id="npTagline" hidden></p>
+      <p class="np-by" id="npBy"></p>
+      <p class="np-meta" id="npMeta"></p>
+      <div class="lyr" id="lyr" hidden>
+        <p class="lyr-head" id="lyrHead">詞 ／ LYRICS</p>
+        <div class="lyr-body" id="lyrBody"></div>
+      </div>
+      <div class="ctl">
+        <button class="an-btn" type="button" id="anBtn" aria-pressed="false"
+                aria-label="ANの語りを表示する">
+          <img src="assets/an/face-human.webp" alt="" width="42" height="42">
+        </button>
+        <button type="button" id="btnLyr" aria-pressed="false" hidden
+                aria-label="歌詞を表示する">詞</button>
+        <button type="button" id="btnPlay">Pause</button>
+        <button type="button" id="btnPrev" aria-label="前の曲へ">‹ Prev</button>
+        <button type="button" id="btnNext" aria-label="次の曲へ">Next ›</button>
+        <button type="button" id="btnGate">Gate</button>
+        <!-- いま鳴っている世界を、そのまま正方形の画像にして持ち帰る(2026-09-18 高尾さん指示) -->
+        <button type="button" id="btnShot" aria-label="この画面を画像として保存する">Save image</button>
+      </div>
+    </div>
+
+    <p class="state" id="state">Choose a gate, and it plays.<br><span style="color:var(--washi)">門を選ぶと、流れ始めます。</span></p>
+  </div>
+
+  <div class="ticker" id="ticker" aria-live="polite">
+    <div class="tick-track" id="tickTrack" role="button" tabindex="0"
+         aria-label="タップで停止・全文表示">
+      <span class="tick-text" id="tickText"></span>
+      <span class="tick-hint">tap to close ／ もう一度タップで閉じる</span>
+    </div>
+  </div>
+</div>
+
+<div class="art-full" id="artFull" hidden>
+  <img id="artFullImg" alt="" crossorigin="anonymous">
+  <p class="art-full-hint">tap to close ／ タップで閉じる</p>
+</div>
+
+<canvas id="waves" aria-hidden="true"></canvas>
+<div id="blackout" aria-hidden="true"></div>
+
+<audio id="audio" preload="auto" crossorigin="anonymous"></audio>
+<audio id="pre" preload="auto" crossorigin="anonymous" style="display:none"></audio>
+
+<script>
+(function () {
+  'use strict';
+
+  /* 手元(localhost)で開いたときは手元のAPIを見る。本番では本番のAPI(投稿ページと同じ書き方) */
+  var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://127.0.0.1:5001'
+    : 'https://open-gate-sutra-production.up.railway.app';
+  var API = API_BASE + '/api/shelf/';
+  var TIMEOUT = 8000;
+  var SHELF_COLOR = {focus:'#5b8fb9', relax:'#9ec9dd', energy:'#c1483a', inspire:'#dd8a5c'};
+
+  var audio = document.getElementById('audio');
+  var pre   = document.getElementById('pre');
+  var np    = document.getElementById('np');
+  var gates = document.getElementById('gates');
+  var stateEl = document.getElementById('state');
+  var ticker = document.getElementById('ticker');
+  var tickText = document.getElementById('tickText');
+  var anBtn = document.getElementById('anBtn');
+  var artBtn = document.getElementById('npArtBtn'), artImg = document.getElementById('npArt');
+  var artFull = document.getElementById('artFull'), artFullImg = document.getElementById('artFullImg');
+  var lyr = document.getElementById('lyr'), lyrBody = document.getElementById('lyrBody');
+  var btnLyr = document.getElementById('btnLyr');
+
+  var queue = [], pos = -1, current = null;
+  var waveRGB = [217, 196, 154];
+  var baseHex = '';                 // この曲の色の元。波の呼吸に合わせてここから回す
+
+  function say(html){ stateEl.innerHTML = html; stateEl.style.display = html ? '' : 'none'; }
+
+  function shuffle(a){
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  /* ── 音のエネルギーで生態系を呼吸させる ──
+     living-bg.js は自動生成なので触らない。window.__livingBG の窓口だけを使う。
+     瞬間の音量をそのまま渡すと画面が痙攣するので、強く均して phase をゆっくり動かす。
+     ※ R2など別ドメインの音を解析するには、音源側のCORS許可と
+       audio.crossOrigin='anonymous' の両方が要る。片方でも欠けると
+       **エラーを出さずに無音として解析され、絵が反応しなくなる**。 */
+  var actx = null, analyser = null, freq = null, raf = 0;
+  var envFast = 0, envSlow = 0;   // 速い呼吸と、曲全体の腰の重さ、二つの時間軸で見る
+  var lastTick = 0;
+  var reduceMotion = window.matchMedia &&
+                     window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* ── 音を波にする ──
+     周波数を5つの帯に分け、1帯に1本の波を割り当てる。
+     低い音ほど下に、ゆっくり、大きくうねる。高い音ほど上で、細かく、速い。
+     揺れはばはその帯の強さそのもの。音が止まれば波も凪ぐ。 */
+  /* MP3は16kHzより上をほぼ捨てるので、帯は下半分に寄せる。
+     音の力は高い帯ほど弱いため、帯ごとに持ち上げ(gain)を掛けて釣り合わせる。
+
+     5本は手前から奥へ並ぶ。低い音ほど手前で、大きく、太く、間隔も広い。
+     手前ほど短い時間を映すので速く流れ、奥ほど長い時間を映すのでゆっくり流れる。
+     手前は画面の外までせり出し、奥は狭まる。遠近はこれで出る。
+
+     lo/hi:周波数の範囲(0〜1)  y:静止線の高さ(画面比)  sec:画面に映る秒数
+     amp:振れの大きさ(画面比)  w:線の太さ  a:濃さ  gain:持ち上げ
+     spread:横の広がり  haze:遠くのものほど滲ませる量 */
+  var BANDS = [
+    { lo:0.36, hi:0.60, y:0.470, sec:9.0, amp:0.040, cyc:4.4, w:3.2, a:0.34, gain:2.6, spread:0.58, haze:1.00 },
+    { lo:0.20, hi:0.36, y:0.545, sec:7.6, amp:0.052, cyc:3.3, w:4.4, a:0.42, gain:2.0, spread:0.70, haze:0.80 },
+    { lo:0.10, hi:0.20, y:0.640, sec:6.3, amp:0.070, cyc:2.4, w:6.0, a:0.50, gain:1.5, spread:0.84, haze:0.60 },
+    { lo:0.04, hi:0.10, y:0.765, sec:5.1, amp:0.094, cyc:1.7, w:8.5, a:0.58, gain:1.15, spread:1.00, haze:0.42 },
+    { lo:0.00, hi:0.04, y:0.930, sec:4.0, amp:0.124, cyc:1.2, w:12.0, a:0.66, gain:1.0, spread:1.20, haze:0.28 }
+  ];
+  /* cyc は画面に乗るいちばん長い波の数。遠い線ほど多く、つまり細かい。
+     遠くの海面が細かく見えるのと同じ理屈で、これが遠近をいちばん強く出す。
+
+     一本の線は、波長のちがう成分を6つ重ねて作る。
+     波長の比を黄金比にしてあるので割り切れず、全体の形は二度と同じにならない。
+     さらに深い水では長い波ほど速く進む(速さは波長の平方根に比例)。
+     成分ごとに速さが違うので、重なり方が刻々とずれていき、形が絶えず変わり続ける。
+     正弦を3つ足すだけだった前の作りでは、いちばん強い成分の周期がそのまま見えて、
+     同じ形が何度も流れていた。 */
+  var PHI = 1.6180339887;          // 黄金比。これより割り切れにくい比はない
+  var NCOMP = 6;
+  BANDS.forEach(function(d, bi){
+    var lam0 = 1 / d.cyc;          // いちばん長い波の波長(帯の横幅に対する比)
+    var v0 = 1 / d.sec;            // その波が横幅を渡りきる速さ(1秒あたり)
+    var sum = 0;
+    d.comp = [];
+    for (var k = 0; k < NCOMP; k++){
+      var lam = lam0 / Math.pow(PHI, k);
+      /* 短い波ほど小さくする。実際の海面では波長が半分になると高さは
+         3分の1ほどまで落ちる。落とし方が甘いと棘のようにぎざぎざになる。
+         長いうねりが主役になるほど、水面はなだらかに見える */
+      var amp = Math.pow(0.50, k);
+      sum += amp;
+      d.comp.push({ lam: lam, amp: amp,
+                    v: v0 * Math.sqrt(lam / lam0),      // 長い波ほど速い
+                    ph: (bi * 7.13 + k * 2.39) % 6.2832 });
+    }
+    d.comp.forEach(function(c){ c.amp /= sum; });       // 合計を1に揃える
+  });;
+  var bandEnv = [0,0,0,0,0];
+  /* 波の形の個性と、曲の中での移ろい(2026-09-16 高尾さん指示)。
+     ampK: 上下の幅の倍率  lamK: 横の波長の倍率  breathe: 移ろいの速さ(曲あたりの往復回数)
+     曲ごとに変え、さらに曲の進みに合わせてゆっくり呼吸させる。
+     数秒で目まぐるしく変えると聞き流しの邪魔になるので、1〜2分かけて一往復させる。 */
+  /* 波長(lamK)は曲の中では動かさない。毎フレーム変えると波の位相が飛び、
+     滑らかな水面が途中で止まって見えた(2026-09-16 高尾さん指摘)。
+     曲の中で動かすのは上下幅だけにし、目標へ毎フレーム2%ずつ近づける(煙が舞うような遅さ)。
+     波長は曲ごとの個性として、曲の変わり目(暗転中)にだけ入れ替える。 */
+  var waveShape = { ampK: 1, lamK: 1, ampT: 1, br: 0, u: -1, has: false };
+  window.__ogsWave = waveShape;     // 調整用。見た目には関係しない
+
+  /* 球の中心をジャケットにする曲のID(2026-09-17 高尾さん指示)。
+     曲ページから1曲を指定して来たときだけ入り、次の曲へ移ったら null に戻す。
+     null のあいだ、中心は今までどおりANのまま。 */
+  var centerArtId = null;
+  var EDGE_FADE = 0.12;   // 走査線の両端を透かす幅(全体に対する割合)
+
+  /* ── 音の強さを記録し、水面の形は別に作る ──
+     記録するのは「その帯がどれだけ鳴っていたか」だけ。
+     左端が今で、右へいくほど過去になる。曲の起伏が水面の高まりとして右へ流れていく。
+     水面の形そのものは、下の drawWaves が毎フレーム波の重ね合わせから作る。
+     こうすると、記録した山がそのままの形で流れるのではなく、
+     流れながら形が変わり続ける。実際の水面と同じ振る舞いになる。 */
+  var SR = 60;                                  // 1秒あたりの記録数
+  var BUF_LEN = 620;                            // いちばん長い帯(9秒)を入れる長さ
+  var trace = BANDS.map(function(){ return new Float32Array(BUF_LEN); });
+  var head = 0, filled = 0, sampleAcc = 0, clock = 0;
+  var bandRaw = [0,0,0,0,0], soft = [0,0,0,0,0], rough = [0,0,0,0,0], bandAvg = [0,0,0,0,0];
+
+  function pushSample(){
+    head = (head + 1) % BUF_LEN;
+    if (filled < BUF_LEN) filled++;
+    clock += 1 / SR;
+    for (var b = 0; b < BANDS.length; b++){
+      var raw = bandRaw[b];
+      /* 二段に均す。立ち上がりはゆっくり、引くのはもっとゆっくり。
+         打点の角が取れて、丸い高まりだけが残る */
+      rough[b] += (raw - rough[b]) * (raw > rough[b] ? 0.055 : 0.018);
+      soft[b]  += (rough[b] - soft[b]) * 0.05;
+      bandAvg[b] += (raw - bandAvg[b]) * 0.004;
+      // 0.35〜1.4 くらいに収まる強さ。静かでも完全には凪がない
+      var lv = 0.35 + soft[b] * 1.05 + (soft[b] - bandAvg[b]) * 0.7;
+      trace[b][head] = lv < 0.12 ? 0.12 : lv > 1.5 ? 1.5 : lv;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     波の見せ方 10種(2026-09-17 高尾さん指示)
+     試作 _proto_wave_styles.html で決めたものを、そのまま移した。
+
+     作りの要点: 波は「中心線 cx,cy と 点ごとの太さ cw を作る」前半と、
+     「それを塗る」後半の二段構え。前半は音の記録・波の重ね合わせ・遠近を
+     すべて含む重い部分で、後半は塗るだけ。ここで差し替わるのは後半だけなので、
+     どの見せ方でも波の動き・音への反応・滑らかさは同一になる。
+       cx,cy: 中心線の座標  cw: その点の太さ  cl: その点の高さ(0=谷 1=山)
+     ══════════════════════════════════════════════════════════════ */
+
+  /* 元素ごとの候補。重なっていてよい(2026-09-17 高尾さん指示)。
+     五行DNAができたら、styleFor の中でここから選ぶだけで曲と繋がる。 */
+  var WAVE_ELEMENTS = {
+    wood:  ['grass', 'leaf'],
+    fire:  ['flame', 'smoke'],
+    earth: ['dot', 'grass'],
+    metal: ['spark', 'glow', 'sdot', 'dot'],
+    water: ['water', 'mist']
+  };
+
+  /* 一定の間隔で点を間引くときの歩幅。step は点と点の画面上の距離(px) */
+  function strideFor(step, px){
+    var s = Math.round(px / Math.max(0.0001, step));
+    return s < 1 ? 1 : s;
+  }
+
+  /* 場所ごとに決まる散らばり(0〜1)。同じ場所なら毎フレーム同じ値を返すので、
+     大きさがちらつかない。草・炎・星・葉の大きさをばらばらにするのに使う */
+  function rnd1(i, seed){
+    var v = Math.sin(i * 12.9898 + seed * 78.233) * 43758.5453;
+    return v - Math.floor(v);
+  }
+
+  /* 二次曲線上の点(0〜1の位置 t)。草を根元から先へ切り分けるのに使う */
+  function qbez(a, b, c, t){
+    var m = 1 - t;
+    return m * m * a + 2 * m * t * b + t * t * c;
+  }
+
+  /* 中心線の傾き(その点での dy/dx)。草・葉・炎の向きに使う */
+  function slopeAt(cx, cy, i, n){
+    var lo = i > 0 ? i - 1 : 0, hi = i < n - 1 ? i + 1 : n - 1;
+    var dx = cx[hi] - cx[lo];
+    return dx === 0 ? 0 : (cy[hi] - cy[lo]) / dx;
+  }
+
+  /* ── 帯の輪郭をなぞる。水面・煙・霧が共通で使う ──
+     mul: 太さの倍率  off: 中心線を縦にずらす量 */
+  function bandPath(ctx, cx, cy, cw, n, mul, off){
+    ctx.beginPath();
+    ctx.moveTo(cx[0], cy[0] + off - cw[0] * 0.5 * mul);
+    for (var k = 1; k < n; k++) ctx.lineTo(cx[k], cy[k] + off - cw[k] * 0.5 * mul);
+    for (var m = n - 1; m >= 0; m--) ctx.lineTo(cx[m], cy[m] + off + cw[m] * 0.5 * mul);
+    ctx.closePath();
+  }
+
+  /* 十字の星をひと筆で描き足す。四隅をくびれさせると、光条の尖った星になる。
+     w はくびれの深さ。R に対して小さいほど、鋭い四芒星になる */
+  function starPath(ctx, x, y, R, w){
+    ctx.moveTo(x, y - R);
+    ctx.quadraticCurveTo(x + w, y - w, x + R, y);
+    ctx.quadraticCurveTo(x + w, y + w, x, y + R);
+    ctx.quadraticCurveTo(x - w, y + w, x - R, y);
+    ctx.quadraticCurveTo(x - w, y - w, x, y - R);
+    ctx.closePath();
+  }
+
+  var PAINT = {};
+
+  /* ── 水面 ── もとからあった塗り。帯を塗り、上端に光の稜線を乗せる */
+  PAINT.water = function(g){
+    var ctx = g.ctx, d = g.d, cx = g.cx, cy = g.cy, cw = g.cw, n = g.n;
+    var col = g.col, lit = g.lit, step = g.step, x0 = g.x0, x1 = g.x1;
+    bandPath(ctx, cx, cy, cw, n, 1, 0);
+    /* 上が明るく下へ抜けていく塗り。水面に光が乗って、
+       下へいくほど水に沈んでいくように見せる */
+    var gr = ctx.createLinearGradient(0, g.baseY - g.amp, 0, g.baseY + g.amp * 0.9);
+    gr.addColorStop(0,    'rgba(' + lit + ',' + (d.a * 0.8).toFixed(3) + ')');
+    gr.addColorStop(0.32, 'rgba(' + col + ',' + d.a.toFixed(3) + ')');
+    gr.addColorStop(1,    'rgba(' + col + ',' + (d.a * 0.18).toFixed(3) + ')');
+    ctx.fillStyle = gr;
+    ctx.shadowColor = 'rgba(' + col + ',.5)';     // 遠いものほど滲む。空気遠近法
+    ctx.shadowBlur = (5 + d.w * 1.6) * (0.6 + d.haze * 1.4);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    /* 線に沿った濃淡。同じ濃さで塗ると帯が均一で平坦に見える。
+       斜面が急なところほど光を返すので、そこを明るくする。
+       さらにゆっくり動く斑を重ねて、光が散らばる面を作る */
+    var NS = 26;
+    var gp = ctx.createLinearGradient(x0, 0, x1, 0);
+    for (var p2 = 0; p2 <= NS; p2++){
+      var idx = Math.round(p2 / NS * (n - 1));
+      var lo2 = Math.max(0, idx - 2), hi2 = Math.min(n - 1, idx + 2);
+      var slope = Math.abs(cy[hi2] - cy[lo2]) / (step * (hi2 - lo2) + 0.001);
+      slope = slope > 1 ? 1 : slope;
+      var uu = p2 / NS;
+      var patch = 0.5 + 0.5 * Math.sin(uu * 14.6 + clock * 0.55 + g.b * 2.3);
+      var edge2 = Math.min(uu, 1 - uu) / EDGE_FADE;
+      var tp2 = edge2 >= 1 ? 1 : edge2 * edge2 * (3 - 2 * edge2);
+      var al2 = d.a * (0.30 * slope + 0.34 * patch * patch) * tp2;
+      gp.addColorStop(uu, 'rgba(' + lit + ',' + al2.toFixed(3) + ')');
+    }
+    ctx.fillStyle = gp;
+    ctx.fill();
+
+    /* 水面の稜線。細い明るい線を上端にだけ重ねると、光の筋になる */
+    ctx.beginPath();
+    ctx.moveTo(cx[0], cy[0] - cw[0] * 0.5);
+    for (var q = 1; q < n; q++) ctx.lineTo(cx[q], cy[q] - cw[q] * 0.5);
+    var gl = ctx.createLinearGradient(x0, 0, x1, 0);
+    gl.addColorStop(0,    'rgba(' + lit + ',0)');
+    gl.addColorStop(0.18, 'rgba(' + lit + ',' + (d.a * 0.62).toFixed(3) + ')');
+    gl.addColorStop(0.82, 'rgba(' + lit + ',' + (d.a * 0.62).toFixed(3) + ')');
+    gl.addColorStop(1,    'rgba(' + lit + ',0)');
+    ctx.strokeStyle = gl;
+    ctx.lineWidth = Math.max(0.6, d.w * 0.16);
+    ctx.stroke();
+  };
+
+  /* ── 煙 ── 同じ帯を三枚、ゆっくりずらして薄く重ねる。
+     ずれは時計でゆっくり動くので、三枚の隙間が呼吸して見える */
+  PAINT.smoke = function(g){
+    var ctx = g.ctx, d = g.d, col = g.col, lit = g.lit;
+    ctx.shadowColor = 'rgba(' + col + ',.55)';
+    for (var k = 0; k < 3; k++){
+      var sway = Math.sin(clock * 0.26 + k * 2.1 + g.b * 1.7);
+      var off = (k - 1) * d.w * 1.15 + sway * d.w * 0.75;
+      var mul = 1.5 + k * 0.35 + sway * 0.18;
+      bandPath(ctx, g.cx, g.cy, g.cw, g.n, mul, off);
+      var gr = ctx.createLinearGradient(0, g.baseY - g.amp * 1.2, 0, g.baseY + g.amp);
+      gr.addColorStop(0,   'rgba(' + lit + ',' + (d.a * 0.10).toFixed(3) + ')');
+      gr.addColorStop(0.4, 'rgba(' + col + ',' + (d.a * 0.20).toFixed(3) + ')');
+      gr.addColorStop(1,   'rgba(' + col + ',0)');
+      ctx.fillStyle = gr;
+      ctx.shadowBlur = (10 + d.w * 2.4) * (0.7 + d.haze * 1.2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  };
+
+  /* ── 霧 ── 輪郭を描かず、太らせた帯を淡く置くだけ。
+     煙との違いは「動かない・重ねない・もっと薄い」こと */
+  PAINT.mist = function(g){
+    var ctx = g.ctx, d = g.d, col = g.col, lit = g.lit;
+    bandPath(ctx, g.cx, g.cy, g.cw, g.n, 3.1, 0);
+    var gr = ctx.createLinearGradient(0, g.baseY - g.amp * 1.4, 0, g.baseY + g.amp * 1.2);
+    gr.addColorStop(0,    'rgba(' + lit + ',0)');
+    gr.addColorStop(0.42, 'rgba(' + lit + ',' + (d.a * 0.16).toFixed(3) + ')');
+    gr.addColorStop(0.72, 'rgba(' + col + ',' + (d.a * 0.13).toFixed(3) + ')');
+    gr.addColorStop(1,    'rgba(' + col + ',0)');
+    ctx.fillStyle = gr;
+    ctx.shadowColor = 'rgba(' + col + ',.45)';
+    ctx.shadowBlur = (18 + d.w * 3.2) * (0.8 + d.haze * 1.4);
+    ctx.fill();
+    ctx.fill();          // 二度塗りで芯だけ少し濃くする
+    ctx.shadowBlur = 0;
+  };
+
+  /* ── ドット ── 中心線に沿って等間隔に粒を打つ。
+     一粒ずつ濃さを変えると遅いので、濃淡は二枚に分けて一度に塗る */
+  PAINT.dot = function(g){
+    var ctx = g.ctx, d = g.d, cx = g.cx, cy = g.cy, cw = g.cw, cl = g.cl, n = g.n;
+    var st = strideFor(g.step, 7 + d.w * 0.7);
+    var i, r;
+    ctx.beginPath();                                   // 下地の粒(全部)
+    for (i = 0; i < n; i += st){
+      r = cw[i] * 0.46;
+      if (r < 0.35) continue;
+      ctx.moveTo(cx[i] + r, cy[i]);
+      ctx.arc(cx[i], cy[i], r, 0, 6.2831853);
+    }
+    ctx.fillStyle = 'rgba(' + g.col + ',' + (d.a * 0.62).toFixed(3) + ')';
+    ctx.shadowColor = 'rgba(' + g.col + ',.5)';
+    ctx.shadowBlur = 3 + d.haze * 5;
+    ctx.fill();
+    ctx.beginPath();                                   // 山の近くだけ明るい芯
+    for (i = 0; i < n; i += st){
+      if (cl[i] < 0.55) continue;
+      r = cw[i] * 0.22;
+      if (r < 0.3) continue;
+      ctx.moveTo(cx[i] + r, cy[i]);
+      ctx.arc(cx[i], cy[i], r, 0, 6.2831853);
+    }
+    ctx.fillStyle = 'rgba(' + g.lit + ',' + (d.a * 0.85).toFixed(3) + ')';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  };
+
+  /* ── 角ドット ── 丸ドットと同じ並びを四角で打つ(2026-09-17 高尾さん指示)。
+     座標と大きさを整数に丸めるのは、角をぼかさず立たせるため。
+     滲みは一切掛けない(「四角のドットは周りをぼんやりしない。明確な四角」)。 */
+  PAINT.sdot = function(g){
+    var ctx = g.ctx, d = g.d, cx = g.cx, cy = g.cy, cw = g.cw, cl = g.cl, n = g.n;
+    var st = strideFor(g.step, 7 + d.w * 0.7);
+    var i, s;
+    ctx.shadowBlur = 0;
+    ctx.beginPath();                                   // 下地の粒(全部)
+    for (i = 0; i < n; i += st){
+      s = Math.round(cw[i] * 0.82);
+      if (s < 1) continue;
+      ctx.rect(Math.round(cx[i] - s * 0.5), Math.round(cy[i] - s * 0.5), s, s);
+    }
+    // 滲まない分うっすら見えるので、濃さを上げて存在を保つ
+    ctx.fillStyle = 'rgba(' + g.col + ',' + (d.a * 0.88).toFixed(3) + ')';
+    ctx.fill();
+    ctx.beginPath();                                   // 山の近くだけ明るい芯
+    for (i = 0; i < n; i += st){
+      if (cl[i] < 0.55) continue;
+      s = Math.round(cw[i] * 0.38);
+      if (s < 1) continue;
+      ctx.rect(Math.round(cx[i] - s * 0.5), Math.round(cy[i] - s * 0.5), s, s);
+    }
+    ctx.fillStyle = 'rgba(' + g.lit + ',' + (d.a * 1.0).toFixed(3) + ')';
+    ctx.fill();
+  };
+
+  /* ── キラキラ・光点 ── 丸い光点だけ。星の版より控えめで、水面の煌めきに近い */
+  PAINT.glow = function(g){
+    var ctx = g.ctx, d = g.d, cx = g.cx, cy = g.cy, cw = g.cw, cl = g.cl, n = g.n;
+    var st = strideFor(g.step, 11 + d.w * 0.5);
+    var buckets = [[], [], []];
+    for (var i = 0; i < n; i += st){
+      if (cl[i] < 0.42) continue;
+      // 点ごとに速さと位相をずらす。揃って光ると電飾に見える
+      var tw = 0.5 + 0.5 * Math.sin(clock * (1.6 + (i % 7) * 0.33) + i * 1.97 + g.b * 2.2);
+      var v = tw * tw * (cl[i] - 0.42) / 0.58;
+      if (v < 0.12) continue;
+      buckets[v > 0.66 ? 2 : v > 0.34 ? 1 : 0].push(i);
+    }
+    var ALPHA = [0.28, 0.6, 1.0];
+    ctx.shadowColor = 'rgba(' + g.lit + ',.9)';
+    for (var k = 0; k < 3; k++){
+      var list = buckets[k];
+      if (!list.length) continue;
+      ctx.beginPath();
+      for (var j = 0; j < list.length; j++){
+        var p = list[j];
+        var r = Math.max(0.5, cw[p] * 0.20 + 0.7 + k * 0.45);
+        ctx.moveTo(cx[p] + r, cy[p]);
+        ctx.arc(cx[p], cy[p], r, 0, 6.2831853);
+      }
+      ctx.fillStyle = 'rgba(' + g.lit + ',' + (d.a * ALPHA[k]).toFixed(3) + ')';
+      ctx.shadowBlur = 3 + k * 5 + d.haze * 4;
+      ctx.fill();
+    }
+    /* いちばん強い点には十字の光芒を足す。数が少ないので線でよい */
+    var top = buckets[2];
+    if (top.length){
+      ctx.beginPath();
+      for (var m = 0; m < top.length; m += 3){
+        var q = top[m], L = 2.5 + cw[q] * 0.5;
+        ctx.moveTo(cx[q] - L, cy[q]); ctx.lineTo(cx[q] + L, cy[q]);
+        ctx.moveTo(cx[q], cy[q] - L); ctx.lineTo(cx[q], cy[q] + L);
+      }
+      ctx.strokeStyle = 'rgba(' + g.lit + ',' + (d.a * 0.5).toFixed(3) + ')';
+      ctx.lineWidth = 0.7;
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+  };
+
+  /* ── キラキラ・星 ── 山の近くに十字の星が咲く(2026-09-17 高尾さん指示)。
+     明滅は点ごとに速さも位相もずらす。揃って光ると電飾に見えてしまう。
+     濃さは三段に丸めて三回の塗りで済ませる(一点ずつ塗ると遅い) */
+  PAINT.spark = function(g){
+    var ctx = g.ctx, d = g.d, cx = g.cx, cy = g.cy, cw = g.cw, cl = g.cl, n = g.n;
+    var st = strideFor(g.step, 15 + d.w * 0.7);
+    var buckets = [[], [], []];
+    var vals = {};
+    for (var i = 0; i < n; i += st){
+      if (cl[i] < 0.38) continue;
+      var tw = 0.5 + 0.5 * Math.sin(clock * (1.6 + (i % 7) * 0.33) + i * 1.97 + g.b * 2.2);
+      var v = tw * tw * (cl[i] - 0.38) / 0.62;
+      if (v < 0.10) continue;
+      vals[i] = v;
+      buckets[v > 0.62 ? 2 : v > 0.30 ? 1 : 0].push(i);
+    }
+    var ALPHA = [0.34, 0.68, 1.0];
+    ctx.shadowColor = 'rgba(' + g.lit + ',.95)';
+    for (var k = 0; k < 3; k++){
+      var list = buckets[k];
+      if (!list.length) continue;
+      ctx.beginPath();
+      for (var j = 0; j < list.length; j++){
+        var p = list[j];
+        /* 大きな星と小さな星を混ぜる。8個に1個ほどが大きく咲き、残りは小さく煌めく。
+           大きさは場所ごとに決まるので、同じ星が育ったり縮んだりしない */
+        var sr = rnd1(p, g.b + 1.3);
+        var sz = sr > 0.88 ? 0.6 + (sr - 0.88) * 2 : 0.45 + sr * 0.75;
+        var R = (1.8 + cw[p] * 0.6) * (0.55 + vals[p] * 1.15) * sz;
+        if (R < 1.0) continue;
+        starPath(ctx, cx[p], cy[p], R, R * 0.13);
+      }
+      ctx.fillStyle = 'rgba(' + g.lit + ',' + (d.a * ALPHA[k]).toFixed(3) + ')';
+      ctx.shadowBlur = 4 + k * 6 + d.haze * 5;
+      ctx.fill();
+    }
+    /* 星の中心に白に近い芯を置く。光条だけだと輪郭が痩せて見える */
+    var top = buckets[2];
+    if (top.length){
+      ctx.beginPath();
+      for (var m = 0; m < top.length; m++){
+        var q = top[m], r = Math.max(0.6, cw[q] * 0.16 + 0.6);
+        ctx.moveTo(cx[q] + r, cy[q]);
+        ctx.arc(cx[q], cy[q], r, 0, 6.2831853);
+      }
+      ctx.fillStyle = 'rgba(255,255,255,' + (d.a * 0.75).toFixed(3) + ')';
+      ctx.shadowBlur = 8 + d.haze * 6;
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  };
+
+  /* ── 草 ── 中心線から上へ細い葉を伸ばし、先を横へ靡かせる。
+     根元は背景へ溶かす(2026-09-17 高尾さん指示)。葉を根元から先へ6つに切り、
+     根元側の段ほど薄く塗る。一本ずつ濃淡を付けると1画面で数百回の塗りになるので、
+     段ごとに一度だけ塗る。地際を結んでいた明るい線は、溶かす妨げになるので廃した。 */
+  PAINT.grass = function(g){
+    var ctx = g.ctx, d = g.d, cx = g.cx, cy = g.cy, cw = g.cw, cl = g.cl, n = g.n;
+    var st = strideFor(g.step, 5 + d.w * 0.45);
+    var SEG = 6;
+    var FADE = [0.00, 0.30, 0.62, 0.84, 0.96, 1.00];   // 根元から先へ向かう濃さ
+    for (var s = 0; s < SEG; s++){
+      var t0 = s / SEG, t1 = (s + 1) / SEG;
+      ctx.beginPath();
+      for (var i = 0; i < n; i += st){
+        /* 丈をばらばらにする。二乗して小さい側に寄せると、
+           短い草が多く、ときどき背の高い草が混じる野原になる */
+        var gr = rnd1(i, g.b);
+        var L = (cw[i] * 1.9 + d.w * 1.1) * (0.30 + cl[i] * 0.70) * (0.45 + gr * gr * 2.1);
+        if (L < 1.2) continue;
+        var sl = slopeAt(cx, cy, i, n);
+        // 傾きに直交する向き(上向き)。急な斜面では葉も傾く
+        var inv = 1 / Math.sqrt(1 + sl * sl);
+        var nx = sl * inv, ny = -inv;
+        var wind = Math.sin(clock * 0.85 + cx[i] * 0.017 + g.b * 1.3) * 0.55
+                 + Math.sin(clock * 0.31 + cx[i] * 0.006) * 0.3;
+        var p0x = cx[i], p0y = cy[i];
+        var p1x = cx[i] + nx * L * 0.55 + wind * L * 0.16, p1y = cy[i] + ny * L * 0.55;
+        var p2x = cx[i] + nx * L + wind * L * 0.62,        p2y = cy[i] + ny * L;
+        ctx.moveTo(qbez(p0x, p1x, p2x, t0), qbez(p0y, p1y, p2y, t0));
+        ctx.lineTo(qbez(p0x, p1x, p2x, t1), qbez(p0y, p1y, p2y, t1));
+      }
+      // 先の段だけ光を帯びる。根元の段は色も薄く、滲みも掛けない
+      ctx.strokeStyle = 'rgba(' + (s >= SEG - 2 ? g.lit : g.col) + ',' +
+                        (d.a * 0.95 * FADE[s]).toFixed(3) + ')';
+      ctx.lineWidth = Math.max(0.5, d.w * 0.16);
+      ctx.shadowColor = 'rgba(' + g.col + ',.5)';
+      ctx.shadowBlur = s === 0 ? 0 : 1 + s * 1.2 + d.haze * 3;
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+  };
+
+  /* ── 葉 ── 中心線に沿って木の葉を並べる。
+     最初はぼかした楕円だったが、小さいと丸に見えてドットと区別がつかなかった
+     (2026-09-17 高尾さん指摘)。両端の尖った形にし、滲みを外し、一枚ずつ左右へ振った。 */
+  PAINT.leaf = function(g){
+    var ctx = g.ctx, d = g.d, cx = g.cx, cy = g.cy, cw = g.cw, n = g.n;
+    var st = strideFor(g.step, 10 + d.w * 1.1);
+    var i, rx, ry, ang, lr;
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();                                   // 葉身
+    for (i = 0; i < n; i += st){
+      rx = (cw[i] * 0.95 + d.w * 0.42) * (0.7 + rnd1(i, g.b + 5.1) * 0.8);
+      if (rx < 1.0) continue;
+      ry = rx * 0.38;
+      // 波の傾きに、枝から振れる角度と、ゆっくりした裏返りを足す
+      lr = (i / st) % 2 === 0 ? 1 : -1;
+      ang = Math.atan(slopeAt(cx, cy, i, n)) + lr * 0.55
+          + Math.sin(clock * 0.45 + i * 0.8 + g.b) * 0.18;
+      ctx.save();
+      ctx.translate(cx[i], cy[i]);
+      ctx.rotate(ang);
+      // 両端が尖る木の葉。上下を二本の弧で結ぶと、先の尖った形になる
+      ctx.moveTo(-rx, 0);
+      ctx.quadraticCurveTo(0, -ry, rx, 0);
+      ctx.quadraticCurveTo(0,  ry, -rx, 0);
+      ctx.closePath();
+      ctx.restore();
+    }
+    ctx.fillStyle = 'rgba(' + g.col + ',' + (d.a * 0.82).toFixed(3) + ')';
+    ctx.fill();
+
+    ctx.beginPath();                                   // 葉脈。一本の細い線
+    for (i = 0; i < n; i += st){
+      rx = (cw[i] * 0.95 + d.w * 0.42) * (0.7 + rnd1(i, g.b + 5.1) * 0.8);
+      if (rx < 1.0) continue;
+      lr = (i / st) % 2 === 0 ? 1 : -1;
+      ang = Math.atan(slopeAt(cx, cy, i, n)) + lr * 0.55
+          + Math.sin(clock * 0.45 + i * 0.8 + g.b) * 0.18;
+      ctx.save();
+      ctx.translate(cx[i], cy[i]);
+      ctx.rotate(ang);
+      ctx.moveTo(-rx * 0.9, 0);
+      ctx.lineTo(rx * 0.9, 0);
+      ctx.restore();
+    }
+    ctx.strokeStyle = 'rgba(' + g.lit + ',' + (d.a * 0.7).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(0.4, d.w * 0.09);
+    ctx.stroke();
+  };
+
+  /* ── 炎 ── 中心線から上へ舌を伸ばす。草との違いは
+     「短くて太い・先が細る・速く揺れる・先が明るい」こと。
+     一本ごとに縦のグラデーションを掛け、根元を背景へ溶かす。
+     グラデーションは帯ごとに一度だけ、根元0・先端1の単位の空間で作り、
+     舌ごとに座標をずらして使い回すので、作り直しは帯あたり1回で済む。
+     枚を重ねる作りでは境目が横線として見えたため、この方式に改めた
+     (2026-09-17 高尾さん指摘での作り直し)。 */
+  PAINT.flame = function(g){
+    var ctx = g.ctx, d = g.d, cx = g.cx, cy = g.cy, cw = g.cw, cl = g.cl, n = g.n;
+    var st = strideFor(g.step, 6 + d.w * 0.8);
+
+    var gr = ctx.createLinearGradient(0, 0, 0, -1);
+    gr.addColorStop(0.00, 'rgba(' + g.col + ',0)');
+    gr.addColorStop(0.14, 'rgba(' + g.col + ',' + (d.a * 0.10).toFixed(3) + ')');
+    gr.addColorStop(0.38, 'rgba(' + g.col + ',' + (d.a * 0.34).toFixed(3) + ')');
+    gr.addColorStop(0.64, 'rgba(' + g.col + ',' + (d.a * 0.62).toFixed(3) + ')');
+    gr.addColorStop(0.85, 'rgba(' + g.lit + ',' + (d.a * 0.86).toFixed(3) + ')');
+    gr.addColorStop(1.00, 'rgba(' + g.lit + ',' + (d.a * 1.00).toFixed(3) + ')');
+    ctx.fillStyle = gr;
+    ctx.shadowBlur = 0;
+
+    for (var i = 0; i < n; i += st){
+      /* 舌の大きさをばらばらにする。小さい舌が多く、ときどき大きく立ち上がる */
+      var fr = rnd1(i, g.b + 3.7);
+      var sz = 0.40 + fr * fr * 1.9;
+      var half = (cw[i] * 0.55 + d.w * 0.12) * (0.60 + sz * 0.50);
+      var L = (cw[i] * 2.2 + d.w * 1.4) * (0.35 + cl[i] * 0.95) * sz;
+      if (L < 1.5) continue;
+      // 速い揺らぎ。場所ごとに位相をずらすので、隣の舌と揃わない
+      var fl = Math.sin(clock * 2.3 + i * 1.31 + g.b * 2.6) * 0.5
+             + Math.sin(clock * 1.1 + i * 0.47) * 0.3;
+      /* 根元をその舌の生え際へ移し、縦だけを丈の分だけ伸ばす。
+         横は伸ばさないので、幅はそのまま画面上の太さで書ける */
+      ctx.save();
+      ctx.translate(cx[i], cy[i]);
+      ctx.scale(1, L);
+      ctx.beginPath();
+      ctx.moveTo(-half, 0);
+      ctx.quadraticCurveTo(-half * 0.9, -0.55, fl * L * 0.42, -1);
+      ctx.quadraticCurveTo(half * 0.9, -0.55, half, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+  };
+
+  /* いま使う見せ方。曲の変わり目(暗転中)にだけ入れ替える。
+     曲の途中で変えると、塗り方が切り替わった瞬間に波が飛んで見える */
+  var waveStyle = 'water';
+
+  function drawWaves(rgb){
+    if (!wctx) return;
+    sizeWaves();
+    wctx.clearRect(0, 0, ww, wh);
+    if (audio.paused) return;
+    wctx.lineCap = 'round';
+    wctx.lineJoin = 'round';
+    var col = rgb[0] + ',' + rgb[1] + ',' + rgb[2];
+    /* 光が当たった面の色。白そのものだと棚の色が消えてしまうので、
+       棚の色を白へ半分ほど寄せた色を使う */
+    var lit = Math.round(rgb[0] + (255 - rgb[0]) * 0.32) + ',' +
+              Math.round(rgb[1] + (255 - rgb[1]) * 0.32) + ',' +
+              Math.round(rgb[2] + (255 - rgb[2]) * 0.32);
+
+    // 奥から手前へ描く。手前の水面が奥の水面を隠して、重なりの順が見える
+    for (var b = 0; b < BANDS.length; b++){
+      var d = BANDS[b];
+      var n = Math.min(filled, Math.round(d.sec * SR));
+      if (n < 8) continue;
+      var baseY = wh * d.y, amp = wh * d.amp * waveShape.ampK;
+      var half = ww * d.spread * 0.5;
+      var x0 = ww * 0.5 - half, x1 = ww * 0.5 + half;
+      var buf = trace[b], step = (x1 - x0) / (n - 1), comp = d.comp;
+
+      /* 中心線と、その場所ごとの太さを先に出しておく。
+         canvas は一本の線の途中で太さを変えられないので、
+         上端と下端の二本を作って帯として塗る。
+         cl はその点の高さ(0=谷 1=山)。粒・星・草・炎が大きさや明滅に使う */
+      var cx = new Float64Array(n), cy = new Float64Array(n),
+          cw = new Float64Array(n), cl = new Float64Array(n);
+      for (var i = 0; i < n; i++){
+        var u = i / (n - 1);
+        // i=0 がいちばん新しい記録。左端が今で、右へいくほど過去
+        var lv = buf[(head - i + BUF_LEN * 2) % BUF_LEN];
+        /* 波長のちがう6つの成分を重ねる。速さが成分ごとに違うので、
+           重なり方が刻々とずれ、同じ形が二度と現れない */
+        var v = 0;
+        for (var c = 0; c < comp.length; c++){
+          var cp = comp[c];
+          v += cp.amp * Math.sin((u - cp.v * clock) / (cp.lam * waveShape.lamK) * 6.2831853 + cp.ph);
+        }
+        /* その時の音の強さで高さが決まる。
+           成分どうしが揃うことは滅多にないので、そのままだと山が低い。
+           少し持ち上げてから、角のない抑え方で -1〜1 に収める。
+           単純な頭打ちにすると山の天辺が平らに削れて、角が見えてしまう */
+        v = Math.tanh(v * lv * 1.15);
+        /* 両端は振れも太さも細らせる。書き始めと消え際が自然に消える */
+        var edge = Math.min(u, 1 - u) / EDGE_FADE;
+        var taper = edge >= 1 ? 1 : edge * edge * (3 - 2 * edge);
+        cx[i] = x0 + step * i;
+        cy[i] = baseY - v * amp * taper;
+        /* 波の高いところは思いきり太く、谷は髪の毛のように細く。
+           差を大きく取るほど、絵として面白くなる。
+           1.7乗にして、太くなるのを山の近くだけに絞っている */
+        var lift = (v < -1 ? -1 : v > 1 ? 1 : v) * 0.5 + 0.5;
+        cw[i] = d.w * taper * (0.08 + 1.85 * Math.pow(lift, 1.7));
+        cl[i] = lift * taper;
+      }
+
+      /* ここから先が、曲ごとに変わる塗り(2026-09-17 高尾さん指示)。
+         上で作った中心線と太さは、どの見せ方でも同じものを使う */
+      (PAINT[waveStyle] || PAINT.water)({
+        ctx: wctx, d: d, b: b, n: n, cx: cx, cy: cy, cw: cw, cl: cl,
+        step: step, x0: x0, x1: x1, baseY: baseY, amp: amp, col: col, lit: lit
+      });
+    }
+    window.__ogsBands = bandEnv;   // 調整用。見た目には関係しない
+  }
+
+  /* ── 曲の進みに合わせて、生態系を育てて散らす ──
+     背景アートには種・発芽・流動・開花・飽和・崩壊・還元・再生の八段階が輪になっている。
+     曲は「散った状態」から始める(2026-09-16 高尾さん指示)。還元(6.4)から再生(7)を通り、
+     種(8=0)へ入って育ち、中盤で飽和まで達し、終わりにまた崩れて散って消える。
+     こうすると曲の切れ目で姿が途切れず、散った粒がゆっくり集まって球になる。
+     段階は8で一周するので、8を超えた値は種からの育ちとして扱われる(living-bg側で剰余を取る)。
+     音の強さはその上に乗る揺らぎとして足すだけで、大枠は曲の進みが決める。 */
+  function phaseFor(u){
+    if (u < 0.10) return 6.4 + (u / 0.10) * 1.6;           // 還元 → 再生 → 種(8.0)
+    if (u < 0.60) return 8.0 + ((u - 0.10) / 0.50) * 4.0;  // 種 → 飽和(12.0 = 4)
+    if (u < 0.85) return 12.0;                             // 飽和のまま保つ
+    return 12.0 + ((u - 0.85) / 0.15) * 2.4;               // 崩壊 → 還元(14.4 = 6.4)
+  }
+
+  /* ── 曲ごとの生態系の表情 ──
+     静の棚はゆっくり回り、息づかいも浅い。動の棚は速く回り、大きく伸び縮みする。
+     同じ棚でも曲ごとに少しずつ変えるため、曲の題から作った数で味付けする。
+     同じ曲なら毎回同じ表情になる。 */
+  var MOTION_BASE = {
+    sei: { spin:0.42, tilt:0.55, swellAmp:0.8, swellRate:0.45, scale:0.92 },
+    do:  { spin:2.00, tilt:1.60, swellAmp:4.5, swellRate:2.20, scale:1.14 }
+  };
+  var HUE_SPAN = 46;   // 曲を通して色相がずれていく幅(度)
+
+  function hashOf(str){
+    var h = 0;
+    for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return h;
+  }
+
+  /* 球を作るアイコンの偏り。曲ごとに、都市寄り・森寄り・花寄りなどを変える。
+     以前は端末に保存された重みのまま固定で、しかも配合の作り直しが起きず、
+     どの曲でも同じ種類のアイコンばかりに見えていた(2026-09-16 高尾さん指摘)。
+     偏りは曲名から決まるので、同じ曲なら毎回同じ配合になる。 */
+  var BIOMES = ['forest', 'flower', 'city', 'crystal', 'mech', 'leaf'];
+  function biomeBiasFor(track){
+    var h = hashOf((track.title || '') + '%' + (track.mode || ''));
+    var main = BIOMES[h % BIOMES.length];
+    var sub  = BIOMES[(h >>> 4) % BIOMES.length];
+    var bias = {};
+    BIOMES.forEach(function(b, i){
+      /* 主役は厚く、脇役はその半分。残りも消さずに薄く混ぜる(一色に染めない) */
+      bias[b] = 0.35 + ((h >>> (i + 2)) % 100) / 300;
+    });
+    bias[main] = 3.2;
+    bias[sub] = Math.max(bias[sub], 1.5);
+    return bias;
+  }
+
+  function motionFor(track){
+    var base = MOTION_BASE[track.axis === 'do' ? 'do' : 'sei'];
+    var h = hashOf((track.title || '') + '/' + (track.mode || ''));
+    /* -1〜1 の癖を三つ取り出し、回る速さ・伸び縮み・大きさに散らす */
+    var k1 = ((h        & 255) / 255) * 2 - 1;
+    var k2 = (((h >> 8) & 255) / 255) * 2 - 1;
+    var k3 = (((h >> 16) & 255) / 255) * 2 - 1;
+    return {
+      spin:      base.spin      * (1 + k1 * 0.35),
+      tilt:      base.tilt      * (1 + k2 * 0.30),
+      swellAmp:  base.swellAmp  * (1 + k2 * 0.30),
+      swellRate: base.swellRate * (1 + k1 * 0.25),
+      scale:     base.scale     * (1 + k3 * 0.14),
+      hueDir:    k3 >= 0 ? 1 : -1,      // 色がどちらへ回っていくか
+      /* 波の個性。静かな棚は幅を抑えて波長を長く、動く棚は幅を広げて波長を短く。
+         曲ごとの癖(k1〜k3)で、その中をさらに散らす */
+      waveAmp:   (track.axis === 'do' ? 1.18 : 0.86) * (1 + k1 * 0.22),
+      waveLam:   (track.axis === 'do' ? 0.82 : 1.26) * (1 + k2 * 0.20),
+      waveBreath: 0.6 + Math.abs(k3) * 0.6,   // 曲あたり0.6〜1.2往復(3〜5分で一呼吸)
+      hueFrom:   k1 * 22,               // 出だしの色のずれ
+      waveStyle: styleFor(track, h)     // 波の見せ方(10種から1つ)
+    };
+  }
+
+  /* ── 曲ごとの波の見せ方(2026-09-17 高尾さん指示) ──
+     10種から1つを曲名とIDで決める。同じ曲なら毎回同じ見せ方になる。
+     静かな棚は水面・霧・煙・光点が出やすく、動く棚は炎・星・角ドットが出やすい。
+     ただし棚で決めきらず、どちらの一覧にも相手側のものを混ぜてある。
+     決まりきった対応にすると「この棚はいつもこれ」と見えてしまうため。
+
+     五行DNAができたら、ここを WAVE_ELEMENTS から選ぶ形に差し替えれば繋がる。
+     見た目の作りには一切触れずに済むよう、選ぶ所をこの一箇所に集めている。 */
+  /* 星は一覧に一つずつだけ置く。両方に二つ入れていたとき、105曲のうち24曲(23%)が
+     星になり、光点は5曲しかなかった(2026-09-17 実測)。減らした枠には光点を入れ、
+     どの見せ方も10前後に均す(2026-09-18 高尾さん指示) */
+  var STYLE_SEI = ['water', 'mist', 'smoke', 'glow', 'leaf', 'water', 'mist', 'dot', 'grass', 'spark'];
+  var STYLE_DO  = ['flame', 'spark', 'sdot', 'dot', 'grass', 'flame', 'smoke', 'glow', 'sdot', 'water'];
+  function styleFor(track, h){
+    var list = track.axis === 'do' ? STYLE_DO : STYLE_SEI;
+    /* ビットをずらすときは符号なし(>>>)にする。符号付き(>>)だと大きな値で負になり、
+       一覧から取り出せず undefined になる(2026-09-16の色で実際に起きた) */
+    return list[(h >>> 11) % list.length] || 'water';
+  }
+  var motion = null;
+
+  /* ── 差し色(雨・蝶・桜など) ──
+     曲の後半に差し掛かったところで一度だけ出し、終わる前に引く。
+     何を出すかは曲の題と棚から決めるので、同じ曲なら毎回同じものが出る。
+     静の棚は穏やかなもの、動の棚は動きのあるものを選ぶ。 */
+  var ACCENT = {
+    sei: ['sakura', 'bubbles', 'ripple', 'snow', 'stars'],
+    do:  ['rain', 'butterfly', 'leaves', 'fish', 'digital']
+  };
+  var ACCENT_IN = 0.55, ACCENT_OUT = 0.86;
+  var accentOn = false;
+
+  /* 何が出るかは、そのつど無作為に選ぶ(2026-09-18 高尾さん指示)。
+     以前は曲ごとに固定していたが、同じ曲がいつも同じでは揺らぎがない。
+     棚の性格(静は穏やかなもの、動は動きのあるもの)だけは保つ。 */
+  function accentFor(track){
+    var list = ACCENT[track.axis === 'do' ? 'do' : 'sei'];
+    return list[Math.floor(Math.random() * list.length) % list.length];
+  }
+
+  function setAccent(on){
+    if (on === accentOn) return;
+    accentOn = on;
+    var kind = on && current ? accentFor(current) : 'none';
+    window.__ogsAccent = kind;   // 調整用。見た目には関係しない
+    try { if (window.__livingBG) window.__livingBG.setWeather(kind); } catch (e) {}
+  }
+
+  /* 曲の進み。長さが分からないうちは何もしない(生放送や読み込み中) */
+  function trackProgress(){
+    var d = audio.duration;
+    if (!d || !isFinite(d) || d < 8) return -1;
+    return Math.min(1, audio.currentTime / d);
+  }
+  var wcv = document.getElementById('waves');
+  var wctx = wcv.getContext ? wcv.getContext('2d') : null;
+  var wdpr = Math.min(window.devicePixelRatio || 1, 2);
+  var ww = 0, wh = 0;
+
+  function sizeWaves(){
+    if (!wctx) return;
+    if (window.innerWidth === ww && window.innerHeight === wh) return;
+    ww = window.innerWidth; wh = window.innerHeight;
+    wcv.width = ww * wdpr; wcv.height = wh * wdpr;
+    wctx.setTransform(wdpr, 0, 0, wdpr, 0, 0);
+  }
+  var wzTimer = 0;
+  window.addEventListener('resize', function(){
+    clearTimeout(wzTimer); wzTimer = setTimeout(sizeWaves, 200);
+  });
+
+  function rgbOf(hex){
+    var n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  /* 棚の色を、曲ごとに少しだけずらす。棚は4色しかないので、同じ棚の曲が続くと
+     まったく同じ色になり「色が変わらない」と見えていた(2026-09-16)。
+     ずらす量は曲名から決めるので、同じ曲なら毎回同じ色になる。 */
+  function shiftHue(hex, deg){
+    if (!hex) return '#d9c49a';      // 色が取れなかったときも絵を止めない
+    var c = rgbOf(hex).map(function(v){ return v / 255; });
+    var mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]);
+    var d = mx - mn, h = 0, l = (mx + mn) / 2;
+    var sat = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+    if (d !== 0){
+      if (mx === c[0]) h = ((c[1] - c[2]) / d) % 6;
+      else if (mx === c[1]) h = (c[2] - c[0]) / d + 2;
+      else h = (c[0] - c[1]) / d + 4;
+      h *= 60;
+    }
+    h = (h + deg + 360) % 360;
+    var cc = (1 - Math.abs(2 * l - 1)) * sat, x = cc * (1 - Math.abs((h / 60) % 2 - 1)), m = l - cc / 2;
+    var r = [[cc,x,0],[x,cc,0],[0,cc,x],[0,x,cc],[x,0,cc],[cc,0,x]][Math.floor(h / 60) % 6];
+    return '#' + r.map(function(v){
+      var n = Math.round((v + m) * 255);
+      return (n < 16 ? '0' : '') + n.toString(16);
+    }).join('');
+  }
+
+  /* 曲の色。静(整える・ほどく)は寒色、動(動く・ひらく)は暖色を主にする。
+     ただし6曲に1曲ほど、反対の系統も出す。決まりきった色調にしないため
+     (2026-09-16 高尾さん指示)。どの色になるかは曲名から決まるので、同じ曲なら毎回同じ色。 */
+  var COOL = ['#5b8fb9', '#9ec9dd', '#5bb9a3', '#7f8fd6', '#9b7fd6', '#4f9fbf'];
+  var WARM = ['#c1483a', '#dd8a5c', '#d9a23a', '#c9605f', '#e0705a', '#b8563f'];
+  function trackColor(t){
+    var k = hashOf((t.title || '') + '#' + (t.id || ''));
+    var cool = (t.axis === 'sei');
+    if (k % 6 === 0) cool = !cool;                       // ときどき反対の系統
+    var list = cool ? COOL : WARM;
+    /* ビットをずらすときは符号なし(>>>)にする。符号付き(>>)だと大きな値で負になり、
+       一覧から色を取り出せず undefined になっていた(2026-09-16の実測で例外) */
+    var base = list[(k >>> 3) % list.length] || list[0];
+    return shiftHue(base, (((k >>> 7) % 1000) / 1000 - 0.5) * 16);   // 同系のなかで少しずらす
+  }
+
+
+  function startVisual(){
+    if (actx){
+      // Chromeは操作より先に作った音声文脈を止めたままにする。起こさないと無音を解析し続ける
+      if (actx.state === 'suspended') actx.resume();
+      return;
+    }
+    if (!window.AudioContext && !window.webkitAudioContext) return;
+    try {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      var src = actx.createMediaElementSource(audio);
+      analyser = actx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.85;
+      src.connect(analyser);
+      analyser.connect(actx.destination);
+      freq = new Uint8Array(analyser.frequencyBinCount);
+      if (actx.state === 'suspended') actx.resume();
+      loop();
+    } catch (e) { actx = null; }   // 解析できなくても再生は続ける
+  }
+
+  function loop(){
+    raf = requestAnimationFrame(loop);
+    if (!analyser || audio.paused) return;
+    analyser.getByteFrequencyData(freq);
+    var n = freq.length;
+    var sum = 0, low = 0, high = 0, lowN = n >> 3, highN = 0;
+    for (var i = 0; i < n; i++){
+      sum += freq[i];
+      if (i < lowN) low += freq[i];
+      if (i > n * 0.5){ high += freq[i]; highN++; }
+    }
+    var now  = sum / n / 255;                       // 0〜1 全体の音量
+    var bass = low / lowN / 255;                    // 0〜1 低域。拍を掴む
+    var bright = highN ? high / highN / 255 : 0;    // 0〜1 高域。音の明るさ
+
+    envFast += (now * 0.5 + bass * 0.5 - envFast) * 0.16;  // 拍で動く
+    envSlow += (now - envSlow) * 0.02;                     // 曲の性格
+
+    /* 帯ごとの強さ。生の値は走査線に書き留め、均した値は絵の呼吸に使う */
+    for (var b = 0; b < BANDS.length; b++){
+      var d = BANDS[b];
+      var a = Math.floor(d.lo * n), z = Math.max(a + 1, Math.floor(d.hi * n));
+      var acc = 0;
+      for (var j = a; j < z; j++) acc += freq[j];
+      var v = Math.min(1, acc / (z - a) / 255 * d.gain);
+      bandRaw[b] = v;
+      bandEnv[b] += (v - bandEnv[b]) * (0.09 + (BANDS.length - 1 - b) * 0.045);
+    }
+
+    /* 記録は時計に合わせて一定の間隔で行う。描画が遅れても線の速さが変わらない。
+       まとめて追いつくのは4本まで。止まっていた間の穴埋めで暴れさせない */
+    var tNow = performance.now() / 1000;
+    sampleAcc += lastTick ? Math.min(0.2, tNow - lastTick) : 1 / SR;
+    lastTick = tNow;
+    for (var g2 = 0; g2 < 4 && sampleAcc >= 1 / SR; g2++){
+      pushSample();
+      sampleAcc -= 1 / SR;
+    }
+    if (sampleAcc > 4 / SR) sampleAcc = 0;
+
+    /* 絵そのものを息づかせる。canvasには触れず、外から拡大と明るさだけ与える。
+       振れ幅は控えめに。聞き流しの画面で揺れ続けると目が疲れる */
+    if (!reduceMotion){
+      var st = document.documentElement.style;
+      st.setProperty('--breath', (1 + envFast * 0.055).toFixed(4));
+      st.setProperty('--glow',   (0.88 + envFast * 0.42).toFixed(4));
+      drawWaves(waveRGB);
+    }
+    var u = trackProgress();
+    if (u >= 0) setAccent(u >= ACCENT_IN && u < ACCENT_OUT);
+
+    var lb = window.__livingBG;
+    if (!lb || u < 0) return;
+    /* 画像として持ち帰る間だけ、段階を触らない(2026-09-18 高尾さん指示)。
+       ここは毎フレーム段階を曲の進みへ寄せているので、外から飽和(完成した姿)に
+       据えても、次のフレームで曲の位置へ引き戻されてしまう */
+    if (shotFreeze) return;
+    /* 大枠は曲の進み。音の強さは、そのまわりで少し前後させるだけにする。
+       崩れ始めてからは音で引き戻さない(散っていく流れを乱さないため) */
+    var sway = u < 0.85 ? (envSlow - 0.30) * 0.9 : 0;
+    var target = Math.max(0, Math.min(14.4, phaseFor(u) + sway));
+    try {
+      var cur = lb.phase;
+      /* 普段はゆっくり追う。早送りや巻き戻しで大きく飛んだときだけ速く追いつく
+         (実測: 3%ずつだと85%へ飛ばしても数秒変化が見えず「変わらない」と感じる) */
+      var gap = Math.abs(target - cur);
+      lb.phase = cur + (target - cur) * (gap > 0.8 ? 0.14 : 0.03);
+      /* 表情は毎回送る。背景の読み込みは後回しにされるので、
+         曲を描き始めた時点ではまだ窓口が無いことがある。
+         色は曲を通してゆっくり回す。どちらへ回るかは曲ごと。
+         一度に動く量がごく小さいので、変わったことに気づかないまま変わる */
+      /* 波の形を、曲の進みに合わせてゆっくり呼吸させる。
+         色も同じ波に乗せて回すので、形が広がるときに色も移ろう */
+      if (motion){
+        var br = Math.sin(u * motion.waveBreath * 6.2831853);
+        waveShape.ampT = motion.waveAmp * (1 + br * 0.26);          // 目標
+        waveShape.ampK += (waveShape.ampT - waveShape.ampK) * 0.02;  // ゆっくり寄せる
+        waveShape.br = br; waveShape.u = u; waveShape.has = true;
+        /* 色も同じ呼吸に乗せるが、系統から外れない幅にとどめる */
+        if (baseHex) waveRGB = rgbOf(shiftHue(baseHex, motion.hueDir * 12 * br));
+        waveShape.rgb = waveRGB.join(',');   // 調整用。見た目には関係しない
+      }
+      if (motion && lb.setMotion){
+        lb.setMotion({
+          spin: motion.spin, tilt: motion.tilt, swellAmp: motion.swellAmp,
+          swellRate: motion.swellRate, scale: motion.scale,
+          hue: motion.hueFrom + motion.hueDir * HUE_SPAN * u
+        });
+      }
+    } catch (e) {}
+  }
+
+  function render(t){
+    current = t;
+    /* 波長は曲ごとに決め、曲の中では動かさない(滑らかさを保つため) */
+    var m0 = motionFor(t);
+    waveShape.lamK = m0.waveLam;
+    /* 波の見せ方も、ここ(暗転の最中)でだけ入れ替える。
+       曲の途中で塗り方が変わると、その瞬間に波が飛んで見える */
+    waveStyle = m0.waveStyle || 'water';
+    waveShape.style = waveStyle;        // 調整用。見た目には関係しない
+    /* 生態系を種に戻し、この曲の表情に入れ替える。
+       前の曲の終わりの姿を引きずらせない */
+    accentOn = false;
+    motion = motionFor(t);
+    try {
+      if (window.__livingBG){
+        window.__livingBG.setWeather('none');
+        /* 前の曲の終わり(散って消えた状態)から続けて、散った粒が集まり始める */
+        window.__livingBG.phase = 6.4;
+        /* 球そのものを、この曲の地形で作り直す。暗転の最中に行うので、
+           明けたときに前の曲の球が残っていることがない */
+        if (window.__livingBG.setBiomeBias) window.__livingBG.setBiomeBias(biomeBiasFor(t));
+        window.__livingBG.setMotion({
+          spin: motion.spin, tilt: motion.tilt, swellAmp: motion.swellAmp,
+          swellRate: motion.swellRate, scale: motion.scale, hue: motion.hueFrom
+        });
+      }
+    } catch (e) {}
+    var col = trackColor(t);
+    baseHex = col;
+    waveRGB = rgbOf(col);                                 // 波も同じ色で鳴る
+    document.documentElement.style.setProperty('--c', col);
+
+    /* ジャケット。無い曲のほうが多いので、あるときだけ出す。
+       読み込めなかった場合も黙って引っ込める(壊れた枠を見せない) */
+    if (t.artwork_url){
+      artImg.src = t.artwork_url;
+      artImg.alt = (t.title || '') + ' のジャケット';
+      artBtn.hidden = false;
+    } else {
+      artBtn.hidden = true;
+      artImg.removeAttribute('src');
+    }
+    artFull.hidden = true;
+
+    /* 歌詞。添えられた曲だけボタンを出す。曲が変わったら閉じる。
+       勝手に開くと、聞き流したい人の画面を文字で埋めてしまう */
+    var hasLyrics = !!(t.lyrics && t.lyrics.trim());
+    btnLyr.hidden = !hasLyrics;
+    lyrBody.textContent = hasLyrics ? t.lyrics.trim() : '';
+    document.getElementById('lyrHead').textContent =
+      t.lyrics_lang ? '詞 ／ ' + t.lyrics_lang : '詞 ／ LYRICS';
+    showLyrics(false);
+
+    var shelf = [t.axis_label_ja, t.mode_label_ja, t.mode_label_en].filter(Boolean).join(' · ');
+    if (t.also_on) shelf += '  ＋' + t.also_on.mode_label_ja;
+    document.getElementById('npShelf').textContent = shelf;
+    var titleEl = document.getElementById('npTitle');
+    titleEl.textContent = '';
+    if (!DEMO && t.id){
+      var tl = document.createElement('a');
+      tl.className = 'np-title-link';
+      tl.href = 't/' + t.id + '.html';
+      tl.textContent = t.title || '';
+      titleEl.appendChild(tl);
+    } else {
+      titleEl.textContent = t.title || '';
+    }
+
+    var npTg = document.getElementById('npTagline');
+    npTg.textContent = t.tagline || '';
+    npTg.hidden = !t.tagline;
+
+    var by = document.getElementById('npBy');
+    by.textContent = 'by ' + (t.artist_name || 'unknown') + ' ';
+    var href = t.artist_link || t.source_url;
+    if (href){
+      var a = document.createElement('a');
+      /* 同じタブで開くと再生が止まる。作者への動線が「聞くのをやめる」に化ける */
+      a.href = href; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = '↗'; a.setAttribute('aria-label', '作者のページを新しいタブで開く');
+      by.appendChild(a);
+    }
+    document.getElementById('npMeta').textContent =
+      [t.genre, (t.languages || []).join(' / ')].filter(Boolean).join('  ·  ');
+
+    /* 空に浮かぶものを曲ごとに変える(2026-09-16 高尾さん指摘)。
+       素材は銀河・地球・月・太陽・土星の5つ。以前は「静なら月・動なら太陽」の2択で、
+       同じ門の中では何曲流れても空が変わらなかった。
+       静かな棚は月・地球・銀河、動く棚は太陽・土星・銀河を軸にし、
+       どれになるかは曲名から決める(同じ曲なら毎回同じ空) */
+    try {
+      if (window.__livingBG && window.__livingBG.setCelestial){
+        var sky = t.axis === 'sei' ? ['moon', 'earth', 'galaxy'] : ['sun', 'saturn', 'galaxy'];
+        window.__livingBG.setCelestial(sky[hashOf((t.title || '') + '@' + (t.id || '')) % sky.length]);
+      }
+    } catch (e) {}
+
+    /* 球の中心に宿る絵(2026-09-17 高尾さん指示)。
+       曲ページから指定して来た、その曲のあいだだけジャケットを中心に置く。
+       次の曲へ進んだ後と、棚から入った聞き流しは今までどおりAN。
+       ジャケットの無い曲を指定された場合も、黙ってANのままにする。 */
+    try {
+      if (window.__livingBG && window.__livingBG.setCenterImage){
+        var mine = (centerArtId !== null && t.id === centerArtId && !!t.artwork_url);
+        window.__livingBG.setCenterImage(mine ? t.artwork_url : null);
+        if (!mine) centerArtId = null;   // 一度離れたら、巡って戻っても出さない
+      }
+    } catch (e) {}
+
+    /* ロック画面・イヤホン操作に曲名と作者名を出す。
+       画面を見ない使い方なので、これが無いと体験が成立しない */
+    if ('mediaSession' in navigator){
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: t.title || '', artist: t.artist_name || '', album: 'Open Gate Sutra',
+        /* ロック画面にジャケットを出す。画面を見ない使い方でも、
+           いま何が鳴っているかが一目で分かる */
+        artwork: t.artwork_url
+          ? [{ src: t.artwork_url, sizes: '512x512', type: 'image/jpeg' }]
+          : []
+      });
+      navigator.mediaSession.setActionHandler('play',  function(){ audio.play(); });
+      navigator.mediaSession.setActionHandler('pause', function(){ audio.pause(); });
+      navigator.mediaSession.setActionHandler('nexttrack', next);
+      // イヤホンのボタンや通知領域からも送れるようにする
+      navigator.mediaSession.setActionHandler('previoustrack', prev);
+    }
+
+    tickText.textContent = t.an_comment
+      ? t.an_comment + (t.tagline ? '　この曲は、' + t.tagline + '。' : '')
+      : (t.good_points || '');
+    if (ticker.classList.contains('on')) restartFlow();
+  }
+
+  function restartFlow(){
+    tickText.style.animation = 'none';
+    void tickText.offsetWidth;          // 再流し
+    tickText.style.animation = '';
+  }
+
+  function preloadNext(){
+    var n = queue[(pos + 1) % queue.length];
+    if (n && n.audio_url) pre.src = n.audio_url;
+  }
+
+  /* 曲が変わる合図。絵を闇へ沈め、暗いうちに姿と色を入れ替えて、また現れさせる */
+  var swapTimer = 0, swapEndTimer = 0;
+  function swapDark(after){
+    var root = document.documentElement;
+    root.classList.add('swap');
+    /* 前の暗転が残したタイマーも止める。止めないと、新しい暗転が途中で明るく戻る
+       (実測: 1.8秒のはずが1.05秒で戻っていた。2026-09-16) */
+    clearTimeout(swapTimer); clearTimeout(swapEndTimer);
+    swapTimer = setTimeout(function(){
+      try { after(); } finally {
+        swapEndTimer = setTimeout(function(){ root.classList.remove('swap'); }, 400);
+      }
+    }, 1400);
+  }
+
+  function go(i){
+    swapDark(function(){ render(queue[i]); });
+    audio.src = queue[i].audio_url;
+    audio.play().catch(function(){
+      say('Tap play to continue.<br>再生ボタンを押してください。');
+    });
+    preloadNext();
+    updateNav();
+  }
+
+  function next(){
+    if (!queue.length) return;
+    pos += 1;
+    if (pos >= queue.length){
+      /* 一周したら並べ替える。ただし戻れる履歴は保つ。
+         並べ替えた瞬間に「前へ」が別の曲を指すと、聴き手の記憶と食い違う */
+      queue = shuffle(queue); pos = 0;
+    }
+    go(pos);
+  }
+
+  /* 前へ戻る。曲の途中なら、まず頭出しにする。
+     音楽を聴く道具はどれもこう振る舞うので、説明が要らない */
+  var HEAD_SEC = 3;
+  function prev(){
+    if (!queue.length) return;
+    if (audio.currentTime > HEAD_SEC && !audio.paused){
+      audio.currentTime = 0;
+      return;
+    }
+    if (pos <= 0){                 // 先頭なら、その曲の頭へ戻すだけ
+      audio.currentTime = 0;
+      return;
+    }
+    pos -= 1;
+    go(pos);
+  }
+
+  /* 先頭にいるときだけ「前へ」を鈍らせる。押せるが、行き先が無いことを示す */
+  function updateNav(){
+    var b = document.getElementById('btnPrev');
+    if (b) b.classList.toggle('dim', pos <= 0);
+  }
+
+  /* 開発用: ?demo=1 で手元の音源を使う。
+     同一オリジンなのでCORSの制約を受けず、音の解析と絵の連動をすぐ確かめられる。
+     本番は常にAPIから引く(この分岐に入らない)。 */
+  var DEMO = (new URLSearchParams(location.search)).get('demo') === '1';
+
+  function fetchTracks(axis){
+    if (DEMO){
+      // 開発中は書き換えるたびに読み直したいので、毎回ちがう印をつける
+      return fetch('src/js/demo-tracks.json?t=' + Date.now())
+        .then(function(r){ return r.json(); })
+        .then(function(list){
+          return { items: list.filter(function(t){ return t.axis === axis; }) };
+        });
+    }
+    var ctrl = new AbortController();
+    var timer = setTimeout(function(){ ctrl.abort(); }, TIMEOUT);
+    return fetch(API + axis, { signal: ctrl.signal })
+      .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); });
+  }
+
+  function start(axis){
+    say('Loading…');
+    fetchTracks(axis)
+      .then(function(d){
+        var items = (d.items || []).filter(function(t){ return t.audio_url; });
+        if (!items.length){
+          say('<b>This shelf is not playing yet.</b><br>' +
+              'この棚はまだ鳴りません。音源の公開準備が整うまで、もう少しお待ちください。');
+          return;
+        }
+        queue = shuffle(items); pos = -1;
+        gates.style.display = 'none';
+        np.classList.add('on');
+        document.querySelector('.stage').classList.add('playing');
+        say('');
+        next();     // 門を押した操作が起点なので、自動再生の制限に触れない
+      })
+      .catch(function(){
+        say('<b>Could not reach the hall.</b><br>つながりませんでした。時間をおいてお試しください。');
+      });
+  }
+
+  [].forEach.call(gates.querySelectorAll('.gate'), function(g){
+    g.addEventListener('click', function(){ start(g.dataset.axis); });
+  });
+
+  function showLyrics(on){
+    lyr.hidden = !on;
+    btnLyr.setAttribute('aria-pressed', String(!!on));
+    btnLyr.setAttribute('aria-label', on ? '歌詞を隠す' : '歌詞を表示する');
+  }
+  btnLyr.addEventListener('click', function(){ showLyrics(lyr.hidden); });
+
+  /* ══════════════════════════════════════════════════════════════
+     いま鳴っている世界を、正方形の画像にして持ち帰る(2026-09-18 高尾さん指示)
+     別の絵を作るのではなく、画面に出ている二枚の canvas をそのまま重ねる。
+     見ている世界と、持ち帰る画像が食い違わないようにするため。
+
+     取り出せるのは、ジャケットに crossorigin を付けてあるから(2026-09-17)。
+     付いていない画像を一枚でも描くと canvas が汚れ、書き出せなくなる。
+     ══════════════════════════════════════════════════════════════ */
+  var SHOT = 1080;                     // 書き出す一辺(SNSで縮まない大きさ)
+
+  /* 画面のどこを正方形に切り取るか。
+     living-bg は絵の中心を横63%・縦50%(細い画面では横50%・縦44%)に置く。
+     そこを正方形の真ん中に据えるので、画面では右寄りの球が中央に収まる。
+     波は同じ座標系の別の一枚なので、まったく同じ所を切れば重なりが保たれる。
+
+     切り取りは画面より広く取る(2026-09-18 高尾さん指示)。
+     五線の波は画面の高さ47〜93%にあるので、球のまわりだけを狭く切ると
+     波が枠の外へ出てしまい、OGSらしさが画像から消える。
+     画面の外まで切ると、その分は何も描かれていないので地の色が出る。
+     もともと闇の絵なので継ぎ目は見えず、球のまわりに余白が生まれる。
+
+     切り取りの中心は、球の中心より少し下に置く。こうすると球が画の上寄りに、
+     波が下半分に収まり、いちばん下の帯に文字を置いても球に掛からない。 */
+  function shotCrop(cv){
+    var mobile = window.innerWidth < 760;
+    var w = cv.width, h = cv.height;
+    var cx = w * (mobile ? 0.50 : 0.63);
+    var cy = h * (mobile ? 0.50 : 0.56);
+    var half = Math.min(w, h) * 0.56;              // 画面より一回り広く
+    return { x: cx - half, y: cy - half, s: half * 2 };
+  }
+
+  /* 一行に収まるよう字を詰める。収まらなければ末尾を…にする */
+  function fitText(c, text, px, maxW, min){
+    var size = px;
+    while (size > min){
+      c.font = size + 'px ' + FONT_JA;
+      if (c.measureText(text).width <= maxW) return size;
+      size -= 1;
+    }
+    c.font = min + 'px ' + FONT_JA;
+    while (text.length > 4 && c.measureText(text + '…').width > maxW) {
+      text = text.slice(0, -1);
+    }
+    return min;
+  }
+  var FONT_JA = '"Shippori Mincho","Hiragino Mincho ProN",serif';
+  var FONT_EN = '"Cormorant Garamond",Georgia,serif';
+
+  function buildShot(){
+    var out = document.createElement('canvas');
+    out.width = out.height = SHOT;
+    var c = out.getContext('2d');
+    var t = current || {};
+
+    // ① 地の色。画面の body と同じ
+    c.fillStyle = '#04060b';
+    c.fillRect(0, 0, SHOT, SHOT);
+
+    // ② 背景の絵。画面と同じ濃さ(0.80)で重ねる
+    var bg = document.getElementById('living-bg');
+    if (bg && bg.width){
+      var r = shotCrop(bg);
+      c.save();
+      c.globalAlpha = 0.80;
+      c.drawImage(bg, r.x, r.y, r.s, r.s, 0, 0, SHOT, SHOT);
+      c.restore();
+    }
+
+    // ③ 波。背景と同じ所を切るので、重なりが画面のまま保たれる
+    var wv = document.getElementById('waves');
+    if (wv && wv.width){
+      var r2 = shotCrop(wv);
+      c.drawImage(wv, r2.x, r2.y, r2.s, r2.s, 0, 0, SHOT, SHOT);
+    }
+
+    /* ④ 周辺減光。四隅をわずかに落として目を中央へ集める。
+       前は四隅を82%まで落としていて、波まで沈んでいた(2026-09-18 実測)。
+       絵を殺さない程度に留める */
+    var vg = c.createRadialGradient(SHOT / 2, SHOT / 2, SHOT * 0.34,
+                                    SHOT / 2, SHOT / 2, SHOT * 0.80);
+    vg.addColorStop(0, 'rgba(3,5,10,0)');
+    vg.addColorStop(1, 'rgba(3,5,10,.46)');
+    c.fillStyle = vg;
+    c.fillRect(0, 0, SHOT, SHOT);
+
+    /* ⑤ 文字の下地。
+       前は下48%を最大94%の黒で覆っていた。五線の波はちょうどそこ(画面の高さ
+       47〜93%)にあるため、波がまるごと塗り潰されていた(2026-09-18 高尾さん指摘)。
+       下地は下端の帯だけに狭め、濃さも抑える。波の上に字が乗る形にする。 */
+    var scTop = SHOT * 0.70;
+    var sc = c.createLinearGradient(0, scTop, 0, SHOT);
+    sc.addColorStop(0,    'rgba(3,5,10,0)');
+    sc.addColorStop(0.42, 'rgba(3,5,10,.46)');
+    sc.addColorStop(1,    'rgba(3,5,10,.86)');
+    c.fillStyle = sc;
+    c.fillRect(0, scTop, SHOT, SHOT - scTop);
+
+    var pad = Math.round(SHOT * 0.068);
+    var maxW = SHOT - pad * 2;
+    var y = SHOT - pad;
+    c.textAlign = 'left';
+    c.textBaseline = 'alphabetic';
+
+    /* 字に影を敷く。下地を薄くしたぶん、波と重なっても読めるようにする */
+    c.shadowColor = 'rgba(3,5,10,.85)';
+    c.shadowBlur = Math.round(SHOT * 0.018);
+
+    // OGSの印(いちばん下)
+    c.font = '300 ' + Math.round(SHOT * 0.022) + 'px ' + FONT_EN;
+    c.fillStyle = 'rgba(141,130,109,.92)';
+    c.fillText('OPEN GATE SUTRA'.split('').join(' '), pad, y);
+    y -= Math.round(SHOT * 0.048);
+
+    /* 題名と作者は一行にまとめる。行数を減らしたぶん、絵が見える面が広がる */
+    var head = (t.title || '') + (t.artist_name ? '　／　' + t.artist_name : '');
+    if (head){
+      var sz2 = fitText(c, head, Math.round(SHOT * 0.034), maxW, 16);
+      c.font = sz2 + 'px ' + FONT_JA;
+      c.fillStyle = 'rgba(217,196,154,.88)';
+      c.fillText(head, pad, y);
+      y -= Math.round(sz2 * 1.80);
+    }
+
+    /* ANの一言。この画像の主役なので、いちばん大きく置く。
+       長い一言は字を詰めて一行に収める(折り返すと絵を覆いすぎる) */
+    if (t.tagline){
+      var line = t.tagline + '。';
+      var sz3 = fitText(c, line, Math.round(SHOT * 0.058), maxW, 22);
+      c.font = sz3 + 'px ' + FONT_JA;
+      c.fillStyle = '#e9dcba';
+      c.fillText(line, pad, y);
+      /* 「この曲は、」の前置きは置かない(2026-09-18 高尾さん指示)。
+         一言だけが立っているほうが強い */
+    }
+    c.shadowBlur = 0;
+    return out;
+  }
+
+  /* 画像に入れる差し色は、形のあるものから選ぶ(2026-09-18 高尾さん指示)。
+     曲ごとの差し色は10種あるが、雪・星・雨・電子は粒が細かく、
+     画像にすると見分けがつかなかった(実測: 雪の曲で一粒も判別できず)。
+     蝶・小魚・桜・泡・波紋・落葉は形があるので、縮めても何が舞っているか分かる。
+
+     押すたびに、その中から無作為に選ぶ(2026-09-18 高尾さん指示)。
+     曲ごとに固定していたときは、105曲のうち27曲(26%)が波紋になり偏っていた。
+     無作為にすれば偏りが消えるうえ、同じ曲でも押すたびに違う絵が出るので、
+     「良いのが出るまで粘る」楽しみが生まれる。 */
+  var SHOT_ACCENT = {
+    sei: ['sakura', 'bubbles', 'ripple'],      // 静: 桜・泡・波紋
+    do:  ['butterfly', 'leaves', 'fish']       // 動: 蝶・落葉・小魚
+  };
+  function shotAccentFor(track){
+    var list = SHOT_ACCENT[track.axis === 'do' ? 'do' : 'sei'];
+    return list[Math.floor(Math.random() * list.length) % list.length];
+  }
+
+  /* 画像を撮る間だけ、球を完成した姿(飽和)に据える(2026-09-18 高尾さん指示)。
+     普段の球は曲の進みに連れて育ち、崩れ、散る。押した時が散った後だと、
+     持ち帰る画像に何も写っていない。シェアする絵は、いつ押しても完成形にする。
+     終わったら元の段階へ戻すので、聞いている画面は乱れない。 */
+  var shotFreeze = false;
+  var SATURATION = 12.0;              // 12 % 8 = 4 = 飽和
+
+  function withFullSphere(fn){
+    var lb = window.__livingBG;
+    if (!lb){ return Promise.resolve(fn()); }
+    var before = lb.phase;
+    shotFreeze = true;
+    lb.phase = SATURATION;
+
+    /* 差し色(蝶・小魚・桜・泡・波紋・雪・星・雨・落葉・電子)も一緒に出す
+       (2026-09-18 高尾さん指示)。普段は曲の後半にだけ現れるので、
+       前半で押すと画像に何も舞っていない。
+       setWeather は始まりの時刻を6秒前に置く作りなので、撒き直した粒も
+       「すでに舞っている」状態で現れる。曲ごとに何が出るかは決まっている。 */
+    var kind = current ? shotAccentFor(current) : null;
+    if (kind){ try { lb.setWeather(kind); } catch (e) {} }
+
+    /* 球も差し色も自前の描画の輪で動くので、据えた姿が絵に出るまで待つ。
+       待たずに撮ると、前の段階のままの球と、撒いたばかりの粒が写る */
+    return new Promise(function(res){
+      var k = 0;
+      (function step(){
+        if (++k < 14) return requestAnimationFrame(step);
+        var r = fn();
+        lb.phase = before;            // 元の段階へ戻す
+        // 差し色も元へ。曲の後半なら出したまま、前半なら消す
+        try { lb.setWeather(accentOn && current ? accentFor(current) : 'none'); } catch (e) {}
+        shotFreeze = false;
+        res(r);
+      })();
+    });
+  }
+
+  var btnShot = document.getElementById('btnShot');
+
+  function saveShot(){
+    var label = btnShot.textContent;
+    btnShot.disabled = true;
+    btnShot.textContent = 'Saving…';
+    /* 字の形が揃うのを待つ。待たずに書くと、本文が明朝になる前に
+       別の字で焼き付いてしまうことがある */
+    var wait = (document.fonts && document.fonts.ready) || Promise.resolve();
+    wait.then(function(){
+      return withFullSphere(buildShot);       // 球を完成させてから撮る
+    }).then(function(out){
+      out.toBlob(function(blob){
+        if (!blob){ done('Save failed'); return; }
+        var t = current || {};
+        var name = ('ogs-' + (t.id || '') + '-' + (t.title || 'track'))
+          .replace(/[^\w぀-ヿ一-鿿-]+/g, '_').slice(0, 60) + '.png';
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        // すぐ消すと保存が間に合わない端末がある
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 20000);
+        done('Saved ✓');
+      }, 'image/png');
+    }).catch(function(){ done('Save failed'); });
+
+    function done(msg){
+      btnShot.textContent = msg;
+      setTimeout(function(){ btnShot.textContent = label; btnShot.disabled = false; }, 1800);
+    }
+  }
+  btnShot.addEventListener('click', saveShot);
+  /* 調整・検証用。見た目には関係しない。
+     保存と同じ道(球を完成させてから撮る)を通すので、
+     ここで確かめた絵と、実際に落ちる画像が食い違わない */
+  window.__ogsShot = function(){ return withFullSphere(buildShot); };
+
+  /* ジャケットは押した人だけに大きく見せる。画面を占める見せ方はしない */
+  artImg.addEventListener('error', function(){ artBtn.hidden = true; });
+  artBtn.addEventListener('click', function(){
+    if (!artImg.getAttribute('src')) return;
+    artFullImg.src = artImg.src;
+    artFullImg.alt = artImg.alt;
+    artFull.hidden = false;
+  });
+  artFull.addEventListener('click', function(){ artFull.hidden = true; });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && !artFull.hidden) artFull.hidden = true;
+  });
+
+  anBtn.addEventListener('click', function(){
+    var on = ticker.classList.toggle('on');
+    document.querySelector('.stage').classList.toggle('an-on', on);
+    anBtn.setAttribute('aria-pressed', String(on));
+    ticker.classList.remove('open','paused');
+    if (on) restartFlow();
+  });
+
+  /* 流れる文字は読みにくい。タップで止めて全文を出す */
+  var track = document.getElementById('tickTrack');
+  function toggleOpen(){
+    var open = ticker.classList.toggle('open');
+    ticker.classList.toggle('paused', open);
+  }
+  track.addEventListener('click', toggleOpen);
+  track.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleOpen(); }
+  });
+
+  document.getElementById('btnNext').addEventListener('click', next);
+  document.getElementById('btnPrev').addEventListener('click', prev);
+
+  /* 手を離して聴いている画面なので、鍵盤でも送れるようにする。
+     入力欄にいるときは邪魔しない */
+  document.addEventListener('keydown', function(e){
+    if (!np.classList.contains('on')) return;
+    var t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (e.key === 'ArrowRight'){ e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft'){ e.preventDefault(); prev(); }
+    else if (e.key === ' '){ e.preventDefault(); if (audio.paused) audio.play(); else audio.pause(); }
+  });
+  document.getElementById('btnPlay').addEventListener('click', function(){
+    if (audio.paused){ audio.play(); } else { audio.pause(); }
+  });
+  document.getElementById('btnGate').addEventListener('click', function(){
+    audio.pause();
+    np.classList.remove('on');
+    showLyrics(false);
+    artFull.hidden = true;
+    document.querySelector('.stage').classList.remove('playing','an-on');
+    document.documentElement.style.setProperty('--breath','1');
+    document.documentElement.style.setProperty('--glow','1');
+    if (wctx) wctx.clearRect(0, 0, ww, wh);
+    accentOn = false;
+    motion = null;
+    try {
+      if (window.__livingBG){
+        window.__livingBG.setWeather('none');
+        window.__livingBG.setMotion({ spin:1, tilt:1, swellAmp:1, swellRate:1,
+                                      scale:1, hue:0 });
+      }
+    } catch (e) {}
+    ticker.classList.remove('on','open');
+    anBtn.setAttribute('aria-pressed','false');
+    gates.style.display = '';
+    say('Choose a gate, and it plays.<br><span style="color:var(--washi)">門を選ぶと、流れ始めます。</span>');
+    try { if (window.__livingBG) window.__livingBG.resume(); } catch(e){}
+  });
+
+  audio.addEventListener('ended', next);
+  audio.addEventListener('play',  function(){
+    document.getElementById('btnPlay').textContent = 'Pause';
+    startVisual();          // 自動再生が拒まれた場合もここを通る
+    say('');
+  });
+  audio.addEventListener('pause', function(){
+    document.getElementById('btnPlay').textContent = 'Play';
+    if (wctx) wctx.clearRect(0, 0, ww, wh);
+  });
+  /* 1曲読めなくても止めない */
+  audio.addEventListener('error', function(){ if (queue.length) next(); });
+
+  /* 曲のページから「聴く」で来たとき。その曲から始め、続けて同じ棚を流す。
+     曲ごとに再生画面を作らず、この画面ひとつに集める。直す場所を一か所に保つため */
+  var TRACK_API = API.replace('/api/shelf/', '/api/track/');
+  function startWithTrack(id){
+    /* この1曲だけ、球の中心をジャケットにする(2026-09-17 高尾さん指示)。
+       ここから同じ棚へ流れ続けるので、次の曲に移った時点でANへ戻す。
+       SNSへ出す画面は「自分の曲」のときだけ、という境目をはっきりさせるため */
+    centerArtId = id;
+    say('Loading…');
+    fetch(TRACK_API + id)
+      .then(function(r){ if (!r.ok) throw r.status; return r.json(); })
+      .then(function(t){
+        return fetchTracks(t.axis).then(function(d){
+          var rest = (d.items || []).filter(function(x){ return x.audio_url && x.id !== t.id; });
+          queue = [t].concat(shuffle(rest)); pos = -1;
+          gates.style.display = 'none';
+          np.classList.add('on');
+          document.querySelector('.stage').classList.add('playing');
+          say('');
+          next();
+        });
+      })
+      .catch(function(code){
+        say(code === 404
+          ? '<b>Not in the hall.</b><br>この曲は堂にありません。門を選ぶと、流れ始めます。'
+          : '<b>Could not reach the hall.</b><br>つながりませんでした。時間をおいてお試しください。');
+      });
+  }
+
+  var params = new URLSearchParams(location.search);
+  var trackParam = params.get('track');
+  var q = params.get('gate');
+  if (q === 'dou') q = 'do';
+  var fromTrack = trackParam && /^\d+$/.test(trackParam) && !DEMO;
+  var fromGate = (q === 'sei' || q === 'do');
+  if (fromTrack || fromGate){
+    /* ホームの門から来た人に、ここでもう一度門を見せない。
+       棚の一覧を取り終えるまで門が出たままで、「また門が出た」と見えていた(2026-09-16) */
+    gates.style.display = 'none';
+    say('Opening…<br>門を開いています。');
+  }
+  if (fromTrack) startWithTrack(+trackParam);
+  else if (fromGate) start(q);
+})();
+</script>
+</body>
+</html>

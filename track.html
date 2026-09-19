@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track — Open Gate Sutra</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="description" content="A Heart Sutra remix in the Open Gate Sutra hall.">
+
+<meta property="og:type" content="music.song">
+<meta property="og:site_name" content="Open Gate Sutra">
+<meta property="og:title" content="Open Gate Sutra">
+<meta property="og:description" content="A Heart Sutra remix in the Open Gate Sutra hall.">
+<meta property="og:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="src/js/consent.js" defer></script>
+<style>
+  :root{
+    --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
+    --shu:#b23a2e; --ruri:#6fa8d6; --nibi:#8d826d;
+    --hair:rgba(217,196,154,.18); --hair2:rgba(217,196,154,.34);
+    --ja:"Shippori Mincho","Hiragino Mincho ProN",serif;
+    --en:"Cormorant Garamond",Georgia,serif;
+    --ui:ui-sans-serif,-apple-system,"Hiragino Sans",sans-serif;
+    --c:var(--washi);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#03050a;color:var(--washi);font-family:var(--ui);
+    -webkit-font-smoothing:antialiased;line-height:1.7}
+  a{color:inherit}
+  /* 生きた背景アートはここでは使わない。曲と曲評を読むための静かな面にする。
+     真っ黒にせず、上からごく淡い藍を落として奥行きだけ残す */
+  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(120% 80% at 50% -10%, rgba(19,26,38,.9), transparent 62%)}
+
+  header{position:relative;z-index:1;display:flex;align-items:center;gap:16px;
+    padding:16px 22px;border-bottom:1px solid var(--hair)}
+  .brand{display:flex;align-items:center;gap:12px;text-decoration:none;flex:1;min-width:0}
+  .logo{display:flex;font-family:var(--ja);font-size:11px;line-height:1.15;
+    color:var(--washi-hi);border:1px solid var(--hair2);padding:4px 5px;letter-spacing:.06em}
+  .logo span{display:block}
+  .brand h2{font-family:var(--en);font-size:14px;font-weight:400;letter-spacing:.2em;
+    margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand small{display:block;font-family:var(--ja);font-size:9.5px;color:var(--nibi);
+    letter-spacing:.14em;margin-top:2px}
+  .back{font-family:var(--en);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--nibi);text-decoration:none;white-space:nowrap}
+  .back:hover{color:var(--washi)}
+
+  main{position:relative;z-index:1;max-width:56rem;margin:0 auto;padding:38px 22px 90px}
+
+  /* ── 見出し。ジャケットと曲名を並べる ── */
+  .head{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}
+  .art{flex:none;width:200px;height:200px;border:1px solid var(--hair2);
+    background:rgba(13,18,32,.5);overflow:hidden;display:none}
+  .art.on{display:block}
+  .art img{width:100%;height:100%;object-fit:cover;display:block}
+  .head-text{flex:1;min-width:min(100%,17rem)}
+  .shelf{font-family:var(--en);font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--c);margin:0}
+  .shelf .ja{font-family:var(--ja);letter-spacing:.16em}
+  h1{font-family:var(--ja);font-size:clamp(23px,4.4vw,34px);font-weight:500;
+    color:var(--washi-hi);margin:12px 0 0;line-height:1.4;text-wrap:balance}
+  /* 曲の一言。曲名の次に目に入る位置に、曲名より静かな調子で置く */
+  .tagline{font-family:var(--ja);font-size:clamp(15px,2.3vw,18px);color:var(--washi-hi);
+    margin:12px 0 0;line-height:1.7;letter-spacing:.08em;opacity:.92}
+  .tagline::before{content:"";display:inline-block;width:18px;height:1px;background:currentColor;
+    opacity:.5;vertical-align:.32em;margin-right:10px}
+  .by{font-size:14px;margin:14px 0 0}
+  .by a{color:var(--ruri);text-decoration:none;border-bottom:1px solid var(--hair2)}
+  .by a:hover{border-bottom-color:var(--ruri)}
+  .meta{font-size:11.5px;color:var(--nibi);margin:8px 0 0;letter-spacing:.06em}
+
+  /* ── 聴く ── */
+  .play{display:flex;align-items:center;gap:14px;margin:24px 0 0;flex-wrap:wrap}
+  .btn{background:rgba(13,18,32,.6);border:1px solid var(--hair2);color:var(--washi);
+    font:inherit;font-size:12px;letter-spacing:.12em;padding:11px 22px;cursor:pointer;
+    text-decoration:none;display:inline-block;backdrop-filter:blur(3px)}
+  .btn:hover{border-color:var(--washi)}
+  .btn:focus-visible{outline:2px solid var(--ruri);outline-offset:2px}
+  .btn.main{border-color:var(--c);color:var(--washi-hi)}
+  audio{width:100%;margin-top:16px;filter:invert(.86) hue-rotate(180deg) saturate(.3)}
+
+  /* ── ANの語り ── */
+  .an{margin:44px 0 0;border-left:2px solid var(--shu);padding:4px 0 4px 20px}
+  .an-head{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+  .an-head img{width:34px;height:34px;border-radius:50%;object-fit:cover;
+    border:1px solid var(--hair2)}
+  .an-head b{font-family:var(--en);font-size:10.5px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--nibi);font-weight:400}
+  .an p{font-family:var(--ja);font-size:15px;line-height:2.05;color:var(--washi-hi);margin:0}
+  .an .an-end{margin-top:12px;letter-spacing:.06em}
+  .an .good{font-size:13.5px;color:var(--washi);margin-top:16px;opacity:.86}
+  .an .good::before{content:"GOOD ";font-family:var(--en);font-size:9.5px;
+    letter-spacing:.2em;color:var(--nibi)}
+
+  /* ── 歌詞 ── */
+  .lyr{margin:38px 0 0;border-top:1px solid var(--hair);padding-top:18px}
+  .lyr summary{cursor:pointer;font-family:var(--en);font-size:10.5px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--nibi);list-style:none;padding:4px 0}
+  .lyr summary::-webkit-details-marker{display:none}
+  .lyr summary::before{content:"＋ "}
+  .lyr[open] summary::before{content:"− "}
+  .lyr summary:hover{color:var(--washi)}
+  .lyr-body{font-family:var(--ja);font-size:14px;line-height:2.1;white-space:pre-wrap;
+    margin-top:14px;color:var(--washi)}
+
+  /* ── 足元 ── */
+  .foot{margin:52px 0 0;border-top:1px solid var(--hair);padding-top:22px;
+    display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .foot .grow{flex:1}
+  .share{font-size:11.5px;color:var(--nibi)}
+  .share b{color:var(--washi);font-weight:400}
+
+  .state{font-family:var(--ja);font-size:14px;color:var(--nibi);line-height:2;
+    padding:60px 0;text-align:center}
+  .state b{display:block;font-family:var(--en);font-size:12px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--washi);margin-bottom:10px}
+
+  @media (max-width:620px){
+    .art{width:132px;height:132px}
+    .head{gap:18px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="./">
+    <span class="logo" aria-hidden="true"><span>開</span><span>羯</span><span>諦</span><span>経</span></span>
+    <span><h2>Open Gate Sutra<small>ひらかれた般若心経の家</small></h2></span>
+  </a>
+  <a class="back" href="archive.html">← Archive</a>
+</header>
+
+<main id="main">
+  <p class="state" id="state"><b>Opening…</b>読み込んでいます。</p>
+
+  <article id="track" hidden>
+    <div class="head">
+      <div class="art" id="art"><img id="artImg" alt=""></div>
+      <div class="head-text">
+        <p class="shelf" id="shelf"></p>
+        <h1 id="title"></h1>
+        <p class="tagline" id="tagline" hidden></p>
+        <p class="by" id="by"></p>
+        <p class="meta" id="meta"></p>
+      </div>
+    </div>
+
+    <div class="play">
+      <a class="btn main" id="btnPlay" href="listen.html">▶ 聴く ／ Play</a>
+      <a class="btn" id="btnShelf" href="listen.html">この棚を流す ／ Play the shelf</a>
+    </div>
+
+    <section class="an" id="an" hidden>
+      <div class="an-head">
+        <img src="assets/an/face-human.webp" alt="" width="34" height="34">
+        <b>AN's review ／ ANの曲評</b>
+      </div>
+      <p id="anComment"></p>
+      <p class="an-end" id="anEnd" hidden></p>
+      <p class="good" id="anGood" hidden></p>
+    </section>
+
+    <details class="lyr" id="lyr" hidden>
+      <summary id="lyrHead">Lyrics ／ 詞</summary>
+      <div class="lyr-body" id="lyrBody"></div>
+    </details>
+
+    <div class="foot">
+      <a class="btn" id="btnArtist" href="#" hidden>作者の場所へ ／ Visit the artist</a>
+      <a class="btn" id="btnSource" href="#" target="_blank" rel="noopener noreferrer" hidden>出どころ ／ Source</a>
+      <span class="grow"></span>
+      <span class="share">このページの住所が、あなたの曲の住所です。<b id="shareUrl"></b></span>
+    </div>
+  </article>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  /* 手元(localhost)で開いたときは手元のAPIを見る。本番では本番のAPI(投稿ページと同じ書き方) */
+  var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://127.0.0.1:5001'
+    : 'https://open-gate-sutra-production.up.railway.app';
+  var API = API_BASE + '/api/track/';
+  var state = document.getElementById('state');
+  var box = document.getElementById('track');
+
+  function say(head, body){
+    state.innerHTML = '<b>' + head + '</b>' + body;
+    state.hidden = false;
+  }
+
+  var id = (new URLSearchParams(location.search)).get('id');
+  if (!id || !/^\d+$/.test(id)){
+    say('No track given.', '曲が指定されていません。<br><a href="archive.html">アーカイブへ戻る</a>');
+    return;
+  }
+
+  fetch(API + id)
+    .then(function(r){ if (!r.ok) throw r.status; return r.json(); })
+    .then(render)
+    .catch(function(code){
+      if (code === 404) say('Not in the hall.',
+        'この曲は堂にありません。取り下げられたか、まだ公開されていません。<br><a href="archive.html">アーカイブへ戻る</a>');
+      else say('Could not reach the hall.', 'つながりませんでした。時間をおいてお試しください。');
+    });
+
+  var SHELF_COLOR = {focus:'#5b8fb9', relax:'#9ec9dd', energy:'#c1483a', inspire:'#dd8a5c'};
+
+  function render(t){
+    document.documentElement.style.setProperty('--c', SHELF_COLOR[t.mode] || 'var(--washi)');
+
+    /* 共有したときに中身が伝わるよう、題と説明を書き換える。
+       ただしSNSの見出しはページを読み込まずに集めるので、
+       ここで書き換えても共有カードには反映されない。
+       共有カードは tools/build_track_pages.py が曲ごとの静的ページを作って対応する。 */
+    var who = t.artist_name || 'unknown';
+    document.title = t.title + ' — ' + who + ' ｜ Open Gate Sutra';
+
+    if (t.artwork_url){
+      var img = document.getElementById('artImg');
+      img.src = t.artwork_url;
+      img.alt = t.title + ' のジャケット';
+      img.onerror = function(){ document.getElementById('art').classList.remove('on'); };
+      document.getElementById('art').classList.add('on');
+    }
+
+    var shelf = [t.axis_label_ja, t.mode_label_ja, t.mode_label_en].filter(Boolean);
+    document.getElementById('shelf').innerHTML =
+      '<span class="ja">' + shelf.slice(0,2).join(' · ') + '</span> · ' + (shelf[2] || '');
+    document.getElementById('title').textContent = t.title || '';
+    var tg = document.getElementById('tagline');
+    tg.textContent = t.tagline || '';
+    tg.hidden = !t.tagline;
+
+    var by = document.getElementById('by');
+    by.textContent = 'by ';
+    /* 名義は「この名前の曲の一覧」へ渡す。名前は手入力の文字列なので、
+       個人のページではなく絞り込み表示として扱う */
+    var a = document.createElement('a');
+    a.href = 'archive.html?artist=' + encodeURIComponent(who);
+    a.textContent = who;
+    by.appendChild(a);
+    if (t.country) by.appendChild(document.createTextNode('  ' + t.country));
+
+    document.getElementById('meta').textContent =
+      [t.genre, t.subgenre, (t.languages || []).join(' / ')].filter(Boolean).join('  ·  ');
+
+    /* 聴くときは、聞き流し画面でビジュアルと一緒に */
+    document.getElementById('btnPlay').href = 'listen.html?track=' + t.id;
+    if (t.axis) document.getElementById('btnShelf').href = 'listen.html?gate=' + t.axis;
+
+    if (t.an_comment || t.good_points){
+      document.getElementById('an').hidden = false;
+      document.getElementById('anComment').textContent = t.an_comment || '';
+      /* 曲評は結びの一文を含めずに保存している。選ばれた一言をここで結びとして足す */
+      var anEnd = document.getElementById('anEnd');
+      anEnd.textContent = (t.an_comment && t.tagline) ? 'この曲は、' + t.tagline + '。' : '';
+      anEnd.hidden = !(t.an_comment && t.tagline);
+      if (t.good_points){
+        var g = document.getElementById('anGood');
+        g.textContent = t.good_points;
+        g.hidden = false;
+      }
+    }
+
+    if (t.lyrics && t.lyrics.trim()){
+      document.getElementById('lyr').hidden = false;
+      document.getElementById('lyrBody').textContent = t.lyrics.trim();
+      if (t.lyrics_lang)
+        document.getElementById('lyrHead').textContent = 'Lyrics ／ 詞 · ' + t.lyrics_lang;
+    }
+
+    if (t.artist_link){
+      var b = document.getElementById('btnArtist');
+      b.href = t.artist_link;
+      b.target = '_blank';
+      b.rel = 'noopener noreferrer';
+      /* どこへ出るのかを見せる。行き先の分からないリンクは押せない */
+      try { b.textContent = '作者の場所へ ／ ' + new URL(t.artist_link).hostname.replace(/^www\./, ''); }
+      catch (e) {}
+      b.hidden = false;
+    }
+    if (t.source_url){
+      var sc = document.getElementById('btnSource');
+      sc.href = t.source_url;
+      try { sc.textContent = '出どころ ／ ' + new URL(t.source_url).hostname.replace(/^www\./, ''); }
+      catch (e) {}
+      sc.hidden = false;
+    }
+
+    document.getElementById('shareUrl').textContent =
+      location.origin + location.pathname + '?id=' + t.id;
+
+    state.hidden = true;
+    box.hidden = false;
+  }
+})();
+</script>
+</body>
+</html>

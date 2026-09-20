@@ -179,6 +179,8 @@
     <div class="foot">
       <a class="btn" id="btnArtist" href="#" hidden>作者の場所へ ／ Visit the artist</a>
       <a class="btn" id="btnSource" href="#" target="_blank" rel="noopener noreferrer" hidden>出どころ ／ Source</a>
+      <a class="btn" id="btnX" href="#" target="_blank" rel="noopener noreferrer" hidden>𝕏 ポストする</a>
+      <button class="btn" type="button" id="btnCopy" hidden>文章をコピー</button>
       <span class="grow"></span>
       <span class="share">このページの住所が、あなたの曲の住所です。<b id="shareUrl"></b></span>
     </div>
@@ -301,8 +303,42 @@
       sc.hidden = false;
     }
 
-    document.getElementById('shareUrl').textContent =
-      location.origin + location.pathname + '?id=' + t.id;
+    /* 貼るべき住所は t/<id>.html。この track.html?id= はSNSのカードを持たない。
+       カードに曲名とジャケットを出すために静的ページを別に作ってある */
+    var pageUrl = location.origin +
+      location.pathname.replace(/[^/]*$/, '') + 't/' + t.id + '.html';
+    document.getElementById('shareUrl').textContent = pageUrl;
+
+    /* ── 曲を渡せるようにする(2026-09-20 高尾さん指示) ──
+       ここを見ているのが作った人か聴き手かは分からないので、
+       「私の曲」とは書かず、ANの曲評を引用する形にしてある。
+       tools/build_track_pages.py の share_text() と同じ形を保つこと。
+       Xは日本語を2文字と数える(上限280)。引用を45字に抑えて収めている */
+    function buildShare(quoteLen){
+      var head = t.tagline ? t.tagline + '\n\n' : '';
+      var body = '';
+      var c = (t.an_comment || '').replace(/^[…\s]+/, '');
+      if (c) {
+        var n = quoteLen || 45;
+        body = 'ANの曲評 ──' + c.slice(0, n) + (c.length > n ? '…' : '') + '\n\n';
+      }
+      return head + body + t.title + ' ／ ' + (t.artist_name || 'unknown') + '\n' +
+             pageUrl + '\n\n#般若心経 #HeartSutra #OpenGateSutra';
+    }
+
+    var bx = document.getElementById('btnX');
+    bx.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(buildShare());
+    bx.hidden = false;
+
+    var bc = document.getElementById('btnCopy');
+    bc.hidden = false;
+    bc.addEventListener('click', function(){
+      /* コピーする方は字数の縛りが無いので、曲評を長めに渡す */
+      navigator.clipboard.writeText(buildShare(130)).then(function(){
+        bc.textContent = 'コピーしました ✓';
+        setTimeout(function(){ bc.textContent = '文章をコピー'; }, 1800);
+      }).catch(function(){ bc.textContent = 'コピーできませんでした'; });
+    });
 
     state.hidden = true;
     box.hidden = false;

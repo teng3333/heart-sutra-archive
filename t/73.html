@@ -163,10 +163,25 @@
       <div class="foot">
       <a class="btn" href="https://suno.com/@rockingtreble058" target="_blank" rel="noopener noreferrer">作者の場所へ ／ suno.com</a>
       <a class="btn" href="https://suno.com/song/44ea685c-c092-4277-b566-6fe661ecb2ab" target="_blank" rel="noopener noreferrer">出どころ ／ suno.com</a>
+      <a class="btn" href="https://twitter.com/intent/tweet?text=%E9%9B%BB%E5%AD%90%E3%81%AE%E6%B5%B7%E3%81%B8%E6%BA%B6%E3%81%91%E3%81%A6%E3%81%84%E3%81%8F%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C%0A%0AAN%E3%81%AE%E6%9B%B2%E8%A9%95%20%E2%94%80%E2%94%80%E3%81%B5%E3%81%85%E3%82%93%E3%80%82%E8%AA%AD%E7%B5%8C%E3%82%92%E3%81%93%E3%82%93%E3%81%AA%E9%A2%A8%E3%81%AB%E6%96%99%E7%90%86%E3%81%99%E3%82%8B%E3%81%AA%E3%82%93%E3%81%A6%E3%80%81%E9%9D%A2%E7%99%BD%E3%81%84%E3%81%98%E3%82%83%E3%81%AA%E3%81%84%E3%80%822%E3%82%B9%E3%83%86%E3%83%83%E3%83%97%E3%81%AE%E5%BF%83%E5%9C%B0%E8%89%AF%E3%81%84%E3%83%AA%E3%82%BA%E3%83%A0%E3%81%A8%E3%80%81%E6%B5%AE%E9%81%8A%E2%80%A6%0A%0A%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C%20Free-Garage%20JAZZ%20%EF%BC%8F%20TENG3%0Ahttps%3A//teng3333.github.io/heart-sutra-archive/t/73.html%0A%0A%23%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C%20%23HeartSutra%20%23OpenGateSutra" target="_blank" rel="noopener noreferrer">𝕏 ポストする</a>
+      <button class="btn" type="button" data-share-text="電子の海へ溶けていく般若心経&#10;&#10;ANの曲評 ──ふぅん。読経をこんな風に料理するなんて、面白いじゃない。2ステップの心地良いリズムと、浮遊感のあるシンセのレイヤー。硬質なビートの上で、声は残響となって空間に溶けていくわね。まるで機械の回路を祈りが巡っているみたい。身体を揺らしながら思考を解放していく……「ひ…&#10;&#10;般若心経 Free-Garage JAZZ ／ TENG3&#10;https://teng3333.github.io/heart-sutra-archive/t/73.html&#10;&#10;#般若心経 #HeartSutra #OpenGateSutra">文章をコピー</button>
       <span class="grow"></span>
       <span class="share">このページの住所が、あなたの曲の住所です。<b>https://teng3333.github.io/heart-sutra-archive/t/73.html</b></span>
       </div>
 </article>
 </main>
+<script>
+/* コピーの釦だけは、押されたときに動くものが要る。
+   本文はJavaScriptが無くても読めるままにしてある */
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-share-text]');
+  if (!b) return;
+  navigator.clipboard.writeText(b.getAttribute('data-share-text')).then(function () {
+    var o = b.textContent;
+    b.textContent = 'コピーしました ✓';
+    setTimeout(function () { b.textContent = o; }, 1800);
+  }).catch(function () { b.textContent = 'コピーできませんでした'; });
+});
+</script>
 </body>
 </html>

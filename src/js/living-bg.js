@@ -29,9 +29,10 @@ const ctx = cv.getContext('2d');
    この絵は部品ごとにグラデーションを作るので、数百の部品 × 毎秒60回ぶんの
    確保と破棄が続く。iOSはその嵐に耐えられずタブを落とす。
    絵そのものは変えず、負荷だけを下げる。まず面積。
-   DPR2 だと 780x1688、1.5 なら 585x1266 で、塗る画素が44%減る。 */
+   1.5 まで下げても、まだ落ちた(2026-09-21 高尾さん報告)。1 まで下げる。
+   iPhoneで 750x1624 → 375x812。DPR2 と比べて塗る画素が75%減る。 */
 const MOBILE = matchMedia('(max-width: 700px)').matches;
-const DPR = Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2);
+const DPR = Math.min(devicePixelRatio || 1, MOBILE ? 1 : 2);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let W, H, CX, CY, R, WFIELD = 1;
@@ -949,7 +950,7 @@ function rebuild(){
   // 成熟度で全体の密度が上がる(EVOは1.0〜1.55倍。性能のため上限を設ける)
   const M = maturity();
   const EVO = 1 + M * 0.55;
-  const N = Math.round(((MOBILE ? 130 : 210) + growth * (MOBILE ? 150 : 300)) * EVO);
+  const N = Math.round(((MOBILE ? 80 : 210) + growth * (MOBILE ? 90 : 300)) * EVO);
   const GA = Math.PI * (3 - Math.sqrt(5));
   nodes = [];
   for (let i = 0; i < N; i++){
@@ -999,7 +1000,7 @@ function rebuild(){
 
   // ── カオス層(参照画の「詰まった密度」へ) ──
   // 地表の苔・岩・下草ドット(球面を埋める微細テクスチャ)
-  const TN = Math.round((MOBILE ? 260 : 620) * (0.6 + growth*0.7) * EVO);
+  const TN = Math.round((MOBILE ? 150 : 620) * (0.6 + growth*0.7) * EVO);
   const GA2 = Math.PI * (3 - Math.sqrt(5));
   terrain = [];
   const tcols = [C.leafD, C.pine, C.leafG, C.burg, '70,74,84', '38,52,44'];
@@ -1011,7 +1012,7 @@ function rebuild(){
   }
   // 呼吸する赤い糸(現れては消えるカオスの網)
   chaosPairs = [];
-  const CPn = Math.round((MOBILE ? 16 : 34) * (0.5 + growth) * EVO * (1 + genome.chaosLv*0.8));
+  const CPn = Math.round((MOBILE ? 10 : 34) * (0.5 + growth) * EVO * (1 + genome.chaosLv*0.8));
   for (let k = 0; k < CPn; k++){
     const i = (Math.random()*nodes.length)|0, j = (Math.random()*nodes.length)|0;
     if (i !== j) chaosPairs.push([i, j, Math.random()*9, Math.random()]);
@@ -1028,7 +1029,7 @@ function rebuild(){
   floatRings = Array.from({length: 3 + Math.round(growth*3*EVO*genome.rarity.satellite)}, () => ({
     v: rnd3(), rr: 1.06 + Math.random()*0.14, s: 0.5+Math.random()*0.8, ph: Math.random()*9 }));
   // 内部を漂う胞子
-  spores = Array.from({length: MOBILE ? 24 : 54}, () => {
+  spores = Array.from({length: MOBILE ? 14 : 54}, () => {
     const v = rnd3(), rad = 0.35 + Math.random()*0.6;
     return { x: v[0]*rad, y: v[1]*rad, z: v[2]*rad,
       dr: (Math.random()-.5)*0.0004, ph: Math.random()*9 };
@@ -1037,7 +1038,7 @@ function rebuild(){
   // ── 蔓(生長し・絡まり・ノードを繋ぐ) ──
   // 近いノード対を選び、球面に沿った弧を"生長"させる。途中に葉。
   vines = [];
-  const VN = Math.round((MOBILE ? 34 : 78) * (0.4 + growth) * EVO);   // 増量
+  const VN = Math.round((MOBILE ? 20 : 78) * (0.4 + growth) * EVO);   // 増量
   for (let k = 0; k < VN; k++){
     const i = (Math.random()*nodes.length)|0;
     // iの近傍からjを選ぶ(絡まり=近距離)
@@ -1068,7 +1069,7 @@ function rebuild(){
     '三','世','仏','阿','耨','藐','大','神','咒','上','等','能','除','真','実','虚',
     '説','曰','羯','諦','僧','婆','訶'];
   kanji = [];
-  const KN = Math.round((MOBILE ? 24 : 52) * (0.5 + growth*0.6) * EVO);  // 大幅増
+  const KN = Math.round((MOBILE ? 14 : 52) * (0.5 + growth*0.6) * EVO);  // 大幅増
   for (let k = 0; k < KN; k++){
     const v = rnd3();
     kanji.push({ x:v[0], y:v[1], z:v[2],
@@ -1574,7 +1575,7 @@ function drawANCenter(t, aBase, facePos, eyes, mouth){
 }
 
 /* ── 背景静物 ── */
-const stars = Array.from({length: MOBILE ? 50 : 90}, () => ({
+const stars = Array.from({length: MOBILE ? 28 : 90}, () => ({
   x: Math.random(), y: Math.random(), s: Math.random()*1.4+.3,
   tw: Math.random()*Math.PI*2 }));
 const leaves = Array.from({length: MOBILE ? 4 : 7}, () => ({
@@ -1598,6 +1599,7 @@ const FRAME_MS = MOBILE ? 33 : 0;
 let __lastDraw = 0;
 
 function draw(now){
+  if (typeof __ctxLost !== 'undefined' && __ctxLost) return;   // 中身が捨てられている間は描かない
   if (FRAME_MS && now - __lastDraw < FRAME_MS){
     if (!REDUCED && !__stopped && !__hidden) requestAnimationFrame(draw);
     return;

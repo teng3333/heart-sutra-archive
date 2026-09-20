@@ -26,7 +26,7 @@
 <script src="src/js/consent.js" defer></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
-<script src="src/js/living-bg.js?v=20" defer></script>
+<script src="src/js/living-bg.js?v=21" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -356,7 +356,22 @@
   }
 
   /* 鳴らす操作は一本にまとめる。拒まれたら札を現実へ戻す */
+  /* ── 音の出口を起こす ──────────────────────────────────────
+     波の解析のために createMediaElementSource を使っている。これを使うと、
+     曲の音はすべて AudioContext を通る。iOSは中断やメモリ逼迫でこの文脈を
+     勝手に止める。止まると、要素は再生しているのに音が出ない
+     (2026-09-21 高尾さん報告: 落ちたあと次の曲へ進むのに無音。
+      再生を押しても戻らず、門へ戻って選び直すと鳴る)。
+
+     resume() は「操作の直後」でないと効かない。startVisual() は play の
+     出来事から呼ばれる=操作の外なので、そこでの resume は通らなかった。
+     押された場所から直に呼ぶ。 */
+  function wakeAudio(){
+    try { if (actx && actx.state === 'suspended') actx.resume(); } catch (e) {}
+  }
+
   function togglePlay(){
+    wakeAudio();
     if (audio.paused){ audio.play().catch(function(){ syncPlayBtn(); }); }
     else { audio.pause(); }
   }
@@ -1598,6 +1613,7 @@
   var unlocked = false, unlocking = false;
 
   function unlockAudio(){
+    wakeAudio();
     if (unlocked) return;
     unlocked = true; unlocking = true;
     var release = function(){ unlocking = false; };
@@ -1610,7 +1626,7 @@
   }
 
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){
-    g.addEventListener('click', function(){ unlockAudio(); start(g.dataset.axis); });
+    g.addEventListener('click', function(){ unlockAudio(); wakeAudio(); start(g.dataset.axis); });
   });
 
   function showLyrics(on){
@@ -2109,7 +2125,7 @@
     if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleOpen(); }
   });
 
-  document.getElementById('btnNext').addEventListener('click', next);
+  document.getElementById('btnNext').addEventListener('click', function(){ wakeAudio(); next(); });
   document.getElementById('btnPrev').addEventListener('click', prev);
 
   /* 手を離して聴いている画面なので、鍵盤でも送れるようにする。
@@ -2146,6 +2162,11 @@
     gates.style.display = '';
     say('Choose a gate, and it plays.<br><span style="color:var(--washi)">門を選ぶと、流れ始めます。</span>');
     try { if (window.__livingBG) window.__livingBG.resume(); } catch(e){}
+  });
+
+  /* タブに戻ったときにも一度試す。操作ではないので通らないこともあるが害は無い */
+  document.addEventListener('visibilitychange', function(){
+    if (!document.hidden) wakeAudio();
   });
 
   audio.addEventListener('ended', next);

@@ -1585,8 +1585,32 @@
       });
   }
 
+  /* ── 門を押したその場で、音を解錠する ──────────────────────────
+     スマホは「操作の直後」でないと音を出させない。
+     門を押してから棚を取り終えるまで3〜6秒かかるので、取得を待ってから
+     play() を呼ぶ頃には、その操作の効力が切れている。だから押しても鳴らず、
+     「再生ボタンを押してください」まで行っていた(2026-09-21 高尾さん報告)。
+
+     押されたその瞬間に、無音を一度だけ鳴らして止める。
+     以後この audio は自由に鳴らせるようになる。本当の曲は go() が差し込む。
+     無音は0.02秒のWAVを文字として持つ。読みに行かないので待たない。 */
+  var SILENCE = 'data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+  var unlocked = false, unlocking = false;
+
+  function unlockAudio(){
+    if (unlocked) return;
+    unlocked = true; unlocking = true;
+    var release = function(){ unlocking = false; };
+    try {
+      audio.src = SILENCE;
+      var pr = audio.play();
+      if (pr && pr.then) pr.then(function(){ audio.pause(); release(); }, release);
+      else { audio.pause(); release(); }
+    } catch (e) { release(); }
+  }
+
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){
-    g.addEventListener('click', function(){ start(g.dataset.axis); });
+    g.addEventListener('click', function(){ unlockAudio(); start(g.dataset.axis); });
   });
 
   function showLyrics(on){
@@ -1949,7 +1973,7 @@
     btnShare.disabled = true;
     btnShare.textContent = 'Preparing…';
     function back(msg, hold){
-      btnShare.textContent = msg;
+      btnShare.textContent = msg || label;   // 空にすると釦が消えたように見える
       shotBeast = null;
       setTimeout(function(){
         btnShare.textContent = label; btnShare.disabled = false;
@@ -1961,7 +1985,12 @@
       var file = null;
       try { file = new File([shot.blob], shot.name, { type: 'image/png' }); } catch (e) {}
 
-      if (file && navigator.canShare && navigator.canShare({ files: [file] })){
+      /* OSの共有板が役に立つのは、指で触る端末のとき。
+         macOSのSafariも navigator.share を持っているが、開く板に X が無く、
+         メール・メッセージ・AirDrop しか出てこない(2026-09-21 高尾さん報告)。
+         パソコンでは、画像を保存して文章を写し、Xの投稿画面へ案内するほうが早い。 */
+      var handheld = matchMedia('(pointer: coarse)').matches;
+      if (handheld && file && navigator.canShare && navigator.canShare({ files: [file] })){
         return navigator.share({ files: [file], text: text })
           .then(function(){ back(hit || 'Shared ✓', hit ? 2800 : 1800); })
           .catch(function(){ back(''); });      // 取り消しただけかもしれない。責めない
@@ -2121,11 +2150,13 @@
 
   audio.addEventListener('ended', next);
   audio.addEventListener('play',  function(){
+    if (unlocking) return;          // 解錠の無音。画面には出さない
     syncPlayBtn();
     startVisual();
     say('');
   });
   audio.addEventListener('pause', function(){
+    if (unlocking) return;          // 解錠の無音。画面には出さない
     syncPlayBtn();
     if (wctx) wctx.clearRect(0, 0, ww, wh);
   });

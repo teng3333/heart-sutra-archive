@@ -1986,6 +1986,11 @@
 
   function shareShot(){
     var label = btnShare.textContent;
+    var t = current || {};
+    var text = shotText(t);
+    var tweet = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+    var handheld = matchMedia('(pointer: coarse)').matches;
+
     btnShare.disabled = true;
     btnShare.textContent = 'Preparing…';
     function back(msg, hold){
@@ -1995,36 +2000,55 @@
         btnShare.textContent = label; btnShare.disabled = false;
       }, hold || 1800);
     }
-    makeShot().then(function(shot){
-      var text = shotText(shot.track);
+
+    var shot = makeShot();        // 押されたその場で走らせ始める
+
+    /* ── パソコン ──────────────────────────────────────────
+       Xは文字とURLしか受け取れない。画像は人が貼るしかない。
+       ならばせめて「貼るだけ」で済むように、画像をクリップボードに載せる。
+       保存させて、あとで自分で探して引きずり込ませるのは共有ではない
+       (2026-09-21 高尾さん指摘)。
+
+       Safariはクリップボードへの書き込みを「操作の直後」しか許さない。
+       絵ができるのを待ってから書くと、その頃には効力が切れている。
+       そこで ClipboardItem に「あとで届く画像」を約束のまま渡す。
+       これはSafariが認めている書き方。 */
+    if (!handheld && window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+      var onClip = navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': shot.then(function(s){ return s.blob; }) })
+      ]).then(function(){ return true; }, function(){ return false; });
+
+      return shot.then(function(s){
+        return onClip.then(function(ok){
+          var hit = shotBeast ? shotBeast.ja + ' ✦ ' : '';
+          if (!ok) download(s.blob, s.name);        // 載せられなければ保存に戻す
+          say('<b>' + hit + (ok ? '画像をコピーしました。' : '画像を保存しました。') + '</b><br>' +
+              '<a href="' + tweet + '" target="_blank" rel="noopener noreferrer">𝕏 を開く</a> → ' +
+              (ok ? '投稿欄で貼り付け（⌘V / Ctrl+V）。' : '保存した画像を投稿欄へ。'));
+          back(hit || (ok ? 'Copied ✓' : 'Saved ✓'), hit ? 3200 : 2600);
+        });
+      }).catch(function(){ back('Share failed'); });
+    }
+
+    /* ── スマホ ────────────────────────────────────────────
+       OSの共有板なら、画像も文章も一度にXへ渡る。ここが本命の道 */
+    return shot.then(function(s){
       var hit = shotBeast ? shotBeast.ja + ' ✦ ' : '';
       var file = null;
-      try { file = new File([shot.blob], shot.name, { type: 'image/png' }); } catch (e) {}
+      try { file = new File([s.blob], s.name, { type: 'image/png' }); } catch (e) {}
 
-      /* OSの共有板が役に立つのは、指で触る端末のとき。
-         macOSのSafariも navigator.share を持っているが、開く板に X が無く、
-         メール・メッセージ・AirDrop しか出てこない(2026-09-21 高尾さん報告)。
-         パソコンでは、画像を保存して文章を写し、Xの投稿画面へ案内するほうが早い。 */
-      var handheld = matchMedia('(pointer: coarse)').matches;
-      if (handheld && file && navigator.canShare && navigator.canShare({ files: [file] })){
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })){
         return navigator.share({ files: [file], text: text })
           .then(function(){ back(hit || 'Shared ✓', hit ? 2800 : 1800); })
           .catch(function(){ back(''); });      // 取り消しただけかもしれない。責めない
       }
 
-      /* パソコン。画像を保存し、文章を写し、行き先を出す */
-      download(shot.blob, shot.name);
-      var copied = navigator.clipboard
-        ? navigator.clipboard.writeText(text).then(function(){ return true; }, function(){ return false; })
-        : Promise.resolve(false);
-      return copied.then(function(ok){
-        say('<b>' + hit + '画像を保存しました。</b><br>' +
-            (ok ? '文章はコピー済みです。' : '') +
-            '<a href="https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) +
-            '" target="_blank" rel="noopener noreferrer">𝕏 を開く</a>' +
-            ' → 画像を貼り付けてください。');
-        back(hit || 'Saved ✓', hit ? 2800 : 1800);
-      });
+      // 共有板を持たない端末。保存して、行き先だけ出す
+      download(s.blob, s.name);
+      say('<b>' + hit + '画像を保存しました。</b><br>' +
+          '<a href="' + tweet + '" target="_blank" rel="noopener noreferrer">𝕏 を開く</a>' +
+          ' → 保存した画像を投稿欄へ。');
+      back(hit || 'Saved ✓', hit ? 2800 : 2600);
     }).catch(function(){ back('Share failed'); });
   }
   btnShare.addEventListener('click', shareShot);

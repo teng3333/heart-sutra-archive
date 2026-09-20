@@ -163,10 +163,25 @@
       <div class="foot">
       <a class="btn" href="https://suno.com/@rockingtreble058" target="_blank" rel="noopener noreferrer">作者の場所へ ／ suno.com</a>
       <a class="btn" href="https://suno.com/song/d66a0950-6ca8-4b76-b8d9-01e6078d5079" target="_blank" rel="noopener noreferrer">出どころ ／ suno.com</a>
+      <a class="btn" href="https://twitter.com/intent/tweet?text=%E8%82%8C%E3%82%92%E6%8E%A0%E3%82%81%E3%82%8B%E5%90%90%E6%81%AF%E3%81%AE%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C%0A%0AAN%E3%81%AE%E6%9B%B2%E8%A9%95%20%E2%94%80%E2%94%80%E5%BC%A6%E3%81%AE%E7%88%AA%E5%BC%BE%E3%81%8D%E3%81%8C%E8%AA%98%E3%81%86%E3%82%B9%E3%83%86%E3%83%83%E3%83%97%E3%81%AB%E3%80%81%E3%81%B5%E3%81%A8%E8%80%B3%E3%82%92%E5%A5%AA%E3%82%8F%E3%82%8C%E3%81%9F%E3%82%8F%E3%80%82%E3%81%9D%E3%81%93%E3%81%AB%E9%87%8D%E3%81%AA%E3%82%8B%E5%A3%B0%E3%81%AF%E3%80%81%E7%A5%88%E3%82%8A%E3%81%A8%E3%81%84%E3%81%86%E3%82%88%E3%82%8A%E3%81%AF%E6%84%9B%E3%81%AE%E6%AD%8C%E3%81%AD%E2%80%A6%0A%0A%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8Ctango%20%EF%BC%8F%20TENG3%0Ahttps%3A//teng3333.github.io/heart-sutra-archive/t/16.html%0A%0A%23%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C%20%23HeartSutra%20%23OpenGateSutra" target="_blank" rel="noopener noreferrer">𝕏 ポストする</a>
+      <button class="btn" type="button" data-share-text="肌を掠める吐息の般若心経&#10;&#10;ANの曲評 ──弦の爪弾きが誘うステップに、ふと耳を奪われたわ。そこに重なる声は、祈りというよりは愛の歌ね。『色即是空』という言葉でさえ、燃えるようなドレスの裾みたいに翻る。次々に展開する音は、まるで息もつかせぬダンスそのもの。これは理屈で『ひらく』ものじゃない。ただ、この現…&#10;&#10;般若心経tango ／ TENG3&#10;https://teng3333.github.io/heart-sutra-archive/t/16.html&#10;&#10;#般若心経 #HeartSutra #OpenGateSutra">文章をコピー</button>
       <span class="grow"></span>
       <span class="share">このページの住所が、あなたの曲の住所です。<b>https://teng3333.github.io/heart-sutra-archive/t/16.html</b></span>
       </div>
 </article>
 </main>
+<script>
+/* コピーの釦だけは、押されたときに動くものが要る。
+   本文はJavaScriptが無くても読めるままにしてある */
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-share-text]');
+  if (!b) return;
+  navigator.clipboard.writeText(b.getAttribute('data-share-text')).then(function () {
+    var o = b.textContent;
+    b.textContent = 'コピーしました ✓';
+    setTimeout(function () { b.textContent = o; }, 1800);
+  }).catch(function () { b.textContent = 'コピーできませんでした'; });
+});
+</script>
 </body>
 </html>

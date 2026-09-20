@@ -425,12 +425,15 @@
     </div>
   </section>
 
-  <section id="nine">
+  <!-- 読めるまでは枠ごと隠す(latest.js と同じ作法)。/api/archive は約3秒かかるので、
+       出しておくと見出しだけが空で立つ。noscript は枠の外に置いてある -->
+  <section id="nine" hidden>
     <div class="sec-head"><h3>AN's Three</h3><span>今日のAN三選</span></div>
-    <!-- 種火:高尾の84曲プレイリストから日替わり3曲を todays-nine.js が描画。本番は an_selections に接続 -->
+    <!-- 公開中の曲から日替わり3曲を todays-nine.js が描画。行き先は各曲のページ(t/<id>.html)。
+         以前はSUNOの84曲を手書きしていた(2026-09-20に廃止)。本番は an_selections に接続 -->
     <div class="nine" id="nine-grid"></div>
-    <noscript><p style="text-align:center;margin-top:34px"><a href="https://suno.com/playlist/5ae1adc6-893c-4fce-bfec-a0114e0bd925" style="color:inherit">Listen to the Heart Sutra playlist on SUNO →</a></p></noscript>
   </section>
+  <noscript><p style="text-align:center;margin-top:34px"><a href="listen.html?gate=all" style="color:inherit">Listen to every track in the Hall →</a></p></noscript>
 
   <!-- 堂に入ったばかりの投稿3件。latest.js が GET /api/latest を読んで描く。
        取れないときは hidden のまま(死んだ枠を見せない)。カバー画像は持たない -->
@@ -459,7 +462,7 @@
 </main>
 
 <a class="sticky-gate" id="stickyGate" href="submit.html" data-ogs-event="submit_open" data-ogs-placement="sticky"><b>渡</b>Cross the gate</a>
-<script src="src/js/todays-nine.js?v=3"></script>
+<script src="src/js/todays-nine.js?v=4"></script>
 <script src="src/js/latest.js?v=2"></script>
 <script src="src/js/home-listen.js?v=4"></script>
 <script>

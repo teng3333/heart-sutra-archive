@@ -130,8 +130,8 @@
       '#cookie-consent .cc-ja{display:none}#cookie-consent button{min-height:32px;padding:7px 9px}' +
       '#privacy-settings{left:8px;right:auto;bottom:8px;padding:7px 8px;font-size:8px}' +
       'html.ogs-consent-open #bgm-toggle{bottom:82px!important}' +
-      'html.ogs-consent-open #motion-toggle{bottom:118px!important}' +
-      'html.ogs-consent-open #art-link{bottom:154px!important}' +
+      'html.ogs-consent-open #motion-toggle{bottom:120px!important}' +
+      'html.ogs-consent-open #art-link{bottom:158px!important}' +
       'html.ogs-consent-open .sticky-gate{bottom:82px!important}}';
     document.head.appendChild(css);
   }

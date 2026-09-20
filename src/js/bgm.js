@@ -123,7 +123,12 @@
       '#bgm-toggle.on .dot{background:#b23a2e;box-shadow:0 0 6px rgba(178,58,46,.8)}' +
       '#bgm-toggle .now{max-width:15em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' +
       'text-transform:none;letter-spacing:.04em;color:#5c5442}' +
-      '@media (max-width:700px){#bgm-toggle .now{display:none}#bgm-toggle{left:auto;right:10px;bottom:10px;padding:7px 9px;font-size:9px}}';
+      /* 狭い画面では文字を畳み、小さな四角の印にする(2026-09-20 高尾さん指摘)。
+         右下に3つ並ぶ札が門の上に覆いかぶさっていた */
+      '@media (max-width:700px){#bgm-toggle .now,#bgm-toggle .txt{display:none}' +
+      '#bgm-toggle{left:auto;right:10px;bottom:10px;width:32px;height:32px;' +
+      'padding:0;gap:0;justify-content:center}' +
+      '#bgm-toggle .dot{width:8px;height:8px}}';
     document.head.appendChild(css);
 
     btn = document.createElement('button');
@@ -162,9 +167,12 @@
 
   function init() {
     buildUI();
-    // 以前OFFを選んだ人には鳴らさない(自動再生も操作待ちもしない)
-    if (getPref() === 'off') return;
-    play().then(armAutoStart);   // 自動再生を試し、拒否されたら操作待ちへ
+    /* 開いた途端に音を出さない(2026-09-20 高尾さん指示)。
+       以前は、最初の操作(スクロールや軽い触れ)を合図に鳴らし始めていた。
+       聴くつもりで来た人には良いが、そうでない人には驚きになる。
+       いまは釦を押した人にだけ鳴らす。
+       一度ONにした人は覚えているので、次からは開いた時に鳴る。 */
+    if (getPref() === 'on') play().then(armAutoStart);
   }
 
   if (document.readyState === 'loading') {

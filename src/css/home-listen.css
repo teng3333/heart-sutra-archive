@@ -8,9 +8,12 @@
 .home-listen-copy p span{color:var(--nibi);font:500 10px/1 var(--ja);letter-spacing:.18em}
 .home-listen-copy>small{display:block;margin-top:10px;color:var(--nibi);font:500 8px/1.65 var(--ui);letter-spacing:.1em;text-transform:uppercase}
 .home-listen-copy>small span{font-family:var(--ja);letter-spacing:.12em;text-transform:none}
-/* 門が3つになったので折り返しを許す(2026-09-19)。
-   静・動・全で 82px×3＋隙間となり、狭い枠では収まりきらないことがある */
-.home-mini-gates{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:flex-start;align-self:start;justify-self:end;gap:10px}
+/* 折り返しは許さない(2026-09-20 高尾さん指摘)。
+   一度は門が3つになる想定で wrap にしたが、いまは2つ(流・棚 / 素・渡)。
+   折り返すと枕の行の高さは固定なので、二段目がそのまま下へはみ出し、
+   次の節に重なる(実測: 320px幅で36pxはみ出していた)。
+   狭い画面では門そのものを小さくして、横一列を保つ。 */
+.home-mini-gates{display:flex;flex-wrap:nowrap;justify-content:flex-end;align-items:flex-start;align-self:start;justify-self:end;gap:10px}
 .home-mini-gate{position:relative;display:inline-block;flex:0 0 82px;width:82px;height:102px;padding:0;border:0;border-radius:45% 45% 3px 3px;background:linear-gradient(180deg,rgba(10,16,25,.96),rgba(4,7,12,.98));color:var(--washi-hi);font:inherit;text-align:center;text-decoration:none;cursor:pointer;perspective:520px;isolation:isolate}
 .home-mini-gate::before{content:"";position:absolute;inset:-3px;z-index:2;border:1px solid rgba(217,196,154,.42);border-radius:45% 45% 3px 3px;pointer-events:none}
 .home-mini-gate::after{content:"OPEN";position:absolute;inset:0;z-index:0;display:grid;place-items:center;color:rgba(111,168,214,.72);font:600 5px/1 var(--ui);letter-spacing:.18em;text-indent:.18em}
@@ -64,12 +67,27 @@
 @media (max-width:700px){
   .hero-inner{max-width:620px}
   .home-entry-row{grid-template-columns:1fr;margin-top:27px}
-  .home-listen-entry{grid-template-columns:minmax(108px,1fr) auto;grid-template-rows:88px minmax(40px,auto);gap:9px 10px;padding:12px 13px 10px}
+  .home-listen-entry{grid-template-columns:minmax(92px,1fr) auto;grid-template-rows:76px minmax(40px,auto);gap:9px 10px;padding:12px 13px 10px}
   .home-listen-copy b{font-size:17px}.home-listen-copy>small{font-size:7px}
-  .home-mini-gates{gap:8px}
-  .home-mini-gate{flex-basis:70px;width:70px;height:88px}.home-mini-gate b{font-size:24px}.home-mini-gate__door>span{font-size:6px}.home-mini-gate small{font-size:5px;margin-top:5px}.home-mini-gate__door::before,.home-mini-gate__door::after{background-position:11px 11px,28% 18%,0 0}.home-mini-gate__door::after{background-position:calc(100% - 11px) 11px,72% 18%,0 0}
+  .home-mini-gates{gap:7px}
+  .home-mini-gate{flex-basis:60px;width:60px;height:76px}.home-mini-gate b{font-size:21px;margin-top:6px}.home-mini-gate__door>span{font-size:5.5px}.home-mini-gate small{font-size:4.5px;margin-top:4px}.home-mini-gate__door::before,.home-mini-gate__door::after{background-position:11px 11px,28% 18%,0 0}.home-mini-gate__door::after{background-position:calc(100% - 11px) 11px,72% 18%,0 0}
   .home-playlist-status{align-items:flex-start;flex-direction:column;gap:2px}
-  .home-creator-entry{grid-template-columns:minmax(108px,1fr) auto;grid-template-rows:88px minmax(40px,auto);gap:9px 10px;padding:12px 13px 10px}.home-creator-copy b{font-size:14px}.home-creator-copy>small{font-size:7px}.home-creator-gates{gap:8px}.home-creator-flow{align-items:flex-start;flex-direction:column;gap:2px}
+  .home-creator-entry{grid-template-columns:minmax(92px,1fr) auto;grid-template-rows:76px minmax(40px,auto);gap:9px 10px;padding:12px 13px 10px}.home-creator-copy b{font-size:14px}.home-creator-copy>small{font-size:7px}.home-creator-gates{flex-wrap:nowrap;gap:7px}.home-creator-flow{align-items:flex-start;flex-direction:column;gap:2px}
   .home-secondary-gates{gap:18px;width:min(292px,100%);margin-top:0;padding-top:13px}.home-secondary-item{gap:8px}.home-mini-gate--secondary{flex-basis:80px;width:64px;height:80px}.home-secondary-copy>b{font-size:13px}.home-secondary-copy>span{font-size:7px}.home-secondary-copy>small{font-size:5px}
+}
+/* もっと狭い画面、あるいは端末側で文字を大きくしている場合。
+   枕の中の文字が伸びると、門の列が押されて折り返しの力がかかる。
+   ここでさらに一段小さくして、横一列を保てる余地を作る */
+@media (max-width:360px){
+  .home-listen-entry,.home-creator-entry{grid-template-columns:minmax(78px,1fr) auto;grid-template-rows:66px minmax(40px,auto);gap:8px 8px;padding:11px 11px 9px}
+  .home-mini-gates,.home-creator-gates{gap:6px}
+  .home-mini-gate{flex-basis:52px;width:52px;height:66px}
+  .home-mini-gate b{font-size:18px;margin-top:5px}
+  .home-mini-gate__door>span{font-size:5px;margin-top:2px}
+  .home-mini-gate small{font-size:4px;margin-top:3px}
+  .home-listen-copy b{font-size:15px}.home-creator-copy b{font-size:12.5px}
+  .home-secondary-gates{gap:14px;width:min(260px,100%)}
+  .home-mini-gate--secondary{flex-basis:72px;width:56px;height:72px}
+  .home-mini-gate--secondary b{font-size:19px}
 }
 @media (prefers-reduced-motion:reduce){.home-mini-gate__door::before,.home-mini-gate__door::after,.home-mini-gate__door>b,.home-mini-gate__door>span,.home-mini-gate__door>small{transition:none}}

@@ -504,26 +504,48 @@
            SITE + '/t/' + t.id + '.html\n\n' + TAGS;
   }
 
-  function landedHTML(t) {
+  /* 人に渡せるページ(t/<id>.html)は、15分ごとの作り直しでできる。
+     公開されてから、そのページができるまでに穴がある。
+     その間に住所を渡すと、受け取った人には404しか出ない。
+     渡す前に、本当にあるかどうかを確かめる(2026-09-20)。
+     確かめられなければ「無い」と見なす。壊れた住所を配るより良い。 */
+  function pageReady(id) {
+    return fetch('t/' + id + '.html', { method: 'HEAD' })
+      .then(function (r) { return r.ok; })
+      .catch(function () { return false; });
+  }
+
+  function landedHTML(t, ready) {
     var c = (t.an_comment || '').replace(/^[…\s]+/, '');
+    var acts = ready
+      ? '<a class="status-btn" href="' + SITE + '/t/' + t.id + '.html" ' +
+          'target="_blank" rel="noopener noreferrer">あなたの曲のページ</a>' +
+        '<a class="status-btn" id="shareX" href="#" target="_blank" rel="noopener noreferrer">𝕏 ポストする</a>' +
+        '<button class="status-btn" id="shareCopy" type="button">文章をコピー</button>'
+      : '<a class="status-btn" href="listen.html?track=' + t.id + '">いま聴く</a>';
+    var note = ready
+      ? 'もう二度と同じようには鳴らない一曲が、ANに聴かれました。<br>' +
+        'この住所が、あなたの曲の住所です。'
+      : 'もう二度と同じようには鳴らない一曲が、ANに聴かれました。<br>' +
+        '人に渡せるページは、いま作っています(15分ごとに作られます)。<br>' +
+        'できたら、この画面からもう一度確かめてください。';
     return '<div class="landed">' +
       '<p class="tagline">' + esc(t.tagline || t.title) + '</p>' +
       '<p class="song">' + esc(t.title) + ' ／ ' + esc(t.artist_name) + '</p>' +
       (c ? '<p class="quote">' + esc(c.slice(0, 130)) + (c.length > 130 ? '…' : '') + '</p>' : '') +
-      '<div class="acts">' +
-        '<a class="status-btn" href="' + SITE + '/t/' + t.id + '.html" ' +
-          'target="_blank" rel="noopener noreferrer">あなたの曲のページ</a>' +
-        '<a class="status-btn" id="shareX" href="#" target="_blank" rel="noopener noreferrer">𝕏 ポストする</a>' +
-        '<button class="status-btn" id="shareCopy" type="button">文章をコピー</button>' +
-      '</div>' +
-      '<p class="note">もう二度と同じようには鳴らない一曲が、ANに聴かれました。<br>' +
-      'この住所が、あなたの曲の住所です。</p>' +
+      '<div class="acts">' + acts + '</div>' +
+      '<p class="note">' + note + '</p>' +
       '</div>';
   }
 
   function showLanded(t) {
+    return pageReady(t.id).then(function (ready) { paintLanded(t, ready); });
+  }
+
+  function paintLanded(t, ready) {
     var out = document.getElementById('status-out');
-    out.innerHTML = landedHTML(t);
+    out.innerHTML = landedHTML(t, ready);
+    if (!ready) return;          // 渡す住所が無いので、共有の釦も出さない
     var sx = document.getElementById('shareX');
     if (sx) {
       sx.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText(t));

@@ -1630,7 +1630,34 @@
     c.fillStyle = vg;
     c.fillRect(0, 0, SHOT, SHOT);
 
-    /* ⑤ 文字の下地。
+    /* ⑤ 幻獣。当たった回だけ重なる。
+       周辺減光のあとに置く。先に置くと、輪がちょうど四隅にかかるので沈む。
+       字の下地より前に置くので、輪の下側は字の帯に隠れる。透かしなので良い */
+    if (shotBeast && shotBeast.img){
+      c.save();
+      c.globalAlpha = 0.42;
+      c.drawImage(shotBeast.img, 0, 0, SHOT, SHOT);
+      c.restore();
+
+      /* 何が出たのかを画像にも残す。貼られた先で「青龍が出た」と伝わる。
+         釦の手応えだけだと、画像を見返したとき何だったか分からない */
+      var bp = Math.round(SHOT * 0.068);
+      var by = bp + Math.round(SHOT * 0.030);
+      c.save();
+      c.shadowColor = 'rgba(3,5,10,.85)';
+      c.shadowBlur = Math.round(SHOT * 0.016);
+      c.textAlign = 'left';
+      c.font = Math.round(SHOT * 0.030) + 'px ' + FONT_JA;
+      c.fillStyle = 'rgba(233,220,186,.82)';
+      c.fillText(shotBeast.ja, bp, by);
+      var bw = c.measureText(shotBeast.ja).width;
+      c.font = '300 ' + Math.round(SHOT * 0.017) + 'px ' + FONT_EN;
+      c.fillStyle = 'rgba(217,196,154,.60)';
+      c.fillText('   ' + shotBeast.en.split('').join(' '), bp + bw, by);
+      c.restore();
+    }
+
+    /* ⑥ 文字の下地。
        前は下48%を最大94%の黒で覆っていた。五線の波はちょうどそこ(画面の高さ
        47〜93%)にあるため、波がまるごと塗り潰されていた(2026-09-18 高尾さん指摘)。
        下地は下端の帯だけに狭め、濃さも抑える。波の上に字が乗る形にする。 */
@@ -1692,6 +1719,48 @@
      曲ごとに固定していたときは、105曲のうち27曲(26%)が波紋になり偏っていた。
      無作為にすれば偏りが消えるうえ、同じ曲でも押すたびに違う絵が出るので、
      「良いのが出るまで粘る」楽しみが生まれる。 */
+  /* ── 幻獣(当たり) ───────────────────────────────────────────
+     撮った画像に、稀に幻獣の輪が透かしで重なる(2026-09-20 高尾さん指示)。
+     ガチャの当たりの手応えを作り、もう一度撮りたくさせるための仕掛け。
+
+     絵は中央が抜けた輪の構図なので、球を囲む額になる。
+     当たった1枚だけを読む(1枚あたり約500KB)。外れた回は何も読まない。
+
+     確率: 12回に1.4回ほど当たる。当たりの内訳は五行の5体が各19%、
+     黄龍だけ5%。全体で見ると黄龍は 0.6%(約170回に1回)の大当たり。 */
+  var BEAST_CHANCE = 0.12;
+  var BEASTS = [
+    { slug: 'seiryu', ja: '青龍', en: 'SEIRYU', w: 19 },   // 木
+    { slug: 'suzaku', ja: '朱雀', en: 'SUZAKU', w: 19 },   // 火
+    { slug: 'kirin',  ja: '麒麟', en: 'KIRIN',  w: 19 },   // 土
+    { slug: 'byakko', ja: '白虎', en: 'BYAKKO', w: 19 },   // 金
+    { slug: 'genbu',  ja: '玄武', en: 'GENBU',  w: 19 },   // 水
+    { slug: 'koryu',  ja: '黄龍', en: 'KORYU',  w: 5 }     // 中央・大当たり
+  ];
+  var beastCache = {};
+  var shotBeast = null;          // 今から撮る1枚に重ねる幻獣。撮り終えたら消す
+
+  function rollBeast(){
+    if (Math.random() >= BEAST_CHANCE) return null;
+    var tot = 0, i;
+    for (i = 0; i < BEASTS.length; i++) tot += BEASTS[i].w;
+    var r = Math.random() * tot;
+    for (i = 0; i < BEASTS.length; i++){ r -= BEASTS[i].w; if (r < 0) return BEASTS[i]; }
+    return BEASTS[0];
+  }
+
+  /* 絵は自分の所に置いてあるので、印(crossOrigin)は要らない。
+     読めなければ何も重ねない。当たりを逃すだけで、保存は必ず成る */
+  function loadBeast(b){
+    if (beastCache[b.slug]) return Promise.resolve(beastCache[b.slug]);
+    return new Promise(function(res){
+      var im = new Image();
+      im.onload = function(){ beastCache[b.slug] = im; res(im); };
+      im.onerror = function(){ res(null); };
+      im.src = 'assets/beasts/' + b.slug + '.webp';
+    });
+  }
+
   var SHOT_ACCENT = {
     sei: ['sakura', 'bubbles', 'ripple'],      // 静: 桜・泡・波紋
     do:  ['butterfly', 'leaves', 'fish']       // 動: 蝶・落葉・小魚
@@ -1748,14 +1817,26 @@
     /* 字の形が揃うのを待つ。待たずに書くと、本文が明朝になる前に
        別の字で焼き付いてしまうことがある */
     var wait = (document.fonts && document.fonts.ready) || Promise.resolve();
+
+    /* 撮る前に一度だけ引く。当たったら、その1枚を読んでから撮る。
+       外れた回は何も読まないので、待ち時間も通信も増えない */
+    var rolled = rollBeast();
+    shotBeast = null;
+
     wait.then(function(){
+      if (!rolled) return null;
+      return loadBeast(rolled).then(function(im){
+        if (im) shotBeast = { img: im, ja: rolled.ja, en: rolled.en };
+      });
+    }).then(function(){
       return withFullSphere(buildShot);       // 球を完成させてから撮る
     }).then(function(out){
       out.toBlob(function(blob){
         if (!blob){ done('Save failed'); return; }
         var t = current || {};
         var name = ('ogs-' + (t.id || '') + '-' + (t.title || 'track'))
-          .replace(/[^\w぀-ヿ一-鿿-]+/g, '_').slice(0, 60) + '.png';
+          .replace(/[^\w぀-ヿ一-鿿-]+/g, '_').slice(0, 60)
+          + (shotBeast ? '-' + shotBeast.en.toLowerCase() : '') + '.png';
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url; a.download = name;
@@ -1764,20 +1845,35 @@
         document.body.removeChild(a);
         // すぐ消すと保存が間に合わない端末がある
         setTimeout(function(){ URL.revokeObjectURL(url); }, 20000);
-        done('Saved ✓');
+        /* 当たりは釦で報せる。ここが「引けた」瞬間になる。
+           画像を開くまで気づかないと、当たった手応えが消える */
+        if (shotBeast) done(shotBeast.ja + ' ✦', 2800);
+        else done('Saved ✓');
       }, 'image/png');
     }).catch(function(){ done('Save failed'); });
 
-    function done(msg){
+    function done(msg, hold){
       btnShot.textContent = msg;
-      setTimeout(function(){ btnShot.textContent = label; btnShot.disabled = false; }, 1800);
+      shotBeast = null;                 // 次の一枚に持ち越さない
+      setTimeout(function(){
+        btnShot.textContent = label; btnShot.disabled = false;
+      }, hold || 1800);
     }
   }
   btnShot.addEventListener('click', saveShot);
   /* 調整・検証用。見た目には関係しない。
      保存と同じ道(球を完成させてから撮る)を通すので、
      ここで確かめた絵と、実際に落ちる画像が食い違わない */
-  window.__ogsShot = function(){ return withFullSphere(buildShot); };
+  window.__ogsShot = function(slug){
+    /* slug を渡すと、その幻獣が出た場合の絵を作る(当たりを待たずに確かめる用) */
+    var b = null, i;
+    for (i = 0; i < BEASTS.length; i++) if (BEASTS[i].slug === slug) b = BEASTS[i];
+    if (!b){ shotBeast = null; return withFullSphere(buildShot); }
+    return loadBeast(b).then(function(im){
+      shotBeast = im ? { img: im, ja: b.ja, en: b.en } : null;
+      return withFullSphere(buildShot).then(function(out){ shotBeast = null; return out; });
+    });
+  };
 
   /* ジャケットは押した人だけに大きく見せる。画面を占める見せ方はしない */
   artImg.addEventListener('error', function(){ artBtn.hidden = true; });

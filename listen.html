@@ -1726,27 +1726,58 @@
      絵は中央が抜けた輪の構図なので、球を囲む額になる。
      当たった1枚だけを読む(1枚あたり約500KB)。外れた回は何も読まない。
 
-     確率: 12回に1.4回ほど当たる。当たりの内訳は五行の5体が各19%、
-     黄龍だけ5%。全体で見ると黄龍は 0.6%(約170回に1回)の大当たり。 */
-  var BEAST_CHANCE = 0.12;
-  var BEASTS = [
-    { slug: 'seiryu', ja: '青龍', en: 'SEIRYU', w: 19 },   // 木
-    { slug: 'suzaku', ja: '朱雀', en: 'SUZAKU', w: 19 },   // 火
-    { slug: 'kirin',  ja: '麒麟', en: 'KIRIN',  w: 19 },   // 土
-    { slug: 'byakko', ja: '白虎', en: 'BYAKKO', w: 19 },   // 金
-    { slug: 'genbu',  ja: '玄武', en: 'GENBU',  w: 19 },   // 水
-    { slug: 'koryu',  ja: '黄龍', en: 'KORYU',  w: 5 }     // 中央・大当たり
-  ];
+     どれが出るかは、曲の五行で決まる(2026-09-20 高尾さん指示)。
+     APIが曲ごとの五行を合計100の割合で返すので、その割合で引く。
+     激しい曲なら朱雀が、静かな曲なら玄武が出やすい。
+
+     一番強い元素だけを使う手もあるが、それは採らなかった。
+     いまの五行は既存曲の曲評から後付けした仮の値で、偏っている。
+     一番強い元素で決めると、実測で 白虎49.7% / 麒麟1.0% となり、
+     麒麟がほとんど現れない(2026-09-20 実測・105曲)。
+     5つの点数すべてを使って引けば 白虎29.9% / 麒麟15.6% に収まり、
+     しかも同じ曲でも引くたびに違う幻獣が出る(2026-09-20 実測)。
+
+     黄龍だけは五行の外。当たりの5%をこれが上書きする。
+     全体で見ると 0.6%(約170回に1回)の大当たり。 */
+  var BEAST_CHANCE = 0.12;       // 撮って当たる確率
+  var KORYU_SHARE  = 0.05;       // 当たりのうち、黄龍になる割合
+  var FIVE = ['wood', 'fire', 'earth', 'metal', 'water'];
+  var ELEMENT_BEAST = {
+    wood:  { slug: 'seiryu', ja: '青龍', en: 'SEIRYU' },
+    fire:  { slug: 'suzaku', ja: '朱雀', en: 'SUZAKU' },
+    earth: { slug: 'kirin',  ja: '麒麟', en: 'KIRIN'  },
+    metal: { slug: 'byakko', ja: '白虎', en: 'BYAKKO' },
+    water: { slug: 'genbu',  ja: '玄武', en: 'GENBU'  }
+  };
+  var KORYU = { slug: 'koryu', ja: '黄龍', en: 'KORYU' };
   var beastCache = {};
   var shotBeast = null;          // 今から撮る1枚に重ねる幻獣。撮り終えたら消す
 
-  function rollBeast(){
+  function beastBySlug(slug){
+    if (slug === KORYU.slug) return KORYU;
+    for (var k in ELEMENT_BEAST) if (ELEMENT_BEAST[k].slug === slug) return ELEMENT_BEAST[k];
+    return null;
+  }
+
+  function rollBeast(track){
     if (Math.random() >= BEAST_CHANCE) return null;
-    var tot = 0, i;
-    for (i = 0; i < BEASTS.length; i++) tot += BEASTS[i].w;
-    var r = Math.random() * tot;
-    for (i = 0; i < BEASTS.length; i++){ r -= BEASTS[i].w; if (r < 0) return BEASTS[i]; }
-    return BEASTS[0];
+    if (Math.random() < KORYU_SHARE) return KORYU;
+
+    /* 曲の五行で引く。五行が無い曲(APIが古い・まだ点いていない)は、
+       5つを等しく扱う。当たりが出ないより、何か出たほうがよい */
+    var fe = (track && track.five_elements) || null;
+    var w = [], tot = 0, i, v;
+    for (i = 0; i < FIVE.length; i++){
+      v = fe ? Math.max(0, Number(fe[FIVE[i]]) || 0) : 1;
+      w.push(v); tot += v;
+    }
+    if (tot <= 0){ w = [1, 1, 1, 1, 1]; tot = 5; }
+    var x = Math.random() * tot;
+    for (i = 0; i < FIVE.length; i++){
+      x -= w[i];
+      if (x < 0) return ELEMENT_BEAST[FIVE[i]];
+    }
+    return ELEMENT_BEAST[FIVE[FIVE.length - 1]];
   }
 
   /* 絵は自分の所に置いてあるので、印(crossOrigin)は要らない。
@@ -1820,7 +1851,7 @@
 
     /* 撮る前に一度だけ引く。当たったら、その1枚を読んでから撮る。
        外れた回は何も読まないので、待ち時間も通信も増えない */
-    var rolled = rollBeast();
+    var rolled = rollBeast(current);
     shotBeast = null;
 
     wait.then(function(){
@@ -1866,8 +1897,7 @@
      ここで確かめた絵と、実際に落ちる画像が食い違わない */
   window.__ogsShot = function(slug){
     /* slug を渡すと、その幻獣が出た場合の絵を作る(当たりを待たずに確かめる用) */
-    var b = null, i;
-    for (i = 0; i < BEASTS.length; i++) if (BEASTS[i].slug === slug) b = BEASTS[i];
+    var b = beastBySlug(slug);
     if (!b){ shotBeast = null; return withFullSphere(buildShot); }
     return loadBeast(b).then(function(im){
       shotBeast = im ? { img: im, ja: b.ja, en: b.en } : null;

@@ -24,9 +24,15 @@ Object.assign(cv.style, { position:'fixed', inset:'0', width:'100%', height:'100
   opacity: window.OGS_ART_FULLSCREEN ? '1' : '0.80' });
 document.body.insertBefore(cv, document.body.firstChild);
 const ctx = cv.getContext('2d');
-const DPR = Math.min(devicePixelRatio || 1, 2);
-const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* iPhoneのSafariで、ホームと聞き流しが真っ白になって落ちていた
+   (2026-09-21 高尾さん報告。背景の動きを止めると落ちない)。
+   この絵は部品ごとにグラデーションを作るので、数百の部品 × 毎秒60回ぶんの
+   確保と破棄が続く。iOSはその嵐に耐えられずタブを落とす。
+   絵そのものは変えず、負荷だけを下げる。まず面積。
+   DPR2 だと 780x1688、1.5 なら 585x1266 で、塗る画素が44%減る。 */
 const MOBILE = matchMedia('(max-width: 700px)').matches;
+const DPR = Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2);
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let W, H, CX, CY, R, WFIELD = 1;
 function resize(){
@@ -1585,7 +1591,18 @@ let mechaBase = 0.30;
 let faceCycleAuto = true;                 // 顔4版を自動巡回するか
 const FACE_SEC = 22;                       // 1版あたりの滞在秒(全4版で約88秒)
 let frames = 0, fpsT = performance.now();
+/* スマホでは毎秒30回に落とす。見た目の滑らかさは少し落ちるが、
+   1フレームあたりの確保が同じでも、回数が半分になれば嵐も半分になる。
+   パソコンはこれまでどおり毎秒60回。 */
+const FRAME_MS = MOBILE ? 33 : 0;
+let __lastDraw = 0;
+
 function draw(now){
+  if (FRAME_MS && now - __lastDraw < FRAME_MS){
+    if (!REDUCED && !__stopped && !__hidden) requestAnimationFrame(draw);
+    return;
+  }
+  __lastDraw = now;
   const t = (now - t0) / 1000;
   const p = auto ? ((t + tOffset) / CYCLE_SEC * 8) % 8 : manualP;
   const vis = kf('vis',p), connA = kf('conn',p), glow = kf('glow',p),

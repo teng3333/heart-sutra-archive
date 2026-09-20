@@ -62,21 +62,16 @@ def host(u):
     return m.group(1).replace("www.", "") if m else ""
 
 
-def share_text(t, url, quote_len=45):
+def share_text(t, url):
     """SNSへ渡す文。track.html 側の buildShare() と同じ形を保つこと。
 
-    ここを見ているのが作った人か聴き手かは分からないので、「私の曲」とは書かず、
-    ANの曲評を引用する形にしてある。自分を褒めるのは気恥ずかしいが、
-    他人が自分を評した言葉なら貼れる。
-    Xは日本語を2文字と数える(上限280)。引用を45字に抑えて収めている。
+    一言と曲名と住所だけで、曲評は入れない(2026-09-20 高尾さん指示)。
+    はじめは曲評を45字で切って添えていたが、切り詰めた曲評は曲評の断片でしかない。
+    読ませたいなら、リンクを開いて全部読んでもらえばよい。
     """
     head = (t.get("tagline") + "\n\n") if t.get("tagline") else ""
-    body = ""
-    c = re.sub(r"^[…\s]+", "", t.get("an_comment") or "")
-    if c:
-        body = "ANの曲評 ──%s%s\n\n" % (c[:quote_len], "…" if len(c) > quote_len else "")
-    return "%s%s%s ／ %s\n%s\n\n#般若心経 #HeartSutra #OpenGateSutra" % (
-        head, body, t.get("title") or "", t.get("artist_name") or "unknown", url)
+    return "%s%s ／ %s\n%s\n\n#般若心経 #HeartSutra #OpenGateSutra" % (
+        head, t.get("title") or "", t.get("artist_name") or "unknown", url)
 
 
 def page(t, base, tmpl):
@@ -156,14 +151,13 @@ def page(t, base, tmpl):
                     '出どころ ／ %s</a>' % (e(t["source_url"]), e(host(t["source_url"]))))
     # 曲を渡せるようにする(2026-09-20 高尾さん指示)。
     # Xは文字しか受け取れないので、押した先の投稿欄に文が入った状態で開く
-    short = share_text(t, url)
-    tw = "https://twitter.com/intent/tweet?text=" + urllib.parse.quote(short)
+    text = share_text(t, url)
+    tw = "https://twitter.com/intent/tweet?text=" + urllib.parse.quote(text)
     body.append('<a class="btn" href="%s" target="_blank" rel="noopener noreferrer">'
                 '𝕏 ポストする</a>' % e(tw))
-    # コピーする方は字数の縛りが無いので、曲評を長めに渡す
     # 改行をそのまま属性に置くと生成物が読みにくい。&#10; にして1行に収める
     body.append('<button class="btn" type="button" data-share-text="%s">文章をコピー</button>'
-                % e(share_text(t, url, 130)).replace("\n", "&#10;"))
+                % e(text).replace("\n", "&#10;"))
     body.append('<span class="grow"></span>')
     body.append('<span class="share">このページの住所が、あなたの曲の住所です。<b>%s</b></span>' % e(url))
     body.append('</div>')

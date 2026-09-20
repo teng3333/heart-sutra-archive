@@ -310,19 +310,13 @@
     document.getElementById('shareUrl').textContent = pageUrl;
 
     /* ── 曲を渡せるようにする(2026-09-20 高尾さん指示) ──
-       ここを見ているのが作った人か聴き手かは分からないので、
-       「私の曲」とは書かず、ANの曲評を引用する形にしてある。
-       tools/build_track_pages.py の share_text() と同じ形を保つこと。
-       Xは日本語を2文字と数える(上限280)。引用を45字に抑えて収めている */
-    function buildShare(quoteLen){
+       一言と曲名と住所だけで、曲評は入れない。
+       はじめは曲評を45字で切って添えていたが、切り詰めた曲評は
+       曲評の断片でしかない。読ませたいならリンクを開いてもらえばよい。
+       tools/build_track_pages.py の share_text() と同じ形を保つこと */
+    function buildShare(){
       var head = t.tagline ? t.tagline + '\n\n' : '';
-      var body = '';
-      var c = (t.an_comment || '').replace(/^[…\s]+/, '');
-      if (c) {
-        var n = quoteLen || 45;
-        body = 'ANの曲評 ──' + c.slice(0, n) + (c.length > n ? '…' : '') + '\n\n';
-      }
-      return head + body + t.title + ' ／ ' + (t.artist_name || 'unknown') + '\n' +
+      return head + t.title + ' ／ ' + (t.artist_name || 'unknown') + '\n' +
              pageUrl + '\n\n#般若心経 #HeartSutra #OpenGateSutra';
     }
 
@@ -333,8 +327,7 @@
     var bc = document.getElementById('btnCopy');
     bc.hidden = false;
     bc.addEventListener('click', function(){
-      /* コピーする方は字数の縛りが無いので、曲評を長めに渡す */
-      navigator.clipboard.writeText(buildShare(130)).then(function(){
+      navigator.clipboard.writeText(buildShare()).then(function(){
         bc.textContent = 'コピーしました ✓';
         setTimeout(function(){ bc.textContent = '文章をコピー'; }, 1800);
       }).catch(function(){ bc.textContent = 'コピーできませんでした'; });

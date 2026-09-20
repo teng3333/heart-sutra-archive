@@ -500,9 +500,13 @@
     var head = t.tagline ? t.tagline + '\n\n' : '';
     var body = '';
     if (t.an_comment) {
+      /* 投稿者の一人称を代筆しない。本人が書いてもいない「私の曲」を
+         こちらで用意するのは、押しつけになる(2026-09-20 高尾さん指摘)。
+         曲ページ側(tools/build_track_pages.py の share_text)と同じ、
+         ただの引用の形に揃える */
       var c = t.an_comment.replace(/^[…\s]+/, '');
-      body = 'ANが私の曲を聴いて、こう書いた。\n──' +
-             c.slice(0, quoteLen || 45) + (c.length > (quoteLen || 45) ? '…' : '') + '\n\n';
+      var n = quoteLen || 45;
+      body = 'ANの曲評 ──' + c.slice(0, n) + (c.length > n ? '…' : '') + '\n\n';
     }
     return head + body + t.title + ' ／ ' + t.artist_name + '\n' +
            SITE + '/t/' + t.id + '.html\n\n' + TAGS;

@@ -101,8 +101,14 @@
     .art img{width:60px;height:60px}
     .lyr{max-height:34vh}
     .stage.playing .np{left:16px;right:16px;max-width:none;top:52px}
-    .stage.playing .np .ctl{left:16px;bottom:16px}
-    .stage.playing .state{left:16px;right:16px;bottom:72px;max-width:none}
+    /* 画面の下には解析の札(幅139・高さ24)が居座っている。
+       操作列を bottom:16px に置くと2段目が札の下に潜り、Shareが押せなかった
+       (2026-09-21 高尾さんの画面で発覚)。札の上へ逃がす。
+       あわせて釦の横の余白を詰め、段数を増やさない(幅390で2段に収まる) */
+    .stage.playing .np .ctl{left:16px;bottom:44px}
+    .stage.playing .state{left:16px;right:16px;bottom:100px;max-width:none}
+    .stage.playing.an-on .np .ctl{bottom:94px}
+    .stage.playing.an-on .state{bottom:150px}
     .stage.playing::before{
       background:linear-gradient(to top,rgba(8,11,20,.9),rgba(8,11,20,.35) 34%,
                                 rgba(8,11,20,.55) 72%,rgba(8,11,20,.85))}
@@ -216,6 +222,10 @@
   #motion-toggle:hover{opacity:1}
   @media (max-width:700px){
     #motion-toggle{top:10px!important;right:10px!important;bottom:auto!important}
+    /* 釦の横の余白を詰め、段数を増やさない。
+       この2行は .ctl button(基本)より後ろに置くこと。前に置くと負ける */
+    .ctl button{padding:9px 10px}
+    .an-btn{padding:7px 10px 7px 7px!important}
   }
 
   @media (prefers-reduced-motion:reduce){

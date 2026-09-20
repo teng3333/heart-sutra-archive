@@ -2013,7 +2013,13 @@ document.addEventListener('visibilitychange', function(){
     '#motion-toggle:focus-visible{outline:1px solid #d9c49a;outline-offset:3px}' +
     '#motion-toggle .dot{width:6px;height:6px;border-radius:50%;background:#4a4438;flex:none}' +
     '#motion-toggle.on .dot{background:#6fa8d6;box-shadow:0 0 6px rgba(111,168,214,.7)}' +
-    '@media (max-width:700px){#motion-toggle{left:auto;right:10px;bottom:46px;padding:7px 9px;font-size:9px}}';
+    /* 狭い画面では文字を畳み、小さな四角の印にする(2026-09-20 高尾さん指摘)。
+       右下に3つ並ぶ札が幅100pxほどあり、門の上に覆いかぶさっていた。
+       印だけなら32pxで済み、覆う面が1/3以下になる。何の印かは aria-label に残す */
+    '@media (max-width:700px){#motion-toggle{left:auto;right:10px;bottom:48px;' +
+    'width:32px;height:32px;padding:0;gap:0;justify-content:center}' +
+    '#motion-toggle .txt{display:none}' +
+    '#motion-toggle .dot{width:8px;height:8px}}';
   document.head.appendChild(css);
 
   var b = document.createElement('button');
@@ -2051,7 +2057,10 @@ document.addEventListener('visibilitychange', function(){
     '#art-link:focus-visible{outline:1px solid #d9c49a;outline-offset:3px}' +
     '#art-link .dot{width:6px;height:6px;border-radius:50%;background:#b23a2e;' +
     'box-shadow:0 0 6px rgba(178,58,46,.55);flex:none}' +
-    '@media (max-width:700px){#art-link{left:auto;right:10px;bottom:82px;padding:7px 9px;font-size:9px}}';
+    '@media (max-width:700px){#art-link{left:auto;right:10px;bottom:86px;' +
+    'width:32px;height:32px;padding:0;gap:0;justify-content:center}' +
+    '#art-link span:not(.dot){display:none}' +
+    '#art-link .dot{width:8px;height:8px}}';
   document.head.appendChild(css);
   var a = document.createElement('a');
   a.id = 'art-link'; a.href = 'art.html';

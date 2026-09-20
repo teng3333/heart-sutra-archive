@@ -494,17 +494,13 @@
     return d.innerHTML;
   }
 
-  /* Xは日本語を2文字と数える(上限280)。URLは長さにかかわらず23。
-     引用を45字に抑えて、全体が収まるようにしてある */
-  function shareText(t, quoteLen) {
+  /* 共有文。一言と曲名と住所だけで、曲評は入れない(2026-09-20 高尾さん指示)。
+     はじめは曲評を45字で切って添えていたが、切り詰めた曲評は曲評の断片でしかない。
+     読ませたいなら、リンクを開いて全部読んでもらえばよい。
+     tools/build_track_pages.py の share_text() と同じ形を保つこと */
+  function shareText(t) {
     var head = t.tagline ? t.tagline + '\n\n' : '';
-    var body = '';
-    if (t.an_comment) {
-      var c = t.an_comment.replace(/^[…\s]+/, '');
-      body = 'ANが私の曲を聴いて、こう書いた。\n──' +
-             c.slice(0, quoteLen || 45) + (c.length > (quoteLen || 45) ? '…' : '') + '\n\n';
-    }
-    return head + body + t.title + ' ／ ' + t.artist_name + '\n' +
+    return head + t.title + ' ／ ' + t.artist_name + '\n' +
            SITE + '/t/' + t.id + '.html\n\n' + TAGS;
   }
 
@@ -538,8 +534,7 @@
     var sc = document.getElementById('shareCopy');
     if (sc) {
       sc.addEventListener('click', function () {
-        /* コピーする方は字数の縛りが無いので、曲評を長めに渡す */
-        navigator.clipboard.writeText(shareText(t, 130)).then(function () {
+        navigator.clipboard.writeText(shareText(t)).then(function () {
           sc.textContent = 'コピーしました ✓';
           if (window.ogsTrack) window.ogsTrack('share_copy', { placement: 'submit_landed' });
           setTimeout(function () { sc.textContent = '文章をコピー'; }, 1800);

@@ -34,7 +34,38 @@ document.body.insertBefore(cv, document.body.firstChild);""".format(op=BG_OPACIT
 MOTION_CONTROL = """// ── §9.6 動きの停止ボタン + タブ非表示時の休止 ──
 // アクセシビリティ(前庭障害・集中の妨げ)と省電力のため、いつでも止められる。
 var __stopped = false, __hidden = false;
-try { __stopped = localStorage.getItem('ogs-motion') === 'off'; } catch(e){}
+/* スマホでは既定で止める(2026-09-21)。
+   iPhoneのSafariで、動かしていると画面が真っ白になって落ちる。
+   粒を2度減らし、解像度の倍率を1に落とし、コマも間引いたが、まだ落ちた。
+   手元のChromiumでは記憶の漏れが見つからない(JSの山は5〜9MBを往復するだけで増えない)。
+   確かなのは高尾さんの実測「MOTIONを止めると落ちない」だけ。ならばそれに従う。
+   止めても絵は1枚描かれる(下の draw(performance.now()))ので、背景は消えない。
+   動かしたい人は札を押せばいつでも動く。一度選べば、その選択が優先される。 */
+var __stopped = MOBILE, __chose = false;
+try {
+  var __pref = localStorage.getItem('ogs-motion');
+  if (__pref){ __stopped = (__pref === 'off'); __chose = true; }
+} catch(e){}
+
+/* 止まった状態で始めるときの下ごしらえ(2026-09-21)。
+   この絵は1コマでは像にならない。1回だけ描いて止めると背景は真っ黒になる
+   (実測: 濃さ0。動かすと0.5秒で完成し、以後は一定)。
+   そこで、止める前に必要な分だけ先に回す。
+   動きを望まない人(端末の設定・自分でOFFを選んだ人)には、
+   画面に出さずその場で一息に描く。スマホの既定の停止では、rAFで滑らかに整えてから止める。 */
+var __SETTLE_FRAMES = 40;
+function __settle(atOnce){
+  var t0 = performance.now(), n = 0;
+  if (atOnce){
+    for (; n < __SETTLE_FRAMES; n++){ __lastDraw = 0; draw(t0 + n*33); }
+    return;
+  }
+  (function step(ts){
+    __lastDraw = 0;                     // 間引きに邪魔させない
+    draw(ts || performance.now());
+    if (++n < __SETTLE_FRAMES) requestAnimationFrame(step);
+  })();
+}
 
 function __resume(){
   if (__stopped || __hidden || REDUCED) return;
@@ -210,7 +241,10 @@ def build() -> int:
                       "  if (!REDUCED && !__stopped && !__hidden) requestAnimationFrame(draw);")
     # 起動時に停止が記憶されていれば1フレームだけ描いて止める
     txt = txt.replace("else requestAnimationFrame(draw);",
-                      "else if (__stopped) draw(performance.now());\nelse requestAnimationFrame(draw);")
+                      "else if (__stopped) __settle(__chose);\nelse requestAnimationFrame(draw);")
+    # 端末が動きを抑えている人も、1コマでは真っ黒になっていた。同じ下ごしらえを通す
+    txt = txt.replace("if (REDUCED){ auto = false; manualP = 3.5; draw(performance.now()); }",
+                      "if (REDUCED){ auto = false; manualP = 3.5; __settle(true); }")
 
     header = (
         "/* HSE/AN 生きた背景アート — OGSホーム用モジュール\n"

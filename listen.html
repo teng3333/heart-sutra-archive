@@ -26,7 +26,7 @@
 <script src="src/js/consent.js" defer></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
-<script src="src/js/living-bg.js?v=21" defer></script>
+<script src="src/js/living-bg.js?v=23" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -143,10 +143,12 @@
   .ctl button:focus-visible{outline:2px solid var(--ruri);outline-offset:2px}
   /* 行き先が無いときは鈍らせる。押せなくはしない(頭出しには使える) */
   .ctl button.dim{opacity:.42}
-  /* ANアイコン。押すと下の帯に語りが流れる */
-  .an-btn{width:42px;height:42px;padding:0!important;border-radius:50%;overflow:hidden;
-    border:1px solid var(--hair2)!important;background:var(--ai)!important}
-  .an-btn img{width:100%;height:100%;object-fit:cover;display:block;opacity:.85}
+  /* ANの曲評。顔だけでは何が起きるか読み取れなかった(2026-09-21 高尾さん指摘)。
+     顔は名乗りとして小さく残し、「曲評」と字で言う。他の釦と同じ高さに揃える */
+  .an-btn{display:inline-flex;align-items:center;gap:7px;
+    padding:7px 14px 7px 7px!important;border-radius:999px}
+  .an-btn img{width:20px;height:20px;border-radius:50%;object-fit:cover;display:block;opacity:.85}
+  .an-btn span{font-family:var(--ja);font-size:13px;letter-spacing:.04em}
   .an-btn[aria-pressed="true"]{border-color:var(--shu)!important}
   .an-btn[aria-pressed="true"] img{opacity:1}
 
@@ -267,8 +269,9 @@
       </div>
       <div class="ctl">
         <button class="an-btn" type="button" id="anBtn" aria-pressed="false"
-                aria-label="ANの語りを表示する">
-          <img src="assets/an/face-human.webp" alt="" width="42" height="42">
+                aria-label="ANの曲評を読む">
+          <img src="assets/an/face-human.webp" alt="" width="20" height="20">
+          <span>曲評</span>
         </button>
         <button type="button" id="btnLyr" aria-pressed="false" hidden
                 aria-label="歌詞を表示する">詞</button>

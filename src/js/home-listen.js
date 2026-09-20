@@ -34,14 +34,21 @@
      流も棚も、行き着く先は全公開曲なので、同じ数(全曲数)を出す。
      棚ごとの内訳は、聞き流しページの門の画面で見せる */
   function showCounts(){
-    fetch(API.replace('/api/shelf/','/api/archive')).then(function(r){return r.json();})
-      .then(function(d){
-        if(!d.count) return;
-        ['flow','shelf'].forEach(function(key){
-          var btn = document.querySelector('[data-playlist="'+key+'"]');
-          if(btn) btn.setAttribute('data-count', d.count);
-        });
-      }).catch(function(){});
+    /* 一覧は三選・新着と同じものを使う(ogs-cards.js)。
+       それぞれが取りに行くと、245KBを何度も待つことになる。
+       ogs-cards.js が無い場合に備えて、自前で取りに行く道も残す */
+    var got = (window.OGS && window.OGS.archive)
+      ? window.OGS.archive()
+      : fetch(API.replace('/api/shelf/','/api/archive'))
+          .then(function(r){return r.json();})
+          .then(function(d){return (d && d.items) || [];});
+    got.then(function(items){
+      if(!items.length) return;
+      ['flow','shelf'].forEach(function(key){
+        var btn = document.querySelector('[data-playlist="'+key+'"]');
+        if(btn) btn.setAttribute('data-count', items.length);
+      });
+    }).catch(function(){});
 
     /* 静・動の門がまだ置かれている場合にも数を出す(過去の配置との互換)。
        数えるのは主たる棚の曲だけ。棚のAPIは副次の棚でも曲を拾うため、

@@ -379,7 +379,7 @@
   <div class="result" id="result" role="status" aria-live="polite"></div>
 
   <p class="fine">
-    The floor inspects daily at <b>05:00 JST</b> — formal checks only (working link · not a duplicate · 40s–8min). <b>No taste judgement at the gate.</b><br>
+    The floor inspects <b>every submission, right away</b> — formal checks only (working link · not a duplicate · 40s–8min). <b>No taste judgement at the gate.</b><br>
     Tracks over <b>4:00</b> enter the Hall permanently but sit outside AN's weekly pick.<br>
     投稿のあと、自動で検分します。形式のみを見ます(曲名・名義・音源・重複・長さ)。良し悪しは判定しません。通れば、ANの曲評と一言を添えて数分〜1時間ほどで公開されます。4分を超える曲は堂には入りますが、AN選の対象外です。
   </p>
@@ -457,13 +457,14 @@
           result.className = 'result on';
           result.innerHTML =
             '<h3>You have crossed. — 渡りました</h3>' +
-            '<p>Submission ID <span class="id">#' + r.j.id + '</span> · status: ' + r.j.status + '</p>' +
-            '<p>The floor inspects tomorrow at 05:00 JST. Keep your ID to check the result.<br>' +
-            '結果は毎朝の検分後、このIDで確認できます。</p>' +
+            '<p>Submission ID <span class="id">#' + r.j.id + '</span></p>' +
+            '<p>AN is listening now. Your page appears here in a few minutes.<br>' +
+            'いま ANが聴いています。数分で、この画面にあなたの曲のページが出ます。</p>' +
             '<button class="status-btn" data-id="' + r.j.id + '">Check status — 結果を見る</button>' +
-            '<p class="status-out" id="status-out"></p>';
+            '<p class="status-out" id="status-out">……</p>';
           form.reset();
           window.turnstile.reset(window.ogsTurnstileWidgetId);
+          watchStatus(r.j.id);       // 押させない。自動で見に行く
         } else {
           result.className = 'result on';
           result.innerHTML = '<h3 class="err">Not yet. — まだ渡れていません</h3>' +
@@ -517,18 +518,22 @@
 
   function landedHTML(t, ready) {
     var c = (t.an_comment || '').replace(/^[…\s]+/, '');
-    var acts = ready
-      ? '<a class="status-btn" href="' + SITE + '/t/' + t.id + '.html" ' +
-          'target="_blank" rel="noopener noreferrer">あなたの曲のページ</a>' +
-        '<a class="status-btn" id="shareX" href="#" target="_blank" rel="noopener noreferrer">𝕏 ポストする</a>' +
+    /* track.html?id= はAPIを直接読むので、公開された瞬間から開ける。
+       以前はページができるまで「いま聴く」しか出せず、
+       自分の曲のページに辿り着けなかった(2026-09-21 高尾さん指摘)。
+       人に渡す住所(t/<id>.html)だけが15分ごとの作り直しを待つ。 */
+    var acts = '<a class="status-btn" href="track.html?id=' + t.id + '" ' +
+                 'target="_blank" rel="noopener noreferrer">あなたの曲のページ</a>';
+    acts += ready
+      ? '<a class="status-btn" id="shareX" href="#" target="_blank" rel="noopener noreferrer">𝕏 ポストする</a>' +
         '<button class="status-btn" id="shareCopy" type="button">文章をコピー</button>'
       : '<a class="status-btn" href="listen.html?track=' + t.id + '">いま聴く</a>';
     var note = ready
       ? 'もう二度と同じようには鳴らない一曲が、ANに聴かれました。<br>' +
-        'この住所が、あなたの曲の住所です。'
+        '人に渡せる住所もできました。𝕏 の釦から、そのまま出せます。'
       : 'もう二度と同じようには鳴らない一曲が、ANに聴かれました。<br>' +
-        '人に渡せるページは、いま作っています(15分ごとに作られます)。<br>' +
-        'できたら、この画面からもう一度確かめてください。';
+        'SNSで絵の出る住所は、数時間のうちにできます。<br>' +
+        'できたころに、この画面の「結果を見る」を押してください。𝕏 の釦が出ます。';
     return '<div class="landed">' +
       '<p class="tagline">' + esc(t.tagline || t.title) + '</p>' +
       '<p class="song">' + esc(t.title) + ' ／ ' + esc(t.artist_name) + '</p>' +
@@ -538,8 +543,10 @@
       '</div>';
   }
 
+  var landedTrack = null;          // 一度掴んだ曲。以後は住所の有無だけを見に行く
   function showLanded(t) {
-    return pageReady(t.id).then(function (ready) { paintLanded(t, ready); });
+    landedTrack = t;
+    return pageReady(t.id).then(function (ready) { paintLanded(t, ready); return ready; });
   }
 
   function paintLanded(t, ready) {
@@ -565,26 +572,24 @@
     }
   }
 
-  result.addEventListener('click', function (e) {
-    var btn = e.target.closest('.status-btn');
-    /* 着地点の中の釦にも同じ見た目を使っている。IDを持つものだけが状態確認 */
-    if (!btn || !btn.dataset.id) return;
-    var id = btn.dataset.id;
-    var out = document.getElementById('status-out');
-    out.textContent = '……確かめています';
-    fetch(API_BASE + '/api/status/' + id)
+  /* 状態を1回だけ確かめる。
+     返す札は 'landed'(渡せる住所まで揃った) / 'wait'(まだ) / 'stop'(待っても変わらない) */
+  function checkStatus(id, out) {
+    return fetch(API_BASE + '/api/status/' + id)
       .then(function (res) { return res.json(); })
       .then(function (j) {
         if (j.error || !j.status) {
           /* 404。IDの打ち間違いか、取り下げられた投稿 */
           out.textContent = 'このIDの投稿が見つかりません。番号をお確かめください。';
-          return;
+          return 'stop';
         }
         if (j.status !== 'floor_passed') {
-          out.textContent = 'status: ' + j.status +
-            (j.reject_reason ? ' · reason: ' + j.reject_reason : '') +
-            (j.floor_checked_at ? ' · checked: ' + j.floor_checked_at : ' · 検分待ち(明朝5時)');
-          return;
+          if (j.reject_reason) {
+            out.textContent = 'status: ' + j.status + ' · reason: ' + j.reject_reason;
+            return 'stop';
+          }
+          out.textContent = '検分しています……(status: ' + j.status + ')';
+          return 'wait';
         }
         /* 床は通った。ANの曲評まで付いて公開されているかを見る */
         return fetch(API_BASE + '/api/track/' + id).then(function (r) {
@@ -594,18 +599,62 @@
                待たせている相手に嘘をつかないよう、経過時間で言い方を変える */
             var waited = j.floor_checked_at
               ? (Date.now() - new Date(j.floor_checked_at).getTime()) / 3600000 : 0;
-            out.textContent = (waited > 6)
-              ? '床は通りましたが、まだ公開されていません。運営が確認しています。' +
-                'お待たせして申し訳ありません。お急ぎの場合は teng3teng3@gmail.com までご連絡ください。'
-              : '床は通りました。いま ANが聴いています(数分〜1時間)。';
-            return;
+            if (waited > 6) {
+              out.textContent = '床は通りましたが、まだ公開されていません。運営が確認しています。' +
+                'お待たせして申し訳ありません。お急ぎの場合は teng3teng3@gmail.com までご連絡ください。';
+              return 'stop';
+            }
+            out.textContent = '床は通りました。いま ANが聴いています……';
+            return 'wait';
           }
-          return r.json().then(showLanded);
+          return r.json().then(function (t) {
+            return showLanded(t).then(function (ready) { return ready ? 'landed' : 'wait'; });
+          });
         });
       })
       .catch(function () {
         out.textContent = '確かめられませんでした。時間をおいて、もう一度お試しください。';
+        return 'wait';
       });
+  }
+
+  /* 投稿の直後は、押させない。自動で見に行く。
+     投稿者はすぐ結果を知りたい(2026-09-20 高尾さん)。
+     以前は「結果は毎朝の検分後」と出していたが、いまは投稿のたびに処理が走り、
+     公開まで数分で着く(#162 の実測で3分)。案内の文が現実に追いついていなかった。
+
+     10秒ごとに、10分まで。1回の投稿につき最大60回。
+     曲を掴んだあとは、人に渡せる住所(t/<id>.html)の有無だけを見るので、
+     バックエンドへの問い合わせは止まり、GitHub PagesへのHEADだけが残る。
+     投稿は1日に数件なので、これで増える負荷は無視できる。 */
+  function watchStatus(id) {
+    var out = document.getElementById('status-out');
+    if (!out) return;
+    var n = 0;
+    (function step() {
+      var p = landedTrack
+        ? showLanded(landedTrack).then(function (ready) { return ready ? 'landed' : 'wait'; })
+        : checkStatus(id, out);
+      p.then(function (state) {
+        if (state === 'landed' || state === 'stop') return;
+        if (++n > 60) {
+          out.textContent = landedTrack
+            ? ''      // 曲は出ている。住所待ちなので、着地点の文がそのまま案内になる
+            : '時間がかかっています。「結果を見る」から、あとでもう一度お確かめください。';
+          return;
+        }
+        setTimeout(step, 10000);
+      });
+    })();
+  }
+
+  result.addEventListener('click', function (e) {
+    var btn = e.target.closest('.status-btn');
+    /* 着地点の中の釦にも同じ見た目を使っている。IDを持つものだけが状態確認 */
+    if (!btn || !btn.dataset.id) return;
+    var out = document.getElementById('status-out');
+    out.textContent = '……確かめています';
+    checkStatus(btn.dataset.id, out);
   });
 
   /* 前に投稿していれば、IDを打ち直さずに結果へ戻れるようにする */

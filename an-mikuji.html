@@ -3,16 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AN神籤 — 一時休止中</title>
+<title>AN神籤 — ANが占う今日の運勢 ｜ Open Gate Sutra</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<!-- 一時休止中のため検索に出さない(robots.txtのDisallowと二重で担保) -->
+<!-- 検索には出していない(robots.txt の Disallow と二重で担保)。
+     休止していたときの名残で、再開後に出すかどうかは高尾さん判断待ち。
+     出すなら、この行と robots.txt の Disallow を両方外す -->
 <meta name="robots" content="noindex, nofollow">
-<meta property="og:title" content="AN神籤 — 一時休止中">
-<meta property="og:description" content="AN神籤は、ただいま一時休止しています。">
+<meta property="og:title" content="AN神籤 — ANが占う今日の運勢">
+<meta property="og:description" content="ツンデレAI「AN」が、般若心経の智慧であなたの今日の運勢を占います。">
 <meta property="og:type" content="website">
 <script src="src/js/consent.js?v=2" defer></script>
 <style>
@@ -174,27 +176,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-weight:30
 </style>
 </head>
 <body>
-<style>
-body > :not(.mikuji-pause):not(#privacy-settings):not(#cookie-consent){display:none!important}
-.mikuji-pause{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px;background:#0b0b0b;color:#d4d0c8;text-align:center}
-.mikuji-pause__inner{max-width:560px}
-.mikuji-pause__eyebrow{font-family:var(--fe);font-size:13px;letter-spacing:5px;color:#7a776e;text-transform:uppercase;margin-bottom:24px}
-.mikuji-pause h1{font-family:var(--fj);font-size:36px;letter-spacing:8px;margin-bottom:28px}
-.mikuji-pause p{font-size:16px;line-height:2.2;margin-bottom:12px}
-.mikuji-pause__en{font-family:var(--fe);font-style:italic;color:#a09890}
-.mikuji-pause a{display:inline-block;margin-top:28px;padding:12px 22px;border:1px solid #9a8c7a;color:#c4b8a6;text-decoration:none;letter-spacing:2px}
-.mikuji-pause a:hover{background:#9a8c7a;color:#0b0b0b}
-</style>
-<main class="mikuji-pause">
-  <div class="mikuji-pause__inner">
-    <div class="mikuji-pause__eyebrow">temporary pause</div>
-    <h1>AN神籤</h1>
-    <p>AN神籤は、ただいま一時休止しています。</p>
-    <p>記憶と記録はそのまま保管し、再開に向けて整えています。</p>
-    <p class="mikuji-pause__en">AN Mikuji is temporarily paused.</p>
-    <a href="./">般若心経生態系へ戻る</a>
-  </div>
-</main>
 <div class="gold-fx" id="gfx"></div>
 <div class="overlay" id="ov"><div class="stick"></div><div class="ov-t">占っています</div></div>
 <section class="hero">
@@ -232,6 +213,8 @@ body > :not(.mikuji-pause):not(#privacy-settings):not(#cookie-consent){display:n
         <div class="fi-te" id="fMe" style="padding-left:48px;margin-top:12px"></div>
       </div>
       <!-- チャットセクション（BGMの上） -->
+      <!-- チャットは閉じたまま。籤を引くことだけ再開する(2026-09-20 高尾さん指示)。
+           開けるときは、この display:none を外す。中の作りはそのまま残してある -->
       <div class="chat-section" id="chatSection" style="display:none">
         <div class="chat-invite" id="chatInvite">
           <p class="chat-invite-t" id="chatInviteText">ANに覚えてもらった？<br><span style="font-family:var(--fe);font-style:italic;font-size:14px;color:var(--accent-l)">名前と4桁のPINだけ。10秒で登録できる。</span></p>
@@ -248,7 +231,7 @@ body > :not(.mikuji-pause):not(#privacy-settings):not(#cookie-consent){display:n
       <div class="mu-s">
         <div class="mu-l">今日の般若心経BGM <span>Today's Track</span></div>
         <div class="mu-c"><button class="mu-p" onclick="window.open(document.getElementById('mU').value,'_blank')">&#9654;</button><div><div class="mu-ti" id="mT"></div><div class="mu-g" id="mG"></div></div><input type="hidden" id="mU" value="#"></div>
-        <a href="#" class="mu-link" id="mL" target="_blank">楽曲ページで聴く →</a>
+        <a href="#" class="mu-link" id="mL" target="_blank">OGSで聴く →</a>
       </div>
       <div class="share">
         <div class="share-l">Share your fortune</div>
@@ -260,7 +243,7 @@ body > :not(.mikuji-pause):not(#privacy-settings):not(#cookie-consent){display:n
   <footer class="footer">
     <div class="f-su">色不異空　空不異色<br>色即是空　空即是色</div>
     <div class="f-sr">shiki fu i kū  kū fu i shiki<br>shiki soku ze kū  kū soku ze shiki</div>
-    <div class="f-p">AN神籤 — <a href="https://teng3333.github.io/heart-sutra-archive" class="f-a">聴いて覚える般若心経</a><br><a href="https://suno.com/playlist/5ae1adc6-893c-4fce-bfec-a0114e0bd925" class="f-a" target="_blank">♪ SUNOプレイリストで全曲聴く</a><br>Heart Sutra Modern Archive — 魂アゲアゲSoul Up部</div>
+    <div class="f-p">AN神籤 — <a href="https://teng3333.github.io/heart-sutra-archive" class="f-a">聴いて覚える般若心経</a><br><a href="https://teng3333.github.io/heart-sutra-archive/listen.html" class="f-a">♪ 全曲を聴き流す</a><br>Heart Sutra Modern Archive — 魂アゲアゲSoul Up部</div>
   </footer>
 
 <!-- 認証モーダル（ログイン / 登録） -->
@@ -294,78 +277,38 @@ function sr(s){var x=Math.sin(s)*10000;return x-Math.floor(x)}
 function ts(){var d=new Date();var dateNum=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();var name=localStorage.getItem('an_name')||'guest';var nameHash=name.split('').reduce(function(a,c){return a+c.charCodeAt(0)},0);return dateNum+nameHash*97}
 function ds(){var d=new Date(),w=['日','月','火','水','木','金','土'];return d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+w[d.getDay()]+'）'}
 
-/* ===== SUNO楽曲データベース =====
-   新曲追加: このSONGS配列に1行追加するだけでOK
-   mood: celebration(祝), energy(気合), healing(癒), meditation(瞑想), purification(浄化)
-*/
-var SONGS=[
-{t:'般若心経Bollywood',g:'Bollywood / Dance',mood:'celebration',id:'cc6b2656-2c5e-4d84-b7ca-0edde4cfa779'},
-{t:'般若心経samba',g:'Samba / Carnival',mood:'celebration',id:'2b6e2fdf-6ec1-472f-bcf6-55d3942d3d42'},
-{t:'般若心経アイドル',g:'Kawaii Idol Pop × D&B',mood:'celebration',id:'e4ed0524-2273-4727-b093-73d32d63d445'},
-{t:'般若心経reggae',g:'Reggae',mood:'celebration',id:'b1ce3e08-7152-4455-a8ee-e5fff3ea314f'},
-{t:'般若心経K-POP',g:'K-Pop Girl Group',mood:'celebration',id:'c2fb24d0-21f3-4043-934b-8dd07b4eec64'},
-{t:'般若心経funk',g:'Jazz-Funk / Guitar',mood:'energy',id:'3c0565e3-a922-42a9-9cad-2dfe16f2879f'},
-{t:'般若心経metal',g:'Heavy Metal / Nu Metal',mood:'energy',id:'2d7d692a-c54f-476c-8a07-0e3842c07ad3'},
-{t:'般若心経PUNK',g:'Pop Punk / Alt-Rock',mood:'energy',id:'8dc7f16b-95e5-473a-9c1b-94d290568a0a'},
-{t:'般若心経ROCK',g:'Rock / Guitar',mood:'energy',id:'aa7ca553-f716-413f-9db7-7e6da3cdb857'},
-{t:'般若心経ROCK',g:'Rock / Guitar',mood:'energy',id:'b2cad46f-746e-4d77-abee-6983150dd1db'},
-{t:'般若心経エレクトロハウス',g:'Electro Funky House',mood:'energy',id:'0400c852-651a-407e-ae8a-b01705ecc12d'},
-{t:'般若心経TECHNO',g:'Electro Techno',mood:'energy',id:'103b2fd6-7746-428c-89b5-9c6416cdc4fc'},
-{t:'般若心経Flamenco',g:'Flamenco / Castanets',mood:'energy',id:'ad948f36-ddd6-4f4a-aa42-343be69a6857'},
-{t:'般若心経ska',g:'Ska',mood:'energy',id:'7667d0a4-c9a8-47cf-b397-2e761e4472b3'},
-{t:'般若心経Grunge',g:'Grunge',mood:'energy',id:'4b28307a-659f-4e19-8be2-56df97f284e7'},
-{t:'般若心経rockabilly grunge',g:'Garage Rock / Grunge',mood:'energy',id:'5715e04a-500d-46f5-abe4-9f0329431ba9'},
-{t:'般若心経HIPHOP',g:'Hip Hop / Piano',mood:'energy',id:'fc643b27-7208-490b-a512-498353d4749e'},
-{t:'般若心経ARTPOP',g:'Art Pop / Glitch',mood:'energy',id:'4ddc0809-4891-4db7-aa40-49117fce3e8c'},
-{t:'般若心経Halloween',g:'Boom Bap / Halloween',mood:'energy',id:'181a4bf1-6b8d-4674-bba8-b8bc1f0db6f7'},
-{t:'般若心経acoustic',g:'Indie-Pop Ballad / Acoustic',mood:'healing',id:'c6c774a9-ccbd-4962-94ce-c39d4a79a5f5'},
-{t:'般若心経bossa nova',g:'Bossa Nova',mood:'healing',id:'b7c50f09-0c74-45c4-964f-7b97b0ecdf44'},
-{t:'般若心経indie',g:'Slowcore Indie / Shoegaze',mood:'healing',id:'b2c398b6-227b-4c28-9e14-415816f61e08'},
-{t:'ただ空があるだけ',g:'Lo-fi Jazz / Piano',mood:'healing',id:'6168bf30-98ce-421f-8a87-5df541b921db'},
-{t:'般若心経R&B',g:'R&B',mood:'healing',id:'e258a114-7ed2-40b0-9c8b-8b3f6ed2fe84'},
-{t:'般若心経Blues',g:'Texas Blues / Slide Guitar',mood:'healing',id:'5a4cca58-4334-4d1a-bdb1-ee9cb2919b2b'},
-{t:'般若心経讃美歌',g:'Hymn / Pipe Organ & Choir',mood:'healing',id:'89554a3d-a1cd-4cd3-afb8-2975a5d72fc7'},
-{t:'般若心経Lo-fi',g:'Lo-fi / Soft Piano',mood:'meditation',id:'183b4c6f-54a4-4807-a722-fb11fe703211'},
-{t:'般若心経呟',g:'Jazz / Piano / Introspective',mood:'meditation',id:'ce43862f-35c6-4b5e-a307-94eb6c64008d'},
-{t:'般若心経JAZZ',g:'Jazz Ballad / Piano & Bass',mood:'meditation',id:'217948ac-2c80-4f14-a186-74af99066c7b'},
-{t:'般若心経jazz-HIPHOP',g:'Jazz Hip-Hop / Nu Jazz',mood:'meditation',id:'16c5e53e-191f-4815-8c6d-1acc0f85f357'},
-{t:'般若心経Ambient',g:'Ambient',mood:'meditation',id:'e3cfe17d-47d6-4630-836c-5e9f326440a4'},
-{t:'般若心経Cloud Rap',g:'Cloud Rap / Lo-fi R&B',mood:'meditation',id:'1c4dea16-3d44-49e4-913a-60d31ac1b349'},
-{t:'般若心経Cloud Rap',g:'Cloud Rap / Lo-fi R&B',mood:'meditation',id:'1ccd02ec-5454-4cde-909f-92906ea976ff'},
-{t:'般若心経Cloud Rap',g:'Cloud Rap / Lo-fi R&B',mood:'meditation',id:'560f8229-d942-4497-8d5e-426022fd7d51'},
-{t:'般若心経CyberPunk',g:'Cyberpunk / Kagura & Choir',mood:'purification',id:'05708a07-14fa-4c4e-a7ad-3ed1cedb4e41'},
-{t:'般若心経cyberpunk',g:'Cyberpunk Anime OP',mood:'purification',id:'abdfa05f-79b1-49b8-a63a-f3285f0972ad'},
-{t:'般若心経cyber punk',g:'Cyberpunk Anime OP',mood:'purification',id:'04d72c5e-675c-468f-bf2c-eaf1fb37d2a9'},
-{t:'般若心経cyberpunk',g:'Dark Cyberpunk',mood:'purification',id:'acf9eab3-8e05-440a-bdc0-dc926be9eb23'},
-{t:'般若心経cyberpunk',g:'Dark Cyberpunk / EDM',mood:'purification',id:'aefa5a37-5108-4530-bd91-ad46030d3789'},
-{t:'般若心経cyberpunk',g:'Dark Ambient Cyberpunk',mood:'purification',id:'d0e39bb7-08fa-4c2f-8ba2-6d71d27348da'},
-{t:'般若心経アニソン',g:'Anime / Violin / Dark',mood:'purification',id:'bc754292-74b1-474c-94aa-67631d5a9eb7'},
-{t:'般若心経アニソン',g:'Anime / Cyberpunk',mood:'purification',id:'4c5dab56-a168-4093-9fe7-c15cd39dfbbf'},
-{t:'般若心経和楽器RAP',g:'和楽器 Rap / 三味線 & 尺八',mood:'purification',id:'f0492cef-86b9-47a0-9cd2-59f5a853958d'},
-{t:'般若心経演歌',g:'演歌 / Enka Ballad',mood:'purification',id:'a9ccf105-926a-446a-b7ca-af8615bfa0fb'},
-{t:'般若心経tango',g:'Tango Nuevo',mood:'purification',id:'d66a0950-6ca8-4b76-b8d9-01e6078d5079'},
-{t:'般若心経IDM',g:'IDM / Glitch',mood:'purification',id:'63c74f90-95f1-4d32-a6f5-bc77709da616'},
-{t:'般若心経IDM',g:'IDM / Glitch / Art',mood:'purification',id:'c75799dc-bf77-4398-b920-9effd0b86181'},
-{t:'般若心経',g:'Synthwave Dubstep',mood:'purification',id:'4e1e90d4-6c25-4523-b452-a0eef6fd1d55'},
-{t:'般若心経Arabian',g:'Arabian Fantasy Orchestra',mood:'purification',id:'b6adbb7a-fd59-47f8-9594-5b97a581185c'},
-{t:'般若心経Belly Dance',g:'Belly Dance Fusion',mood:'purification',id:'67489dfc-71e0-450c-bac1-1acc30fee9b3'}
-];
+/* ===== 薦める曲 =====
+   以前はSUNOの曲50件をここに手書きし、suno.com へ送り出していた。
+   音源はすべてOGSで預かり、OGSのプレイヤーで聴く作りに移ったので、
+   公開APIから取るように変えた(2026-09-20 高尾さん指示)。
+   手書きの一覧を持たないので、新しく投稿されて公開された曲も、
+   その日のうちに籤の薦める対象に入る。 */
+var SITE = 'https://teng3333.github.io/heart-sutra-archive';
+var SONGS = [];
+var songsReady = fetch('https://open-gate-sutra-production.up.railway.app/api/archive')
+  .then(function(r){ return r.json(); })
+  .then(function(d){ SONGS = d.items || []; })
+  .catch(function(){ SONGS = []; });   // 取れなければ曲の欄は出さない
 
 /* ランク→ムードのマッピング */
+/* 運勢と、薦める棚の対応。
+   OGSの棚は focus(集中) / relax(ほどく) / energy(高ぶる) / inspire(ひらめく)。
+   旧: celebration=祝 energy=気合 healing=癒 meditation=瞑想 purification=浄化 */
 var RANK_MOODS={
-  daidaikichi:['celebration','energy'],
-  daikichi:['energy','celebration'],
-  kichi:['healing','meditation'],
-  chukichi:['meditation','purification'],
-  shokichi:['healing','meditation'],
-  suekichi:['purification','healing'],
-  kyo:['meditation','purification'],
-  daikyo:['purification','meditation']
+  daidaikichi:['inspire','energy'],
+  daikichi:['energy','inspire'],
+  kichi:['relax','inspire'],
+  chukichi:['focus','relax'],
+  shokichi:['relax','focus'],
+  suekichi:['relax','focus'],
+  kyo:['focus','relax'],
+  daikyo:['relax','focus']
 };
 
 function pickSong(seed,rankKey){
+  if(!SONGS.length) return null;
   var moods=RANK_MOODS[rankKey];
-  var pool=SONGS.filter(function(s){return moods.indexOf(s.mood)!==-1});
+  var pool=SONGS.filter(function(s){return moods.indexOf(s.mode)!==-1});
   if(pool.length===0) pool=SONGS;
   var idx=Math.floor(sr(seed*11+37)*pool.length);
   return pool[idx];
@@ -442,8 +385,6 @@ function spG(){var e=document.getElementById('gfx');e.classList.add('active');fo
 function draw(){document.getElementById('db').disabled=true;document.getElementById('ov').classList.add('active');setTimeout(function(){document.getElementById('ov').classList.remove('active');show()},2000)}
 function show(){
   var s=ts(),k=gR(s),d=F[k],i=Math.floor(sr(s*7+13)*d.p.length),p=d.p[i];
-  var song=pickSong(s,k);
-  var url='https://suno.com/song/'+song.id;
   document.getElementById('bd').style.display='none';
   var r=document.getElementById('res');r.className='result active '+d.c;
   document.getElementById('rT').textContent=d.r;
@@ -457,12 +398,25 @@ function show(){
   document.getElementById('fWe').textContent=p.we||'';
   document.getElementById('fM').innerHTML=p.m.replace(/\n/g,'<br>');
   document.getElementById('fMe').textContent=p.me||'';
-  document.getElementById('mT').textContent=song.t;
-  document.getElementById('mG').textContent=song.g;
-  document.getElementById('mU').value=url;
-  document.getElementById('mL').href=url;
-  var t='【AN神籤】今日の運勢は「'+d.r+'」\n\nANおすすめ曲: '+song.t+'\n'+url+'\n\n'+p.m.substring(0,60)+'…\n\n#AN神籤 #般若心経 #聴いて覚える般若心経';
-  document.getElementById('sX').href='https://twitter.com/intent/tweet?text='+encodeURIComponent(t);
+  /* 曲が無くても運勢は渡せる。まず曲抜きで整えておく */
+  var TAGS='#AN神籤 #般若心経 #OpenGateSutra';
+  var base='【AN神籤】今日の運勢は「'+d.r+'」\n\n'+p.m.substring(0,60)+'…\n\n'+SITE+'\n\n'+TAGS;
+  document.getElementById('sX').href='https://twitter.com/intent/tweet?text='+encodeURIComponent(base);
+
+  /* 曲の欄だけは、APIの返事を待ってから埋める */
+  var muSec=document.querySelector('.mu-s');
+  songsReady.then(function(){
+    var song=pickSong(s,k);
+    if(!song){ if(muSec) muSec.style.display='none'; return; }
+    if(muSec) muSec.style.display='';
+    var url=SITE+'/listen.html?track='+song.id;
+    document.getElementById('mT').textContent=song.title;
+    document.getElementById('mG').textContent=song.tagline||song.genre||'';
+    document.getElementById('mU').value=url;
+    document.getElementById('mL').href=url;
+    var t='【AN神籤】今日の運勢は「'+d.r+'」\n\nANおすすめ曲: '+song.title+'\n'+url+'\n\n'+p.m.substring(0,60)+'…\n\n'+TAGS;
+    document.getElementById('sX').href='https://twitter.com/intent/tweet?text='+encodeURIComponent(t);
+  });
   if(k==='daidaikichi')spG();
   r.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -470,6 +424,11 @@ function cp(){var r=document.getElementById('rT').textContent,m=document.getElem
 document.getElementById('dd').textContent=ds();
 
 // ===== AN神籤 チャットAPI =====
+/* チャットは閉じている(2026-09-20 高尾さん指示)。籤を引くことだけ再開した。
+   作りはすべて残してあるので、開けるときは、この false を true にして、
+   chatSection の style="display:none" を外すだけでよい */
+var CHAT_OPEN = false;
+
 var API = 'https://discord-an-bot-production.up.railway.app';
 var _token = localStorage.getItem('an_token');
 var _name  = localStorage.getItem('an_name');
@@ -489,7 +448,8 @@ show = function() {
   var idx = Math.floor(sr(s*7+13)*d.p.length);
   _currentVerse = d.p[idx].g.substring(0, 10);
   // チャットセクションを表示するだけ。スクロールはしない。
-  document.getElementById('chatSection').style.display = 'block';
+  // 閉じている間は出さない。ここを通すと、隠したはずのチャットが籤のあとに現れる
+  if (CHAT_OPEN) document.getElementById('chatSection').style.display = 'block';
 };
 
 function openAuth() {

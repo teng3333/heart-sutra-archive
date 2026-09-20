@@ -1978,10 +1978,12 @@
   }
 
   /* ── 撮った絵をそのままSNSへ ──────────────────────────────
-     Webからツイートに画像を添付することはできない。intentは文字とURLしか運べない。
-     唯一の道が navigator.share で、スマホならOSの共有板に画像も文章も一緒に載る。
-     パソコンにはその道が無いので、画像を保存し、文章を写し、投稿画面への入口を出す。
-     そこから先は手で貼ってもらう。できないことを、できるふりをしない。 */
+     Xは文字とURLしか受け取れない。画像を添えることはWebからはできない。
+     ただし曲ページ(t/<id>.html)はカードの札を持っているので、
+     URLを載せるだけでジャケット付きの投稿になる。まずこれを確実に届ける。
+
+     撮った絵(幻獣が出ることがある)は、その上に添えるもの。
+     クリップボードに載せられれば貼るだけ、拒まれたら保存に戻す。 */
   var btnShare = document.getElementById('btnShare');
 
   function shareShot(){
@@ -2004,28 +2006,36 @@
     var shot = makeShot();        // 押されたその場で走らせ始める
 
     /* ── パソコン ──────────────────────────────────────────
-       Xは文字とURLしか受け取れない。画像は人が貼るしかない。
-       ならばせめて「貼るだけ」で済むように、画像をクリップボードに載せる。
-       保存させて、あとで自分で探して引きずり込ませるのは共有ではない
-       (2026-09-21 高尾さん指摘)。
+       小さな案内を出して、自分でリンクを探して押してもらう形だった。
+       それでは「押しても何も起きない」と同じ(2026-09-21 高尾さん指摘)。
+       押したらXの投稿画面をその場で開く。これが共有釦の仕事。
 
-       Safariはクリップボードへの書き込みを「操作の直後」しか許さない。
-       絵ができるのを待ってから書くと、その頃には効力が切れている。
-       そこで ClipboardItem に「あとで届く画像」を約束のまま渡す。
-       これはSafariが認めている書き方。 */
-    if (!handheld && window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
-      var onClip = navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': shot.then(function(s){ return s.blob; }) })
-      ]).then(function(){ return true; }, function(){ return false; });
+       順番が要る。クリップボードへの書き込みを先に呼ぶ。
+       window.open が先だと、押された勢いを使い切ってしまう。
+       またSafariは書き込みを「操作の直後」しか許さないので、絵の完成は待てない。
+       ClipboardItem に「あとで届く画像」を約束のまま渡す(Safariが認めた書き方)。 */
+    if (!handheld){
+      var onClip = (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write)
+        ? navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': shot.then(function(s){ return s.blob; }) })
+          ]).then(function(){ return true; }, function(){ return false; })
+        : Promise.resolve(false);
+
+      var win = window.open(tweet, '_blank');
+      if (win) { try { win.opener = null; } catch (e) {} }
 
       return shot.then(function(s){
         return onClip.then(function(ok){
           var hit = shotBeast ? shotBeast.ja + ' ✦ ' : '';
           if (!ok) download(s.blob, s.name);        // 載せられなければ保存に戻す
-          say('<b>' + hit + (ok ? '画像をコピーしました。' : '画像を保存しました。') + '</b><br>' +
-              '<a href="' + tweet + '" target="_blank" rel="noopener noreferrer">𝕏 を開く</a> → ' +
-              (ok ? '投稿欄で貼り付け（⌘V / Ctrl+V）。' : '保存した画像を投稿欄へ。'));
-          back(hit || (ok ? 'Copied ✓' : 'Saved ✓'), hit ? 3200 : 2600);
+          var head = hit + (win ? '𝕏 の投稿画面を開きました。' : '');
+          var how  = ok ? '投稿欄で貼り付け（⌘V / Ctrl+V）すると画像が付きます。'
+                        : '画像を保存しました。投稿欄へ引き入れると画像が付きます。';
+          // 塞がれていたら、リンクだけが頼り
+          var link = win ? '' :
+            '<a href="' + tweet + '" target="_blank" rel="noopener noreferrer">𝕏 を開く</a> → ';
+          say((head ? '<b>' + head + '</b><br>' : '') + link + how);
+          back(hit || 'Shared ✓', hit ? 3200 : 2600);
         });
       }).catch(function(){ back('Share failed'); });
     }

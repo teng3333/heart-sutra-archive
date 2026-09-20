@@ -2016,8 +2016,13 @@ var __stopped = false, __hidden = false;
    止めても絵は1枚描かれる(下の draw(performance.now()))ので、背景は消えない。
    動かしたい人は札を押せばいつでも動く。一度選べば、その選択が優先される。 */
 var __stopped = MOBILE, __chose = false;
+/* 鍵を新しくした(2026-09-21)。古い鍵に残った 'on' は、
+   落ちると知らずに押した記録で、スマホで止める既定を打ち消していた
+   (高尾さんのiPhoneで実際に起きた。背景が動いたまま落ちた)。
+   パソコンでの選択は引き継ぐ。スマホでは選び直してもらう。 */
 try {
-  var __pref = localStorage.getItem('ogs-motion');
+  var __pref = localStorage.getItem('ogs-motion-v2');
+  if (!__pref && !MOBILE) __pref = localStorage.getItem('ogs-motion');
   if (__pref){ __stopped = (__pref === 'off'); __chose = true; }
 } catch(e){}
 
@@ -2031,7 +2036,14 @@ var __SETTLE_FRAMES = 40;
 function __settle(atOnce){
   var t0 = performance.now(), n = 0;
   if (atOnce){
-    for (; n < __SETTLE_FRAMES; n++){ __lastDraw = 0; draw(t0 + n*33); }
+    /* 素材が揃う前に一息に描くと、やはり真っ黒になる(実測: 濃さ0)。
+       読み込みが終わってから一度だけ描く。動きは見えず、絵だけが現れる */
+    var burst = function(){
+      var t = performance.now();
+      for (var i = 0; i < __SETTLE_FRAMES; i++){ __lastDraw = 0; draw(t + i*33); }
+    };
+    if (document.readyState === 'complete') setTimeout(burst, 300);
+    else addEventListener('load', function(){ setTimeout(burst, 300); });
     return;
   }
   (function step(ts){
@@ -2084,12 +2096,55 @@ document.addEventListener('visibilitychange', function(){
   }
   b.addEventListener('click', function(){
     __stopped = !__stopped;
-    try { localStorage.setItem('ogs-motion', __stopped ? 'off' : 'on'); } catch(e){}
+    try { localStorage.setItem('ogs-motion-v2', __stopped ? 'off' : 'on'); } catch(e){}
     sync();
     if (!__stopped) __resume();
   });
   document.body.appendChild(b);
   sync();
+})();
+
+// ── §9.7 落ちる直前の記録(2026-09-21) ──
+// iPhoneのSafariで画面が真っ白になる件。手元のChromiumでは再現できず、
+// 記憶の漏れも3つ測って全部空振りした。推測での直しはもう重ねない。
+// 4秒ごとに「いま何をしていたか」を端末に書き置き、次に開いたとき、
+// 前の回が行儀よく終わっていなければ(exitが無ければ)それを落ちた記録として残す。
+// 読むには住所の末尾に #diag を付けて開く。
+(function crashLog(){
+  var t0 = Date.now(), lost = 0, hides = 0, err = '';
+  try {
+    var prev = localStorage.getItem('ogs-last');
+    if (prev && prev.indexOf('"exit"') < 0) localStorage.setItem('ogs-crash', prev);
+  } catch(e){}
+  function rec(exit){
+    var o = { p: (location.pathname.split('/').pop() || 'index'),
+              s: Math.round((Date.now() - t0)/1000),
+              m: __stopped ? 'off' : 'on',
+              lost: lost, hides: hides, err: err,
+              w: innerWidth + 'x' + innerHeight, dpr: devicePixelRatio,
+              ua: (navigator.userAgent.match(/OS [\d_]+|Version\/[\d.]+|Safari|CriOS/g) || []).join(' ') };
+    if (exit) o.exit = exit;
+    try { localStorage.setItem('ogs-last', JSON.stringify(o)); } catch(e){}
+  }
+  rec(); setInterval(function(){ rec(); }, 4000);
+  addEventListener('pagehide', function(){ rec('hide'); });
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden){ hides++; rec('hide'); } else rec();
+  });
+  cv.addEventListener('contextlost', function(){ lost++; rec(); });
+  addEventListener('error', function(e){ err = String(e.message || '').slice(0, 70); rec(); });
+  addEventListener('unhandledrejection', function(e){ err = 'rej ' + String(e.reason).slice(0, 60); rec(); });
+
+  if (location.hash === '#diag'){
+    var box = document.createElement('pre');
+    box.style.cssText = 'position:fixed;inset:auto 8px 8px 8px;z-index:9999;margin:0;padding:10px;' +
+      'background:rgba(6,9,16,.94);border:1px solid rgba(217,196,154,.3);color:#d9c49a;' +
+      'font:11px/1.6 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all;max-height:60vh;overflow:auto';
+    var g = function(k){ try { return localStorage.getItem(k) || '(なし)'; } catch(e){ return '(読めない)'; } };
+    box.textContent = '落ちた回:\n' + g('ogs-crash') + '\n\nいまの回:\n' + g('ogs-last');
+    document.body.appendChild(box);
+    box.addEventListener('click', function(){ box.remove(); });
+  }
 })();
 
 // ── ART鑑賞ページへの入口(鑑賞ページ自身には出さない) ──

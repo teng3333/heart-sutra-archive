@@ -181,6 +181,12 @@
 
   .state{font-size:12.5px;color:var(--nibi);line-height:1.9;max-width:30rem}
   .state b{color:var(--washi)}
+  /* つながらなかったときの「再試行」。操作釦と同じ作法にする */
+  .state .retry{display:inline-block;margin-top:9px;background:rgba(13,18,32,.55);
+    border:1px solid var(--hair2);color:var(--washi);font:inherit;font-size:11px;
+    letter-spacing:.12em;padding:8px 15px;cursor:pointer;backdrop-filter:blur(3px)}
+  .state .retry:hover{border-color:var(--washi)}
+  .state .retry:focus-visible{outline:2px solid var(--ruri);outline-offset:2px}
 
   /* 電子掲示板 */
   .ticker{flex:none;height:0;overflow:hidden;border-top:1px solid transparent;
@@ -264,7 +270,7 @@
         </button>
         <button type="button" id="btnLyr" aria-pressed="false" hidden
                 aria-label="歌詞を表示する">詞</button>
-        <button type="button" id="btnPlay">Pause</button>
+        <button type="button" id="btnPlay" aria-label="再生 / Play">Play</button>
         <button type="button" id="btnPrev" aria-label="前の曲へ">‹ Prev</button>
         <button type="button" id="btnNext" aria-label="次の曲へ">Next ›</button>
         <button type="button" id="btnGate">Gate</button>
@@ -273,7 +279,7 @@
       </div>
     </div>
 
-    <p class="state" id="state">Choose a gate, and it plays.<br><span style="color:var(--washi)">門を選ぶと、流れ始めます。</span></p>
+    <p class="state" id="state" role="status" aria-live="polite">Choose a gate, and it plays.<br><span style="color:var(--washi)">門を選ぶと、流れ始めます。</span></p>
   </div>
 
   <div class="ticker" id="ticker" aria-live="polite">
@@ -326,6 +332,41 @@
   var baseHex = '';                 // この曲の色の元。波の呼吸に合わせてここから回す
 
   function say(html){ stateEl.innerHTML = html; stateEl.style.display = html ? '' : 'none'; }
+
+  /* ── 再生釦の札は、実際の音の状態だけから決める(2026-09-20) ──
+     以前は初期値が Pause で、書き換えは play / pause の出来事に任せていた。
+     設計としては正しいが、自動再生が拒まれると play も pause も起きない。
+     すると画面は「再生ボタンを押してください」と言いながら、釦は Pause のまま。
+     押す前から、止める釦に見える。
+     書き換えるのはこの関数だけにして、呼ぶ側は札を触らない。 */
+  function syncPlayBtn(){
+    var b = document.getElementById('btnPlay');
+    if (!b) return;
+    var playing = !audio.paused && !audio.ended;
+    b.textContent = playing ? 'Pause' : 'Play';
+    b.setAttribute('aria-label', playing ? '一時停止 / Pause' : '再生 / Play');
+  }
+
+  /* 鳴らす操作は一本にまとめる。拒まれたら札を現実へ戻す */
+  function togglePlay(){
+    if (audio.paused){ audio.play().catch(function(){ syncPlayBtn(); }); }
+    else { audio.pause(); }
+  }
+
+  /* つながらなかったときに、やり直せるようにする。
+     「時間をおいてお試しください」と言われても、押す所が無ければ
+     画面を読み直すしかない */
+  var retryFn = null;
+  function sayRetry(html, fn){
+    retryFn = fn;
+    say(html + '<br><button type="button" class="retry">再試行 / Retry</button>');
+  }
+  stateEl.addEventListener('click', function(e){
+    var b = (e.target && e.target.closest) ? e.target.closest('.retry') : null;
+    if (!b || !retryFn) return;
+    var f = retryFn; retryFn = null;
+    f();
+  });
 
   function shuffle(a){
     a = a.slice();
@@ -1435,7 +1476,9 @@
     swapDark(function(){ render(queue[i]); });
     audio.src = queue[i].audio_url;
     audio.play().catch(function(){
-      say('Tap play to continue.<br>再生ボタンを押してください。');
+      /* 自動再生が拒まれた。札を Play へ戻さないと、押す前から止める釦に見える */
+      syncPlayBtn();
+      say('Tap play to continue.<br>再生するにはボタンを押してください。');
     });
     preloadNext();
     updateNav();
@@ -1529,7 +1572,8 @@
         next();     // 門を押した操作が起点なので、自動再生の制限に触れない
       })
       .catch(function(){
-        say('<b>Could not reach the hall.</b><br>つながりませんでした。時間をおいてお試しください。');
+        sayRetry('<b>Could not reach the hall.</b><br>つながりませんでした。',
+                 function(){ start(axis); });
       });
   }
 
@@ -1948,11 +1992,9 @@
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     if (e.key === 'ArrowRight'){ e.preventDefault(); next(); }
     else if (e.key === 'ArrowLeft'){ e.preventDefault(); prev(); }
-    else if (e.key === ' '){ e.preventDefault(); if (audio.paused) audio.play(); else audio.pause(); }
+    else if (e.key === ' '){ e.preventDefault(); togglePlay(); }
   });
-  document.getElementById('btnPlay').addEventListener('click', function(){
-    if (audio.paused){ audio.play(); } else { audio.pause(); }
-  });
+  document.getElementById('btnPlay').addEventListener('click', togglePlay);
   document.getElementById('btnGate').addEventListener('click', function(){
     audio.pause();
     np.classList.remove('on');
@@ -1980,12 +2022,12 @@
 
   audio.addEventListener('ended', next);
   audio.addEventListener('play',  function(){
-    document.getElementById('btnPlay').textContent = 'Pause';
-    startVisual();          // 自動再生が拒まれた場合もここを通る
+    syncPlayBtn();
+    startVisual();
     say('');
   });
   audio.addEventListener('pause', function(){
-    document.getElementById('btnPlay').textContent = 'Play';
+    syncPlayBtn();
     if (wctx) wctx.clearRect(0, 0, ww, wh);
   });
   /* 1曲読めなくても止めない */
@@ -2014,9 +2056,12 @@
         });
       })
       .catch(function(code){
-        say(code === 404
-          ? '<b>Not in the hall.</b><br>この曲は堂にありません。門を選ぶと、流れ始めます。'
-          : '<b>Could not reach the hall.</b><br>つながりませんでした。時間をおいてお試しください。');
+        if (code === 404){
+          say('<b>Not in the hall.</b><br>この曲は堂にありません。門を選ぶと、流れ始めます。');
+          return;
+        }
+        sayRetry('<b>Could not reach the hall.</b><br>つながりませんでした。',
+                 function(){ startWithTrack(id); });
       });
   }
 

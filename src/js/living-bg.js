@@ -2016,14 +2016,20 @@ var __stopped = false, __hidden = false;
    止めても絵は1枚描かれる(下の draw(performance.now()))ので、背景は消えない。
    動かしたい人は札を押せばいつでも動く。一度選べば、その選択が優先される。 */
 var __stopped = MOBILE, __chose = false;
-/* 鍵を新しくした(2026-09-21)。古い鍵に残った 'on' は、
-   落ちると知らずに押した記録で、スマホで止める既定を打ち消していた
-   (高尾さんのiPhoneで実際に起きた。背景が動いたまま落ちた)。
-   パソコンでの選択は引き継ぐ。スマホでは選び直してもらう。 */
+/* スマホは常に静止画にする(2026-09-21 高尾さん判断)。
+   端末に残した記録で、原因が確定した:
+     s=132 / m=on / lost=0 / err="" / iOS 18.7 Safari 26.6.1
+   JSの例外も出ず、絵の置き場も取り上げられず、終了の印すら残さずに
+   2分12秒で終わっている。iOSがタブごと外から捨てている。
+   漏れているのではなく、動かし続けること自体が重い。
+   だから切り替えの印もスマホには出さない。
+   押せてしまえば、そこから落ちる道が残ってしまう。
+   パソコンでの選択は今まで通り引き継ぐ。 */
 try {
-  var __pref = localStorage.getItem('ogs-motion-v2');
-  if (!__pref && !MOBILE) __pref = localStorage.getItem('ogs-motion');
-  if (__pref){ __stopped = (__pref === 'off'); __chose = true; }
+  if (!MOBILE){
+    var __pref = localStorage.getItem('ogs-motion-v2') || localStorage.getItem('ogs-motion');
+    if (__pref){ __stopped = (__pref === 'off'); __chose = true; }
+  }
 } catch(e){}
 
 /* 止まった状態で始めるときの下ごしらえ(2026-09-21)。
@@ -2032,18 +2038,37 @@ try {
    そこで、止める前に必要な分だけ先に回す。
    動きを望まない人(端末の設定・自分でOFFを選んだ人)には、
    画面に出さずその場で一息に描く。スマホの既定の停止では、rAFで滑らかに整えてから止める。 */
-var __SETTLE_FRAMES = 40;
+var __SETTLE_FRAMES = 120;
 function __settle(atOnce){
   var t0 = performance.now(), n = 0;
   if (atOnce){
-    /* 素材が揃う前に一息に描くと、やはり真っ黒になる(実測: 濃さ0)。
-       読み込みが終わってから一度だけ描く。動きは見えず、絵だけが現れる */
-    var burst = function(){
-      var t = performance.now();
-      for (var i = 0; i < __SETTLE_FRAMES; i++){ __lastDraw = 0; draw(t + i*33); }
+    /* 素材が揃う前に描くと真っ黒になる(実測: 濃さ0)ので、読み込み後に描く。
+
+       描く回数は多いほど絵が育つ。40回では世界が薄く、120回で密になる
+       (2026-09-21 実測。濃さ 138,603 → 143,801、見た目の差はそれ以上)。
+       ただし一息に120回描くと、その間ずっと画面が固まる。
+
+       そこで「隠しておいて、描き上がってから現す」。
+       画布を透明にしたまま毎コマ描き、終わったら静かに浮かび上がらせる。
+       動いて見えず、固まりもしない。門と文字はDOMなので最初から見えている。 */
+    var run = function(){
+      t0 = performance.now();       // 数え始めは、実際に描き出したここから
+      // 画布には元から移り変わりの指定がある。隠すときは即座に(実測で1.9秒かかっていた)
+      try { cv.style.transition = 'none'; cv.style.opacity = '0'; } catch(e){}
+      (function step(ts){
+        __lastDraw = 0;
+        draw(ts || performance.now());
+        /* 回数だけで区切ると、遅い端末では待たせすぎる(コマが半分なら倍かかる)。
+           2秒を上限にして、どちらか早い方で切り上げる */
+        if (++n < __SETTLE_FRAMES && performance.now() - t0 < 2000) return requestAnimationFrame(step);
+        try {
+          if (!REDUCED) cv.style.transition = 'opacity .7s ease';
+          cv.style.opacity = '';
+        } catch(e){}
+      })();
     };
-    if (document.readyState === 'complete') setTimeout(burst, 300);
-    else addEventListener('load', function(){ setTimeout(burst, 300); });
+    if (document.readyState === 'complete') setTimeout(run, 120);
+    else addEventListener('load', function(){ setTimeout(run, 120); });
     return;
   }
   (function step(ts){
@@ -2063,6 +2088,7 @@ document.addEventListener('visibilitychange', function(){
 });
 
 (function buildMotionToggle(){
+  if (MOBILE) return;            // スマホは常に静止。押せる道を作らない
   var css = document.createElement('style');
   css.textContent =
     '#motion-toggle{position:fixed;left:14px;bottom:56px;z-index:9997;display:flex;' +
@@ -2174,7 +2200,7 @@ document.addEventListener('visibilitychange', function(){
   document.body.appendChild(a);
 })();
 
-if (REDUCED){ auto = false; manualP = 3.5; __settle(true); }
+if (REDUCED || MOBILE){ auto = false; manualP = 3.5; __settle(true); }
 else if (__stopped) __settle(__chose);
 else requestAnimationFrame(draw);
 

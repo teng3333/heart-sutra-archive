@@ -233,7 +233,9 @@ document.addEventListener('visibilitychange', function(){
       'background:rgba(6,9,16,.94);border:1px solid rgba(217,196,154,.3);color:#d9c49a;' +
       'font:11px/1.6 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all;max-height:60vh;overflow:auto';
     var g = function(k){ try { return localStorage.getItem(k) || '(なし)'; } catch(e){ return '(読めない)'; } };
-    box.textContent = '落ちた回:\\n' + g('ogs-crash') + '\\n\\nいまの回:\\n' + g('ogs-last');
+    box.textContent = '落ちた回:\\n' + g('ogs-crash') +
+                      '\\n\\nいまの回:\\n' + g('ogs-last') +
+                      '\\n\\n音:\\n' + g('ogs-audio');
     document.body.appendChild(box);
     box.addEventListener('click', function(){ box.remove(); });
   }

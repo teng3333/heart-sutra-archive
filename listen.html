@@ -26,7 +26,7 @@
 <script src="src/js/consent.js" defer></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
-<script src="src/js/living-bg.js?v=30" defer></script>
+<script src="src/js/living-bg.js?v=34" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -1224,6 +1224,35 @@
      (2026-09-16 高尾さん指示)。どの色になるかは曲名から決まるので、同じ曲なら毎回同じ色。 */
   var COOL = ['#5b8fb9', '#9ec9dd', '#5bb9a3', '#7f8fd6', '#9b7fd6', '#4f9fbf'];
   var WARM = ['#c1483a', '#dd8a5c', '#d9a23a', '#c9605f', '#e0705a', '#b8563f'];
+  /* living-bg の色合い(7種)から、この曲の色にいちばん近いものを選ぶ。
+     角度は各テーマの wash 色の色相。彩度が無い曲は「素(無彩)」へ。
+
+     動かしていた頃は、曲が替わっても色合いは変わらなかった。
+     それでも別の絵に見えたのは、相が育ち、球が回っていたから。
+     止めた絵にはその助けが無く、どの曲も同じ緑の球になっていた
+     (2026-09-21 高尾さん指摘。4曲続けて指紋がほぼ同じだった)。
+     曲そのものの色から選ぶので、波や文字の色と喧嘩しない。 */
+  var THEME_HUE = [null, 220, 6, 262, 146, 41, 176];   // 素・瑠璃・緋・菫・翠・金・白緑
+  function themeForColor(hex){
+    var c;
+    try { c = rgbOf(hex); } catch (e) { return 0; }
+    if (!c) return 0;
+    var r = c[0]/255, g = c[1]/255, b = c[2]/255;
+    var mx = Math.max(r,g,b), mn = Math.min(r,g,b), d = mx - mn;
+    if (d < 0.08) return 0;                            // 色味が無いなら素
+    var h = (mx === r) ? ((g - b) / d) % 6
+          : (mx === g) ? (b - r) / d + 2
+                       : (r - g) / d + 4;
+    h = (h * 60 + 360) % 360;
+    var best = 0, bd = 999;
+    for (var i = 1; i < THEME_HUE.length; i++){
+      var dd = Math.abs(h - THEME_HUE[i]);
+      if (dd > 180) dd = 360 - dd;
+      if (dd < bd){ bd = dd; best = i; }
+    }
+    return best;
+  }
+
   function trackColor(t){
     var k = hashOf((t.title || '') + '#' + (t.id || ''));
     var cool = (t.axis === 'sei');
@@ -1374,6 +1403,21 @@
           spin: motion.spin, tilt: motion.tilt, swellAmp: motion.swellAmp,
           swellRate: motion.swellRate, scale: motion.scale, hue: motion.hueFrom
         });
+        /* 止まった絵(スマホ)は自分では描き直さない。
+           ここで頼まないと、曲を替えても前の曲の球が残る
+           (2026-09-21 実測: 曲を替えても画布の濃さが一切変わらなかった)。
+           動いている画面では何もしない。
+
+           あわせて、一曲に一枚の姿を与える。色合いは曲の色から選び、
+           相は 2.9〜4.3 の間で曲ごとにずらす(開花から飽和の幅)。
+           この幅から出ると、種のように痩せるか、崩れて散ってしまう。 */
+        if (window.__livingBG.still && window.__livingBG.setTheme){
+          var hk = hashOf((t.title || '') + '~' + (t.id || ''));
+          window.__livingBG.setTheme(themeForColor(trackColor(t)));
+          window.__livingBG.restill(2.9 + (hk % 15) / 10);
+        } else if (window.__livingBG.restill){
+          window.__livingBG.restill();      // 動いている画面では何もしない
+        }
       }
     } catch (e) {}
     var col = trackColor(t);

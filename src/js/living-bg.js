@@ -784,6 +784,7 @@ function buildCenterImage(url, src){
       [0.92, 'rgba(0,0,0,0.12)'], [0.98, 'rgba(0,0,0,0.02)'],
       [1, 'rgba(0,0,0,0)']]);
     CIMG.can = can;
+    if (typeof __restill === 'function') __restill();
   };
   img.onerror = () => {
     if (CIMG.url !== url) return;
@@ -2039,36 +2040,76 @@ try {
    動きを望まない人(端末の設定・自分でOFFを選んだ人)には、
    画面に出さずその場で一息に描く。スマホの既定の停止では、rAFで滑らかに整えてから止める。 */
 var __SETTLE_FRAMES = 120;
+var __stillGen = 0;              // 古い描き上げを止める札
+
+/* 隠しておいて、描き上がってから現す。
+   描く回数は多いほど絵が育つ。40回では世界が薄く、120回で密になる
+   (2026-09-21 実測。濃さ 138,603 → 143,801、見た目の差はそれ以上)。
+   一息に描くと画面が固まるので、画布を透明にしたまま毎コマ描き、
+   終わったら静かに浮かび上がらせる。動いて見えず、固まりもしない。
+   門と文字はDOMなので最初から見えている。
+   遅い端末で待たせないよう、回数か2秒か、早い方で切り上げる。 */
+function __paintStill(){
+  var t0 = performance.now(), n = 0, mine = ++__stillGen;
+  // 画布には元から移り変わりの指定がある。隠すときは即座に(実測で1.9秒かかっていた)
+  try { cv.style.transition = 'none'; cv.style.opacity = '0'; } catch(e){}
+  (function step(ts){
+    if (mine !== __stillGen) return;          // 新しい描き上げに追い越された
+    /* 毎コマ言い直す。listen.html は音の強さで phase を動かし続けるので、
+       一度だけ決めても次のコマで書き換えられる
+       (2026-09-21 実測: 3.5 に決めたのに 8.19 = 種 で描かれ、
+        濃さが 134,393 → 71,429 まで痩せていた) */
+    auto = false; manualP = __stillPhase;
+    __lastDraw = 0;
+    draw(ts || performance.now());
+    if (++n < __SETTLE_FRAMES && performance.now() - t0 < 2000) return requestAnimationFrame(step);
+    try {
+      if (!REDUCED) cv.style.transition = 'opacity .7s ease';
+      cv.style.opacity = '';
+    } catch(e){}
+  })();
+}
+
+/* 止まった絵を描き直す(2026-09-21)。
+   止めた絵は自分では描き直さないので、次の2つで画面から消えていた:
+
+   ① 画面の寸法が変わったとき
+      resize() は cv.width を書き換える。画布はそこで白紙に戻る。
+      iPhoneはスクロールでアドレスバーが伸縮するたびにこれが起きるため、
+      背景が途中で消えて、そのまま真っ暗になっていた(高尾さん報告)。
+   ② 曲が変わったとき
+      listen.html は曲ごとに地形・表情・空・中央の絵を入れ替えるが、
+      描き直されないので前の曲の絵が残ったままだった(実測: 濃さが一切変わらない)。
+
+   相は既定で 3.5(開花と飽和の間)に戻す。呼び手が指定すればその相で止める。曲ごとの相は 6.4(還元)から始まり、
+   動く画面では時間とともに育つが、止まった絵では育たないため、
+   そのまま描くとスカスカの一枚になってしまう。 */
+var __restillT = 0, __stillPhase = 3.5;
+function __restill(p){
+  if (!__stopped && !REDUCED) return;         // 動いている画面は自分で描き直す
+  /* 止める相を呼び手が指定できる。曲ごとに少しずらすため(2026-09-21)。
+     指定が無ければ 3.5(開花と飽和の間)。 */
+  if (isFinite(p)) __stillPhase = Math.max(2.6, Math.min(4.4, p));
+  clearTimeout(__restillT);
+  __restillT = setTimeout(__paintStill, 220);
+}
+addEventListener('resize', __restill);
+addEventListener('orientationchange', __restill);
+try {
+  if (window.__livingBG){
+    window.__livingBG.restill = __restill;
+    /* この画面の絵が止まっているか。呼び手が「止まっているときだけ」の
+       手当てをするために見る(listen.html の曲ごとの色合いなど) */
+    Object.defineProperty(window.__livingBG, 'still', { get: function(){ return __stopped || REDUCED; } });
+  }
+} catch(e){}
+
 function __settle(atOnce){
   var t0 = performance.now(), n = 0;
   if (atOnce){
-    /* 素材が揃う前に描くと真っ黒になる(実測: 濃さ0)ので、読み込み後に描く。
-
-       描く回数は多いほど絵が育つ。40回では世界が薄く、120回で密になる
-       (2026-09-21 実測。濃さ 138,603 → 143,801、見た目の差はそれ以上)。
-       ただし一息に120回描くと、その間ずっと画面が固まる。
-
-       そこで「隠しておいて、描き上がってから現す」。
-       画布を透明にしたまま毎コマ描き、終わったら静かに浮かび上がらせる。
-       動いて見えず、固まりもしない。門と文字はDOMなので最初から見えている。 */
-    var run = function(){
-      t0 = performance.now();       // 数え始めは、実際に描き出したここから
-      // 画布には元から移り変わりの指定がある。隠すときは即座に(実測で1.9秒かかっていた)
-      try { cv.style.transition = 'none'; cv.style.opacity = '0'; } catch(e){}
-      (function step(ts){
-        __lastDraw = 0;
-        draw(ts || performance.now());
-        /* 回数だけで区切ると、遅い端末では待たせすぎる(コマが半分なら倍かかる)。
-           2秒を上限にして、どちらか早い方で切り上げる */
-        if (++n < __SETTLE_FRAMES && performance.now() - t0 < 2000) return requestAnimationFrame(step);
-        try {
-          if (!REDUCED) cv.style.transition = 'opacity .7s ease';
-          cv.style.opacity = '';
-        } catch(e){}
-      })();
-    };
-    if (document.readyState === 'complete') setTimeout(run, 120);
-    else addEventListener('load', function(){ setTimeout(run, 120); });
+    /* 素材が揃う前に描くと真っ黒になる(実測: 濃さ0)ので、読み込み後に描く */
+    if (document.readyState === 'complete') setTimeout(__paintStill, 120);
+    else addEventListener('load', function(){ setTimeout(__paintStill, 120); });
     return;
   }
   (function step(ts){

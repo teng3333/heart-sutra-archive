@@ -26,7 +26,7 @@
 <script src="src/js/consent.js" defer></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
-<script src="src/js/living-bg.js?v=34" defer></script>
+<script src="src/js/living-bg.js?v=35" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -1552,13 +1552,37 @@
     }, 1400);
   }
 
+  /* 自動再生を拒まれたとき、次にどこかを触ったら鳴らす。
+     釦を狙って押させるのは、聴きに来た人に課す仕事としては重い。
+     一度鳴ればもう要らないので、その場で自分を外す(2026-09-21) */
+  var armed = false;
+  function armAnyTap(){
+    if (armed) return;
+    armed = true;
+    var go = function(){
+      armed = false;
+      document.removeEventListener('pointerdown', go, true);
+      document.removeEventListener('keydown', go, true);
+      wakeAudio();
+      audio.play().then(function(){ say(''); }, function(){});
+    };
+    document.addEventListener('pointerdown', go, true);
+    document.addEventListener('keydown', go, true);
+  }
+
   function go(i){
     swapDark(function(){ render(queue[i]); });
-    audio.src = queue[i].audio_url;
-    audio.play().catch(function(){
+    /* 解錠を待ってから差し込む。待たないと解錠を自分で壊してしまう */
+    var url = queue[i].audio_url;
+    unlockReady.then(function(){
+      audio.src = url;
+      return audio.play();
+    }).then(function(){ noteAudio({ play: 'ok' }); }, function(e){
       /* 自動再生が拒まれた。札を Play へ戻さないと、押す前から止める釦に見える */
+      noteAudio({ play: 'ng ' + (e && e.name), unlocked: unlocked });
       syncPlayBtn();
-      say('Tap play to continue.<br>再生するにはボタンを押してください。');
+      say('Tap anywhere to play.<br>画面のどこかを触ると鳴ります。');
+      armAnyTap();
     });
     preloadNext();
     updateNav();
@@ -1669,17 +1693,49 @@
   var SILENCE = 'data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
   var unlocked = false, unlocking = false;
 
+  /* 解錠の結果は端末に残す。手元では再現できないため(2026-09-21)。
+     住所の末尾に #diag を付けて開くと、背景の記録と一緒に読める */
+  function noteAudio(v){
+    try {
+      var o = {};
+      try { o = JSON.parse(localStorage.getItem('ogs-audio') || '{}'); } catch (e) {}
+      for (var k in v) o[k] = v[k];
+      o.t = new Date().toISOString().slice(11, 19);
+      localStorage.setItem('ogs-audio', JSON.stringify(o));
+    } catch (e) {}
+  }
+
+  /* 解錠が済むまで待てる約束。
+     棚の取得が速いと、無音が鳴り終わる前に本当の曲が差し込まれ、
+     解錠そのものが AbortError で中断していた(2026-09-21 実測)。
+     パソコンは寛容なので鳴るが、スマホはここで閉じたままになる。
+     長くても0.5秒で諦めて先へ進む(待ち続けて無音になるほうが悪い) */
+  var unlockReady = Promise.resolve();
+
   function unlockAudio(){
     wakeAudio();
     if (unlocked) return;
     unlocked = true; unlocking = true;
-    var release = function(){ unlocking = false; };
+    var settle;
+    unlockReady = new Promise(function(res){ settle = res; });
+    setTimeout(function(){ settle(); }, 500);
+    var release = function(){ unlocking = false; settle(); };
+    /* 無音を止めるのは、まだ無音が載っているときだけ。
+       棚の取得が速いと、止める処理が届く前に本当の曲が載っていることがあり、
+       そのまま止めると「押さないと鳴らない」状態になる。
+       手元では無音の解錠(14.57秒)と本当の曲(17.66秒)の間が3秒あったが、
+       記憶から返る端末では詰まりうる */
+    var stopIfStillSilent = function(){
+      if ((audio.src || '').indexOf('data:audio/wav') === 0) audio.pause();
+      release();
+    };
     try {
       audio.src = SILENCE;
       var pr = audio.play();
-      if (pr && pr.then) pr.then(function(){ audio.pause(); release(); }, release);
-      else { audio.pause(); release(); }
-    } catch (e) { release(); }
+      if (pr && pr.then) pr.then(function(){ noteAudio({ unlock: 'ok' }); stopIfStillSilent(); },
+                                 function(e){ noteAudio({ unlock: 'ng ' + (e && e.name) }); release(); });
+      else { noteAudio({ unlock: 'old' }); stopIfStillSilent(); }
+    } catch (e) { noteAudio({ unlock: 'throw' }); release(); }
   }
 
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){

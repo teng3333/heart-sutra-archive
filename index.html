@@ -314,6 +314,29 @@
       padding:10px 12px;border:1px solid var(--hair);color:var(--washi)}
     header nav .lang{opacity:.55}
   }
+
+  /* ── コンテストの告知(2026-09-21〜10-19) ──────────────────
+     期間が終わったら、この枠ごと外す。朱の線だけで目を引かせ、
+     色や大きさで騒がない。家の静けさを壊さないため */
+  .contest-call{max-width:760px;margin:52px auto 0;padding:26px 28px;
+    border:1px solid var(--hair2);border-left:2px solid var(--shu);
+    background:rgba(13,18,32,.42)}
+  .contest-call .eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--shu);margin:0 0 10px}
+  .contest-call h3{font-family:var(--ja);font-size:23px;font-weight:500;margin:0 0 6px;
+    color:var(--washi-hi);line-height:1.5}
+  .contest-call p{margin:0 0 6px;font-size:14px;line-height:1.85;opacity:.86}
+  .contest-call .terms{font-size:13px;opacity:.7;margin-top:12px}
+  .contest-call .terms b{color:var(--washi-hi);font-weight:500;opacity:1}
+  .contest-call .go{display:inline-block;margin-top:16px;padding:10px 22px;
+    border:1px solid var(--hair2);color:var(--washi-hi);text-decoration:none;
+    font-size:12px;letter-spacing:.14em;transition:border-color .2s,background .2s}
+  .contest-call .go:hover,.contest-call .go:focus-visible{border-color:var(--washi);
+    background:rgba(13,18,32,.7)}
+  @media (max-width:700px){
+    .contest-call{margin:38px 16px 0;padding:22px 20px}
+    .contest-call h3{font-size:20px}
+  }
 </style>
 <link rel="stylesheet" href="src/css/home-listen.css?v=3">
 </head>
@@ -337,7 +360,7 @@
     </a>
     <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="mainNav">Menu</button>
     <nav id="mainNav" aria-label="Primary navigation">
-      <a href="#listen" data-ogs-event="listen_open" data-ogs-placement="header">Listen</a><a href="kit.html" data-ogs-event="kit_open" data-ogs-placement="header">For Creators</a><a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="header">Submit</a><a href="archive.html">Archive</a><a href="about.html">About</a>
+      <a href="#listen" data-ogs-event="listen_open" data-ogs-placement="header">Listen</a><a href="kit.html" data-ogs-event="kit_open" data-ogs-placement="header">For Creators</a><a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="header">Submit</a><a href="contest.html" data-ogs-event="contest_open" data-ogs-placement="header">Contest</a><a href="archive.html">Archive</a><a href="about.html">About</a>
       <span class="lang soon" title="Coming soon — 準備中">日本語</span>
     </nav>
   </header>
@@ -409,6 +432,18 @@
   <div class="river" aria-hidden="true">
     <span>観自在菩薩行深般若波羅蜜多時照見五蘊皆空度一切苦厄舎利子色不異空空不異色色即是空空即是色受想行識亦復如是舎利子是諸法空相不生不滅不垢不浄不増不減是故空中無色無受想行識無眼耳鼻舌身意無色声香味触法無眼界乃至無意識界　</span><span>観自在菩薩行深般若波羅蜜多時照見五蘊皆空度一切苦厄舎利子色不異空空不異色色即是空空即是色受想行識亦復如是舎利子是諸法空相不生不滅不垢不浄不増不減是故空中無色無受想行識無眼耳鼻舌身意無色声香味触法無眼界乃至無意識界　</span>
   </div>
+
+  <!-- コンテストの告知(2026-09-21〜10-19)。期間が終わったら、この枠と上のCSSを外す -->
+  <section class="contest-call" aria-labelledby="contestCallLabel">
+    <p class="eyebrow">Contest · 募集中</p>
+    <h3 id="contestCallLabel">心が解ける般若心経</h3>
+    <p>Make a Heart Sutra track that lets someone put it down for a while.</p>
+    <p class="ja">張りつめたまま過ごしている人が、しばらく力を抜ける一曲を。</p>
+    <p class="terms"><b>10,000円</b> to one winner ／ 優勝1名に1万円　·　
+       entries close <b>2026-09-30 23:59 JST</b> ／ 締切 9月30日（水）23:59</p>
+    <a class="go" href="contest.html" data-ogs-event="contest_open" data-ogs-placement="home">
+      Read the rules — 応募要項を見る</a>
+  </section>
 
   <section id="gate">
     <div class="sec-head"><h3>How to cross</h3><span>渡り方</span></div>

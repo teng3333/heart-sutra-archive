@@ -41,6 +41,22 @@
   .steps li::before{content:counter(s);position:absolute;left:0;top:.1em;
     width:1.7em;height:1.7em;border:1px solid rgba(217,196,154,.32);border-radius:50%;
     display:flex;align-items:center;justify-content:center;font-size:13px;opacity:.8}
+  /* 応募の入口。この頁でいちばん押してほしいものなので、
+     他のどの要素よりはっきりさせる。朱の印は家の他の場所と同じ「渡」 */
+  .entry-go{margin:26px 0 30px;text-align:center}
+  .entry-go a{display:inline-flex;align-items:center;gap:16px;
+    padding:16px 30px 16px 16px;text-decoration:none;color:var(--washi-hi,#e9dcba);
+    border:1px solid rgba(217,196,154,.34);background:rgba(13,18,32,.5);
+    transition:border-color .2s,background .2s}
+  .entry-go a:hover,.entry-go a:focus-visible{border-color:rgba(217,196,154,.8);
+    background:rgba(13,18,32,.78)}
+  .entry-go a b{flex:none;width:46px;height:46px;display:flex;align-items:center;
+    justify-content:center;background:#b23a2e;color:#f5ecd8;
+    font-family:var(--ja,"Shippori Mincho",serif);font-size:23px;font-weight:500}
+  .entry-go a span{text-align:left;line-height:1.5}
+  .entry-go a .en{display:block;font-size:16px;letter-spacing:.06em}
+  .entry-go a .ja{display:block;font-size:13px;opacity:.8;margin-top:3px}
+  .entry-go .under{display:block;margin-top:10px;font-size:12px;opacity:.6;letter-spacing:.04em}
   .no{margin:14px 0 26px;padding:0;list-style:none}
   .no li{padding:0 0 0 1.4em;position:relative;margin:0 0 9px;line-height:1.8}
   .no li::before{content:"×";position:absolute;left:0;opacity:.5}
@@ -86,6 +102,16 @@
             <span class="ja">Xでシェアするときに付けてください。任意です。</span></td></tr>
   </table>
 
+  <p class="entry-go">
+    <a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="contest">
+      <b aria-hidden="true">渡</b>
+      <span><span class="en">Submit your track</span>
+            <span class="ja">作品を投稿する</span></span>
+    </a>
+    <span class="under">Submitting during the period <i>is</i> your entry. Nothing else to do.<br>
+      <span class="ja">期間内の投稿が、そのまま応募です。ほかに手続きはありません。</span></span>
+  </p>
+
   <h3>What we accept<span class="ja">募集作品</span></h3>
   <p>Any genre. Made by you. One of the following three.</p>
   <p class="ja">ジャンルは自由。ご本人が制作した作品で、次のいずれかに当てはまるもの。</p>
@@ -100,11 +126,21 @@
   <h3>How to enter<span class="ja">応募方法</span></h3>
   <ol class="steps">
     <li>Make your track. The <a class="link" href="kit.html">Kit</a> has the text, the romanisation and prompts you can use.<span class="ja"><br>作品を制作します。<a class="link" href="kit.html">制作ガイド</a>に本文・読み・そのまま使える指示文があります。</span></li>
-    <li>Submit it from the <a class="link" href="submit.html">submission form</a>. <b>Every track submitted during the entry period is automatically an entry.</b><span class="ja"><br><a class="link" href="submit.html">投稿フォーム</a>から投稿します。<b>募集期間内に投稿された作品は、自動的に応募作品となります。</b>別の手続きは要りません。</span></li>
+    <li><b>Submit it — that is your entry.</b> Use the <a class="link" href="submit.html">submission form</a>: your mp3, a title and a name. Every track submitted during the entry period is automatically entered.<span class="ja"><br><b>投稿します。それが応募です。</b><a class="link" href="submit.html">投稿フォーム</a>に、mp3・曲名・お名前を入れるだけ。募集期間内に投稿された作品は、自動的に応募作品になります。<b>「応募」という別の手続きはありません。</b></span></li>
     <li>Share it on X with the tag if you like. <b>Optional</b> — it does not affect judging.<span class="ja"><br>よろしければXでシェアしてください。<b>任意</b>です。審査には影響しません。</span></li>
   </ol>
   <p><small>We do not make sharing a condition, because we cannot verify it fairly — a private account or a dropped tag should never cost someone the prize.</small></p>
   <p class="ja"><small>シェアを条件にしないのは、こちらで公平に確かめられないからです。非公開アカウントやタグの付け忘れで賞を失う、ということがあってはなりません。</small></p>
+
+  <p class="entry-go">
+    <a href="submit.html" data-ogs-event="submit_open" data-ogs-placement="contest">
+      <b aria-hidden="true">渡</b>
+      <span><span class="en">Submit your track</span>
+            <span class="ja">作品を投稿する</span></span>
+    </a>
+    <span class="under">Submitting during the period <i>is</i> your entry. Nothing else to do.<br>
+      <span class="ja">期間内の投稿が、そのまま応募です。ほかに手続きはありません。</span></span>
+  </p>
 
   <h3>How we judge<span class="ja">審査方法</span></h3>
   <p><b>First pass — AN listens.</b> AN plays each track three times and judges how far it carries toward <i>still</i> — focus, release, relax.</p>

@@ -2059,7 +2059,7 @@ function __paintStill(){
        一度だけ決めても次のコマで書き換えられる
        (2026-09-21 実測: 3.5 に決めたのに 8.19 = 種 で描かれ、
         濃さが 134,393 → 71,429 まで痩せていた) */
-    auto = false; manualP = 3.5;
+    auto = false; manualP = __stillPhase;
     __lastDraw = 0;
     draw(ts || performance.now());
     if (++n < __SETTLE_FRAMES && performance.now() - t0 < 2000) return requestAnimationFrame(step);
@@ -2081,18 +2081,28 @@ function __paintStill(){
       listen.html は曲ごとに地形・表情・空・中央の絵を入れ替えるが、
       描き直されないので前の曲の絵が残ったままだった(実測: 濃さが一切変わらない)。
 
-   相は 3.5(開花と飽和の間)に戻す。曲ごとの相は 6.4(還元)から始まり、
+   相は既定で 3.5(開花と飽和の間)に戻す。呼び手が指定すればその相で止める。曲ごとの相は 6.4(還元)から始まり、
    動く画面では時間とともに育つが、止まった絵では育たないため、
    そのまま描くとスカスカの一枚になってしまう。 */
-var __restillT = 0;
-function __restill(){
+var __restillT = 0, __stillPhase = 3.5;
+function __restill(p){
   if (!__stopped && !REDUCED) return;         // 動いている画面は自分で描き直す
+  /* 止める相を呼び手が指定できる。曲ごとに少しずらすため(2026-09-21)。
+     指定が無ければ 3.5(開花と飽和の間)。 */
+  if (isFinite(p)) __stillPhase = Math.max(2.6, Math.min(4.4, p));
   clearTimeout(__restillT);
   __restillT = setTimeout(__paintStill, 220);
 }
 addEventListener('resize', __restill);
 addEventListener('orientationchange', __restill);
-try { if (window.__livingBG) window.__livingBG.restill = __restill; } catch(e){}
+try {
+  if (window.__livingBG){
+    window.__livingBG.restill = __restill;
+    /* この画面の絵が止まっているか。呼び手が「止まっているときだけ」の
+       手当てをするために見る(listen.html の曲ごとの色合いなど) */
+    Object.defineProperty(window.__livingBG, 'still', { get: function(){ return __stopped || REDUCED; } });
+  }
+} catch(e){}
 
 function __settle(atOnce){
   var t0 = performance.now(), n = 0;

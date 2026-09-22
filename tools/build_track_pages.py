@@ -152,7 +152,7 @@ def page(t, base, tmpl):
     # 曲を渡せるようにする(2026-09-20 高尾さん指示)。
     # Xは文字しか受け取れないので、押した先の投稿欄に文が入った状態で開く
     text = share_text(t, url)
-    tw = "https://twitter.com/intent/tweet?text=" + urllib.parse.quote(text)
+    tw = "https://x.com/intent/post?text=" + urllib.parse.quote(text)
     body.append('<a class="btn" href="%s" target="_blank" rel="noopener noreferrer">'
                 '𝕏 ポストする</a>' % e(tw))
     # 改行をそのまま属性に置くと生成物が読みにくい。&#10; にして1行に収める

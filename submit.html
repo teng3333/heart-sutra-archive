@@ -555,7 +555,7 @@
     if (!ready) return;          // 渡す住所が無いので、共有の釦も出さない
     var sx = document.getElementById('shareX');
     if (sx) {
-      sx.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText(t));
+      sx.href = 'https://x.com/intent/post?text=' + encodeURIComponent(shareText(t));
       sx.addEventListener('click', function () {
         if (window.ogsTrack) window.ogsTrack('share_click', { placement: 'submit_landed' });
       });

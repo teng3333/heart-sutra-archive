@@ -414,7 +414,7 @@ function show(){
   /* 曲が無くても運勢は渡せる。まず曲抜きで整えておく */
   var TAGS='#AN神籤 #般若心経 #OpenGateSutra';
   var base='【AN神籤】今日の運勢は「'+d.r+'」\n\n'+p.m.substring(0,60)+'…\n\n'+SITE+'\n\n'+TAGS;
-  document.getElementById('sX').href='https://twitter.com/intent/tweet?text='+encodeURIComponent(base);
+  document.getElementById('sX').href='https://x.com/intent/post?text='+encodeURIComponent(base);
 
   /* 曲の欄だけは、APIの返事を待ってから埋める */
   var muSec=document.querySelector('.mu-s');
@@ -428,7 +428,7 @@ function show(){
     document.getElementById('mU').value=url;
     document.getElementById('mL').href=url;
     var t='【AN神籤】今日の運勢は「'+d.r+'」\n\nANおすすめ曲: '+song.title+'\n'+url+'\n\n'+p.m.substring(0,60)+'…\n\n'+TAGS;
-    document.getElementById('sX').href='https://twitter.com/intent/tweet?text='+encodeURIComponent(t);
+    document.getElementById('sX').href='https://x.com/intent/post?text='+encodeURIComponent(t);
   });
   if(k==='daidaikichi')spG();
   r.scrollIntoView({behavior:'smooth',block:'start'});

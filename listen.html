@@ -341,7 +341,13 @@
      混むと8秒を超えて打ち切られ、門の画面から先へ進めなくなっていた。
      棚のAPIも 2.9〜5.7秒かかるので、静・動もいつ失敗してもおかしくない。
      根はバックエンドが遅いことなので、ここは応急の手当て。 */
-  var TIMEOUT = 20000;
+  /* 棚の取得を待つ上限。20秒でも足りなくなった(2026-09-22 実測)。
+       /api/archive  最初の1バイトまで 12.7 / 15.3 / 16.9 / 25.6秒
+     しかも「曲の住所+棚」で来た人は、曲の詳細(4秒)と一覧の2回を待つので重なる。
+     実際に ?gate=mei&track=147 が32秒待っても届かず打ち切られた。
+     遅いのは通信でもDBでもなく Railway 側のアプリの中(0.4秒で返る問い合わせに15秒)。
+     本丸はそこだが、直るまでここで諦めさせない。 */
+  var TIMEOUT = 35000;
   var SHELF_COLOR = {focus:'#5b8fb9', relax:'#9ec9dd', energy:'#c1483a', inspire:'#dd8a5c'};
 
   var audio = document.getElementById('audio');
@@ -357,7 +363,7 @@
   var lyr = document.getElementById('lyr'), lyrBody = document.getElementById('lyrBody');
   var btnLyr = document.getElementById('btnLyr');
 
-  var queue = [], pos = -1, current = null;
+  var queue = [], pos = -1, current = null, curAxis = null;
   var waveRGB = [217, 196, 154];
   var baseHex = '';                 // この曲の色の元。波の呼吸に合わせてここから回す
 
@@ -1595,6 +1601,7 @@
     });
     preloadNext();
     updateNav();
+    stampURL(queue[i].id);
   }
 
   function next(){
@@ -1626,6 +1633,20 @@
   }
 
   /* 先頭にいるときだけ「前へ」を鈍らせる。押せるが、行き先が無いことを示す */
+  /* 住所に、いま聴いているものを映しておく(2026-09-22 高尾さん指摘)。
+     これが無いと、聞き流し中に住所をコピーして人に渡しても、
+     受け取った人には門しか出ない。「ページには行くが曲が始まらない」の原因。
+     replaceState なので、戻る釦の履歴は汚さない。 */
+  function stampURL(id){
+    if (!history.replaceState) return;
+    var q = [];
+    if (curAxis) q.push('gate=' + curAxis);
+    if (id) q.push('track=' + id);
+    try {
+      history.replaceState(null, '', location.pathname + (q.length ? '?' + q.join('&') : ''));
+    } catch (e) {}
+  }
+
   function updateNav(){
     var b = document.getElementById('btnPrev');
     if (b) b.classList.toggle('dim', pos <= 0);
@@ -1685,6 +1706,7 @@
   }
 
   function start(axis){
+    curAxis = axis;
     say('Loading…');
     fetchTracks(axis)
       .then(function(d){
@@ -2137,7 +2159,7 @@
     var label = btnShare.textContent;
     var t = current || {};
     var text = shotText(t);
-    var tweet = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+    var tweet = 'https://x.com/intent/post?text=' + encodeURIComponent(text);
     var handheld = matchMedia('(pointer: coarse)').matches;
 
     btnShare.disabled = true;
@@ -2368,7 +2390,10 @@
   /* 曲のページから「聴く」で来たとき。その曲から始め、続けて同じ棚を流す。
      曲ごとに再生画面を作らず、この画面ひとつに集める。直す場所を一か所に保つため */
   var TRACK_API = API.replace('/api/shelf/', '/api/track/');
-  function startWithTrack(id){
+  /* axis を渡すと、その棚で続ける(2026-09-22)。
+     渡さないとその曲の主たる棚になるので、瞑から渡した住所が
+     受け取った側では静や動の棚になってしまう */
+  function startWithTrack(id, axis){
     /* この1曲だけ、球の中心をジャケットにする(2026-09-17 高尾さん指示)。
        ここから同じ棚へ流れ続けるので、次の曲に移った時点でANへ戻す。
        SNSへ出す画面は「自分の曲」のときだけ、という境目をはっきりさせるため */
@@ -2377,7 +2402,8 @@
     fetch(TRACK_API + id)
       .then(function(r){ if (!r.ok) throw r.status; return r.json(); })
       .then(function(t){
-        return fetchTracks(t.axis).then(function(d){
+        curAxis = axis || t.axis;
+        return fetchTracks(curAxis).then(function(d){
           var rest = (d.items || []).filter(function(x){ return x.audio_url && x.id !== t.id; });
           queue = [t].concat(shuffle(rest)); pos = -1;
           gates.style.display = 'none';
@@ -2393,7 +2419,7 @@
           return;
         }
         sayRetry('<b>Could not reach the hall.</b><br>つながりませんでした。',
-                 function(){ startWithTrack(id); });
+                 function(){ startWithTrack(id, curAxis); });
       });
   }
 
@@ -2409,7 +2435,7 @@
     gates.style.display = 'none';
     say('Opening…<br>門を開いています。');
   }
-  if (fromTrack) startWithTrack(+trackParam);
+  if (fromTrack) startWithTrack(+trackParam, fromGate ? q : null);
   else if (fromGate) start(q);
 })();
 </script>

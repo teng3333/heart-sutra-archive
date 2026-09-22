@@ -254,6 +254,15 @@
         <b aria-hidden="true">動</b><span class="en">MOVE</span>
         <small>ENERGY<br>&amp; INSPIRE</small>
       </button>
+      <!-- 終始静かな曲だけの門(2026-09-22 高尾さん指示)。
+           「静」の棚にもビートの効いた曲が多く、瞑想には向かなかった。
+           分析データでは「終始静か」かどうかが判定できない
+           (曲中の起伏を表す development は、108曲中85曲が同じ75だった)ので、
+           運営が耳で選んだ曲を MEI に並べる。_dev/mei_picker.html で選ぶ -->
+      <button class="gate" type="button" data-axis="mei">
+        <b aria-hidden="true">瞑</b><span class="en">STILLNESS</span>
+        <small>MEDITATE<br>&amp; BREATHE</small>
+      </button>
       <!-- 静も動も混ぜて流す門(2026-09-19 高尾さん指示) -->
       <button class="gate" type="button" data-axis="all">
         <b aria-hidden="true">全</b><span class="en">ALL</span>
@@ -1627,6 +1636,15 @@
      本番は常にAPIから引く(この分岐に入らない)。 */
   var DEMO = (new URLSearchParams(location.search)).get('demo') === '1';
 
+  /* ── 瞑の棚 ────────────────────────────────────────────
+     終始静かで、瞑想に向く曲の番号。運営が耳で選んだもの。
+     増やすときは、この配列に番号を足すだけでよい(他は何も触らない)。
+     選ぶ道具は _dev/mei_picker.html(手元用・公開していない)。
+     頭・中・終の3か所を聴き比べられるようにしてある。
+     分析データに頼らないのは、曲中の起伏を表す development が
+     108曲中85曲で同じ値(75)になっていて、使い物にならないため。 */
+  var MEI = [];
+
   function fetchTracks(axis){
     if (DEMO){
       // 開発中は書き換えるたびに読み直したいので、毎回ちがう印をつける
@@ -1641,9 +1659,17 @@
 
     /* 「混ぜて聴く」。静も動も分けずに全曲を流す(2026-09-19 高尾さん指示)。
        棚のAPIは片側しか返さないので、全曲を返すアーカイブのAPIを使う */
-    if (axis === 'all'){
+    if (axis === 'all' || axis === 'mei'){
       return fetch(API.replace('/api/shelf/', '/api/archive'), { signal: ctrl.signal })
-        .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); });
+        .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); })
+        .then(function(d){
+          if (axis !== 'mei') return d;
+          /* 選ばれた番号だけを、選ばれた順ではなく一覧の順で拾う。
+             棚に無い番号(取り下げられた曲)は黙って落ちる */
+          var want = {};
+          MEI.forEach(function(id){ want[id] = 1; });
+          return { items: (d.items || []).filter(function(t){ return want[t.id]; }) };
+        });
     }
 
     return fetch(API + axis, { signal: ctrl.signal })
@@ -1741,6 +1767,14 @@
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){
     g.addEventListener('click', function(){ unlockAudio(); wakeAudio(); start(g.dataset.axis); });
   });
+
+  /* 瞑の曲がまだ1曲も選ばれていないなら、門そのものを出さない。
+     押しても空の棚が出るだけの門は、置かないほうがよい */
+  (function(){
+    if (MEI.length) return;
+    var g = gates.querySelector('.gate[data-axis="mei"]');
+    if (g) g.remove();
+  })();
 
   function showLyrics(on){
     lyr.hidden = !on;
@@ -2368,7 +2402,7 @@
   var q = params.get('gate');
   if (q === 'dou') q = 'do';
   var fromTrack = trackParam && /^\d+$/.test(trackParam) && !DEMO;
-  var fromGate = (q === 'sei' || q === 'do' || q === 'all');
+  var fromGate = (q === 'sei' || q === 'do' || q === 'all' || q === 'mei');
   if (fromTrack || fromGate){
     /* ホームの門から来た人に、ここでもう一度門を見せない。
        棚の一覧を取り終えるまで門が出たままで、「また門が出た」と見えていた(2026-09-16) */

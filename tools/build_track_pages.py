@@ -113,6 +113,10 @@ def page(t, base, tmpl):
         e(urllib.parse.quote(who)), e(who))
     if t.get("country"):
         by += "  " + e(t["country"])
+    # XのID(自己申告)。track.html と同じ形を保つこと
+    xh = t.get("x_handle") or ""
+    if re.fullmatch(r"[A-Za-z0-9_]{1,15}", xh):
+        by += '  ·  <a href="https://x.com/%s" target="_blank" rel="noopener noreferrer">@%s</a>' % (xh, xh)
     body.append('<p class="by">%s</p>' % by)
     body.append('<p class="meta">%s</p>' % e(meta))
     body.append('</div></div>')

@@ -256,6 +256,17 @@
     a.textContent = who;
     by.appendChild(a);
     if (t.country) by.appendChild(document.createTextNode('  ' + t.country));
+    /* XのID(自己申告)。サーバーで形を確かめて @ なしで届くが、住所に使うのでここでも確かめる。
+       tools/build_track_pages.py と同じ形を保つこと */
+    if (t.x_handle && /^[A-Za-z0-9_]{1,15}$/.test(t.x_handle)){
+      by.appendChild(document.createTextNode('  ·  '));
+      var xa = document.createElement('a');
+      xa.href = 'https://x.com/' + t.x_handle;
+      xa.target = '_blank';
+      xa.rel = 'noopener noreferrer';
+      xa.textContent = '@' + t.x_handle;
+      by.appendChild(xa);
+    }
 
     document.getElementById('meta').textContent =
       [t.genre, t.subgenre, (t.languages || []).join(' / ')].filter(Boolean).join('  ·  ');

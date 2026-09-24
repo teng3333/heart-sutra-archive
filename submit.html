@@ -220,6 +220,18 @@
     font-size:11px;padding:4px 10px;cursor:pointer}
   .drop-err{color:#e08a7a;font-size:12.5px;margin:-10px 0 16px}
 
+  /* ジャケット: mp3の画像が使われることを、欄の見出しと絵で伝える */
+  label .note{display:block;margin-top:6px;font-family:var(--ja);font-size:12px;
+    letter-spacing:.06em;text-transform:none;color:var(--washi)}
+  .art-auto{display:flex;gap:12px;align-items:center;padding:10px 12px;
+    border:1px solid var(--hair2,rgba(217,196,154,.34));background:rgba(13,18,32,.45);
+    text-transform:none;letter-spacing:.04em}
+  .art-auto img{object-fit:cover;border:1px solid var(--hair2,rgba(217,196,154,.34));flex:none}
+  .art-auto b{display:block;font-family:var(--ja);font-size:13px;font-weight:400;color:var(--washi-hi)}
+  .art-auto b + span{display:block;font-size:11.5px;color:var(--nibi);margin-top:3px}
+  .art-err{color:#e08a7a;font-size:12.5px;text-transform:none;letter-spacing:.04em}
+  .art-auto[hidden],.art-auto img[hidden],.art-err[hidden]{display:none!important}
+
   /* 自動で入った欄は、そう分かるようにする。勝手に決められた感じを残さない */
   .hint.filled{color:#8fbf9a}
   .hint.filled::before{content:"✓ "}
@@ -291,9 +303,22 @@
       <span class="hint"><b>Your link stays on screen while your track plays.</b> 再生中、あなたのリンクが画面に出ます。聴いた人があなたに辿り着ける唯一の道です。</span>
     </label>
 
-    <label>Cover art <span class="ja">ジャケット画像 — 任意</span>
+    <label>X <span class="ja">XのID — 任意</span>
+      <input type="text" name="x_handle" id="xInput" maxlength="60" placeholder="@your_id"
+        autocomplete="off" autocapitalize="off" spellcheck="false">
+      <span class="hint">曲のページに <b>@ID</b> とXへのリンクが出ます。誰の曲かが伝わります。</span>
+    </label>
+
+    <!-- mp3に画像が入っていると黙って使われるのが分かりにくかった(2026-09-24 高尾さん)。
+         「任意」の横に常に一文を出し、実際に読み取れたときは、何が使われるかを絵で見せる -->
+    <label>Cover art <span class="ja">ジャケット画像 — 任意<span class="note">※ mp3に画像が入っていれば、それを自動で使います</span></span>
+      <span class="art-auto" id="artAuto" hidden>
+        <img id="artAutoImg" alt="" width="48" height="48" hidden>
+        <span><b id="artAutoHead"></b><span id="artAutoSub"></span></span>
+      </span>
       <input type="file" name="artwork" id="artInput" accept="image/jpeg,image/png,image/webp">
-      <span class="hint">JPEG / PNG / WebP · 2MBまで。音源に埋め込まれていれば自動で入ります。<span class="ja-line">再生画面、曲のページ、SNSに貼ったときのカードに出ます。</span></span>
+      <span class="hint">JPEG / PNG / WebP · 2MBまで。<span class="ja-line">再生画面、曲のページ、SNSに貼ったときのカードに出ます。</span></span>
+      <span class="art-err" id="artErr" hidden></span>
     </label>
 
     <details class="more">
@@ -402,7 +427,7 @@
     if (!form.reportValidity()) return;
 
     var data = {};
-    ['url', 'title', 'artist_name', 'country', 'artist_link', 'genre',
+    ['url', 'title', 'artist_name', 'country', 'artist_link', 'x_handle', 'genre',
      'lyrics', 'lyrics_lang'].forEach(function (k) {
       var el = form.elements[k];
       if (!el) return;
@@ -670,6 +695,6 @@
       '<p class="status-out" id="status-out"></p>';
   })();
 </script>
-<script src="src/js/submit-audio.js?v=3" defer></script>
+<script src="src/js/submit-audio.js?v=4" defer></script>
 </body>
 </html>

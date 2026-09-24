@@ -29,7 +29,15 @@
   var lyrics = document.getElementById('lyricsInput');
   var lyricsCount = document.getElementById('lyricsCount');
 
+  var artAuto = document.getElementById('artAuto');
+  var artAutoImg = document.getElementById('artAutoImg');
+  var artAutoHead = document.getElementById('artAutoHead');
+  var artAutoSub = document.getElementById('artAutoSub');
+  var artErr = document.getElementById('artErr');
+  var xInput = document.getElementById('xInput');
+
   var pickedArt = null;           // 音源から取り出したジャケット
+  var bigArtSize = 0;             // 音源の画像が2MBを超えていて使えなかったときの大きさ
 
   function say(msg){
     elErr.textContent = msg || '';
@@ -70,6 +78,8 @@
       var fs = major === 3
         ? ((b[i+4] << 24) | (b[i+5] << 16) | (b[i+6] << 8) | b[i+7]) >>> 0
         : syncsafe(b, i + 4);
+      // 読んだ範囲に収まらない画像は、使えない大きさ。大きさだけ控えて、そう知らせる
+      if (id === 'APIC' && fs > 0 && i + 10 + fs > end){ out.artSize = fs; break; }
       if (fs <= 0 || i + 10 + fs > end) break;
       var body = b.subarray(i + 10, i + 10 + fs);
       if (id === 'TIT2') out.title = decodeText(body);
@@ -113,9 +123,32 @@
 
   /* 選び直し用。keepMsg を立てると、直前に出した理由を残したまま枠だけ戻す。
      これを消してしまうと、弾いた理由が誰にも伝わらない */
+  /* ジャケット欄に、いま何が使われるかを出す。
+     自分で選んだ画像があればそれが最優先なので、この枠は引っ込める */
+  function showArtAuto(){
+    if (!artAuto) return;
+    if (artInput && artInput.files && artInput.files.length){ artAuto.hidden = true; return; }
+    if (pickedArt){
+      artAutoImg.src = elArt.src;
+      artAutoImg.hidden = false;
+      artAutoHead.textContent = 'mp3の画像を使います';
+      artAutoSub.textContent = '別の画像にするなら、下で選んでください';
+      artAuto.hidden = false;
+    } else if (bigArtSize){
+      artAutoImg.hidden = true;
+      artAutoHead.textContent = 'mp3の画像は使えません（' + mb(bigArtSize) + '）';
+      artAutoSub.textContent = '2MBを超えています。使うなら2MB以下の画像を下で選んでください';
+      artAuto.hidden = false;
+    } else {
+      artAuto.hidden = true;
+    }
+  }
+
   function reset(keepMsg){
     audioInput.value = '';
     pickedArt = null;
+    bigArtSize = 0;
+    showArtAuto();
     got.hidden = true; face.hidden = false;
     elArt.hidden = true; elArt.removeAttribute('src');
     if (!keepMsg) say('');
@@ -136,7 +169,9 @@
     }
 
     var tags = {};
-    try { tags = readTags(await file.slice(0, 1024 * 1024).arrayBuffer()); } catch (e) {}
+    /* 2MBまでの画像が丸ごと入る範囲を読む。以前は1MBで切っていて、
+       1〜2MBの画像は読み取れず、大きすぎる画像があることにも気づけなかった */
+    try { tags = readTags(await file.slice(0, MAX_ART + 1024 * 1024).arrayBuffer()); } catch (e) {}
 
     elName.textContent = file.name;
     elMeta.textContent = mb(file.size) + (sec ? ' · ' + mmss(sec) : '');
@@ -149,7 +184,10 @@
       pickedArt = tags.art;
       elArt.src = URL.createObjectURL(tags.art);
       elArt.hidden = false;
+    } else if (tags.art || tags.artSize){
+      bigArtSize = tags.art ? tags.art.size : tags.artSize;
     }
+    showArtAuto();
   }
 
   audioInput.addEventListener('change', function(){ take(audioInput.files[0]); });
@@ -172,10 +210,45 @@
     take(f);
   });
 
-  /* 自分で画像を選んだら、音源から取り出したほうは使わない */
+  /* 自分で選んだ画像は、送る前に大きさを確かめる。
+     以前は確かめずに送っていて、サーバーに断られるたびに中身の無い投稿が残った(2026-09-24)。
+     選んだ画像があれば送信時にそちらが優先される(submit.html)。
+     選び直しで空にしたときは、音源の画像に戻る */
   if (artInput) artInput.addEventListener('change', function(){
-    if (artInput.files.length) pickedArt = null;
+    artErr.hidden = true;
+    var f = artInput.files[0];
+    if (f && f.size > MAX_ART){
+      artErr.textContent = 'この画像は ' + mb(f.size) + ' あります。2MBまでの画像を選んでください。';
+      artErr.hidden = false;
+      artInput.value = '';
+    }
+    showArtAuto();
   });
+
+  /* XのID。@ の有無やURLの形で書かれても、@ID の形に揃える(サーバーの normalize_x_handle と同じ規則) */
+  var X_RESERVED = ['home', 'i', 'intent', 'search', 'explore', 'settings', 'messages',
+                    'notifications', 'share', 'hashtag', 'login', 'signup', 'tos', 'privacy'];
+  function xHandle(v){
+    v = (v || '').trim();
+    var m = v.match(/^(?:https?:\/\/)?(?:www\.|mobile\.)?(?:x|twitter)\.com\/([^\/?#]+)/i);
+    if (m){
+      v = m[1];
+      if (X_RESERVED.indexOf(v.toLowerCase()) >= 0) return null;
+    }
+    v = v.replace(/^@+/, '');
+    return /^[A-Za-z0-9_]{1,15}$/.test(v) ? v : null;
+  }
+  if (xInput){
+    var checkX = function(){
+      var raw = xInput.value.trim();
+      if (!raw){ xInput.setCustomValidity(''); return; }
+      var h = xHandle(raw);
+      xInput.setCustomValidity(h ? '' : 'XのIDは英数字と _ の15文字までです（例: @an_hsepj）');
+      if (h) xInput.value = '@' + h;
+    };
+    xInput.addEventListener('change', checkX);
+    xInput.addEventListener('input', function(){ xInput.setCustomValidity(''); });
+  }
 
   if (lyrics) lyrics.addEventListener('input', function(){
     lyricsCount.textContent = lyrics.value.length;

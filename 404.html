@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Not found — Open Gate Sutra</title>
+<script>
+/* 曲の共有ページ t/<id>.html がまだ無いときは、曲ページ track.html?id=<id> へ渡す(2026-09-24)。
+
+   t/ は GitHub Actions が公開中の曲から作る生成物で、予約実行は数時間おきにしか走らない。
+   曲はサーバー側でいつでも自動公開されるので、「公開済みなのに t/ が無い」時間が必ずできる。
+   2026-09-24、新着の #184・#185 がこの穴に落ちて404になった(最後の生成 15:46、公開 19:06 / 20:15)。
+   track.html は API を直接読むので、公開された瞬間から開ける。
+
+   このページは存在しないどの住所にも出るので、相対パスは使わない。
+   渡し先は、今の住所から /t/ より前を取って組み立てる(独自ドメインへ移っても変えずに済む)。
+   下の「戻る」リンクだけは /heart-sutra-archive/ 決め打ちなので、移るときに直すこと。 */
+(function () {
+  var m = location.pathname.match(/^(.*\/)t\/(\d+)\.html$/);
+  if (!m) return;
+  location.replace(m[1] + 'track.html?id=' + m[2] + location.hash);
+})();
+</script>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         background: #05070b; color: #d9cfae; font-family: "Shippori Mincho", serif; text-align: center; }
+  main { padding: 0 16px; }
+  h1 { font-weight: 400; letter-spacing: .2em; font-size: 1.1rem; margin: 0 0 1.2em; }
+  a { color: #d9cfae; }
+</style>
+</head>
+<body>
+<main>
+  <h1>404 — この門は見つかりませんでした</h1>
+  <p><a href="/heart-sutra-archive/">Open Gate Sutra へ戻る</a></p>
+</main>
+</body>
+</html>

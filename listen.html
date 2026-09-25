@@ -401,16 +401,28 @@
      そのあとの resume も操作の外なので通らない。結果、要素は再生して
      いるのに音が出ない
      (2026-09-25 高尾さん報告: iPhoneでPlayを押しても音が出ない)。
-     文脈は、押された中で作る。押された中で作れば running で始まる。 */
+     文脈は、押された中で作る。押された中で作れば running で始まる。
+
+     ただし「作る」をしてよいのは、押された中だけである。押されていない所
+     (タブが表になった等)で作ると、そこで生まれた文脈がそのまま居座り、
+     iOSでは suspended のまま二度と起きない。作る口と起こす口を分ける
+     (2026-09-26 本番で実測: visibilitychange が文脈を作っていた)。 */
+
+  /* 押されていない所から呼んでよい。起こすだけで、作らない */
   function wakeAudio(){
+    try { if (actx && actx.state === 'suspended') actx.resume(); } catch (e) {}
+  }
+
+  /* 押された中からだけ呼ぶ。無ければここで作る */
+  function wakeAudioFromTap(){
     try {
-      if (!actx) { startVisual(); return; }   // 初回。押された中で作る
+      if (!actx) { startVisual(); return; }
       if (actx.state === 'suspended') actx.resume();
     } catch (e) {}
   }
 
   function togglePlay(){
-    wakeAudio();
+    wakeAudioFromTap();
     if (audio.paused){ audio.play().catch(function(){ syncPlayBtn(); }); }
     else { audio.pause(); }
   }
@@ -1596,7 +1608,7 @@
          はじめの音がループする)。触りの行き先が釦なら、ここは退く */
       var t = e && e.target;
       if (t && t.closest && t.closest('button, a, .gate')) return;
-      wakeAudio();
+      wakeAudioFromTap();
       audio.play().then(function(){ say(''); }, function(){});
     };
     document.addEventListener('pointerdown', go, true);
@@ -1779,7 +1791,7 @@
   var unlockReady = Promise.resolve();
 
   function unlockAudio(){
-    wakeAudio();
+    wakeAudioFromTap();
     if (unlocked) return;
     unlocked = true; unlocking = true;
     var settle;
@@ -1805,7 +1817,7 @@
   }
 
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){
-    g.addEventListener('click', function(){ unlockAudio(); wakeAudio(); start(g.dataset.axis); });
+    g.addEventListener('click', function(){ unlockAudio(); wakeAudioFromTap(); start(g.dataset.axis); });
   });
 
   /* 瞑の曲がまだ1曲も選ばれていないなら、門そのものを出さない。
@@ -2346,7 +2358,7 @@
     if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleOpen(); }
   });
 
-  document.getElementById('btnNext').addEventListener('click', function(){ wakeAudio(); next(); });
+  document.getElementById('btnNext').addEventListener('click', function(){ wakeAudioFromTap(); next(); });
   document.getElementById('btnPrev').addEventListener('click', prev);
 
   /* 手を離して聴いている画面なので、鍵盤でも送れるようにする。

@@ -383,46 +383,12 @@
     b.setAttribute('aria-label', playing ? '一時停止 / Pause' : '再生 / Play');
   }
 
-  /* 鳴らす操作は一本にまとめる。拒まれたら札を現実へ戻す */
-  /* ── 音の出口を起こす ──────────────────────────────────────
-     波の解析のために createMediaElementSource を使っている。これを使うと、
-     曲の音はすべて AudioContext を通る。iOSは中断やメモリ逼迫でこの文脈を
-     勝手に止める。止まると、要素は再生しているのに音が出ない
-     (2026-09-21 高尾さん報告: 落ちたあと次の曲へ進むのに無音。
-      再生を押しても戻らず、門へ戻って選び直すと鳴る)。
+  /* 鳴らす操作は一本にまとめる。拒まれたら札を現実へ戻す。
 
-     resume() は「操作の直後」でないと効かない。startVisual() は play の
-     出来事から呼ばれる=操作の外なので、そこでの resume は通らなかった。
-     押された場所から直に呼ぶ。
-
-     もう一段ある。文脈がまだ無いときは、ここで「作る」ところまでやる。
-     作るのを play の出来事に任せていたため、初回の文脈はいつも操作の外で
-     生まれていた。iOSは操作の外で生まれた文脈を suspended で始め、
-     そのあとの resume も操作の外なので通らない。結果、要素は再生して
-     いるのに音が出ない
-     (2026-09-25 高尾さん報告: iPhoneでPlayを押しても音が出ない)。
-     文脈は、押された中で作る。押された中で作れば running で始まる。
-
-     ただし「作る」をしてよいのは、押された中だけである。押されていない所
-     (タブが表になった等)で作ると、そこで生まれた文脈がそのまま居座り、
-     iOSでは suspended のまま二度と起きない。作る口と起こす口を分ける
-     (2026-09-26 本番で実測: visibilitychange が文脈を作っていた)。 */
-
-  /* 押されていない所から呼んでよい。起こすだけで、作らない */
-  function wakeAudio(){
-    try { if (actx && actx.state === 'suspended') actx.resume(); } catch (e) {}
-  }
-
-  /* 押された中からだけ呼ぶ。無ければここで作る */
-  function wakeAudioFromTap(){
-    try {
-      if (!actx) { startVisual(); return; }
-      if (actx.state === 'suspended') actx.resume();
-    } catch (e) {}
-  }
-
+     かつてはここで AudioContext を起こしていた(波の解析に使っていたため)。
+     波を音から切り離したので、曲は素の <audio> がそのまま鳴らす。
+     起こす相手がいなくなったので、その仕掛けは取り払った。 */
   function togglePlay(){
-    wakeAudioFromTap();
     if (audio.paused){ audio.play().catch(function(){ syncPlayBtn(); }); }
     else { audio.pause(); }
   }
@@ -456,7 +422,7 @@
      ※ R2など別ドメインの音を解析するには、音源側のCORS許可と
        audio.crossOrigin='anonymous' の両方が要る。片方でも欠けると
        **エラーを出さずに無音として解析され、絵が反応しなくなる**。 */
-  var actx = null, analyser = null, freq = null, raf = 0;
+  var freq = null, raf = 0;
   var envFast = 0, envSlow = 0;   // 速い呼吸と、曲全体の腰の重さ、二つの時間軸で見る
   var lastTick = 0;
   var reduceMotion = window.matchMedia &&
@@ -1303,31 +1269,67 @@
   }
 
 
-  function startVisual(){
-    if (actx){
-      // Chromeは操作より先に作った音声文脈を止めたままにする。起こさないと無音を解析し続ける
-      if (actx.state === 'suspended') actx.resume();
-      return;
+  /* ── 波の作り方 ────────────────────────────────────────────
+     以前は AudioContext で本物の音を解析していた。だが解析のために
+     createMediaElementSource を使うと、曲の音はすべてその文脈を通る。
+     iOSは画面が消えると文脈を止めるので、曲まで一緒に消えた
+     (2026-09-25 高尾さん報告: スクリーンセーバーで曲が途中で消える)。
+     文脈は一度つなぐと外せないため、「ロック中だけ解析をやめる」もできない。
+
+     そこで波を音から切り離した(2026-09-26 高尾さん判断)。
+     音は素の <audio> のまま鳴り、波はこちらで作る。これで:
+       - 画面が消えても曲は鳴り続ける
+       - 押した瞬間に音が出ないこともなくなる(文脈が無いので止まりようがない)
+       - 音源のCORS許可が欠けても、波が消えるだけの事故が起きない
+     代わりに、波はその曲の音そのものには反応しない。
+     曲ごとの種から作るので、曲が変われば波の性格も変わる。 */
+  var waveSeed = 1;
+  function setWaveSeed(track){
+    /* 投稿IDがあればそれを使う。デモの曲にはIDが無いので、
+       そのときは題名と住所から作る。曲が変われば波の性格も変わる */
+    var t = track || {};
+    var n = parseInt(t.id, 10);
+    if (!isNaN(n)){ waveSeed = n * 2654 + 1013; return; }
+    var key = String(t.title || '') + '|' + String(t.audio_url || '');
+    var h = 5381;
+    for (var i = 0; i < key.length; i++) h = ((h * 33) ^ key.charCodeAt(i)) >>> 0;
+    waveSeed = (h % 100000) + 1;
+  }
+
+  /* 滑らかな揺らぎ。整数の格子で乱数を作り、あいだを滑らかにつなぐ。
+     毎フレーム完全な乱数にすると、目に刺さるちらつきになる */
+  function wobble(t, k){
+    var i = Math.floor(t), f = t - i;
+    var a = Math.sin((i + k * 13 + waveSeed) * 12.9898) * 43758.5453;
+    var b = Math.sin((i + 1 + k * 13 + waveSeed) * 12.9898) * 43758.5453;
+    a -= Math.floor(a); b -= Math.floor(b);
+    var u = f * f * (3 - 2 * f);
+    return a + (b - a) * u;
+  }
+
+  /* 本物の解析結果と同じ形(低い帯ほど強い)の配列を作る。
+     こうしておけば、この先の呼吸・走査線・背景の位相はそのまま動く */
+  function fillWave(out){
+    var n = out.length;
+    var t = performance.now() / 1000;
+    var breath = 0.55 + 0.45 * Math.sin(t * 0.42 + waveSeed * 0.01);   // ゆっくりした満ち引き
+    for (var i = 0; i < n; i++){
+      var tilt = Math.pow(1 - i / n, 1.7);            // 低域を厚く
+      var v = wobble(t * 0.8 + i * 0.09, i);
+      out[i] = Math.max(0, Math.min(255, tilt * breath * (0.35 + v * 0.9) * 255));
     }
-    if (!window.AudioContext && !window.webkitAudioContext) return;
-    try {
-      actx = new (window.AudioContext || window.webkitAudioContext)();
-      var src = actx.createMediaElementSource(audio);
-      analyser = actx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.85;
-      src.connect(analyser);
-      analyser.connect(actx.destination);
-      freq = new Uint8Array(analyser.frequencyBinCount);
-      if (actx.state === 'suspended') actx.resume();
-      loop();
-    } catch (e) { actx = null; }   // 解析できなくても再生は続ける
+  }
+
+  function startVisual(){
+    if (raf) return;                      // すでに回っている
+    if (!freq) freq = new Uint8Array(128);
+    loop();
   }
 
   function loop(){
     raf = requestAnimationFrame(loop);
-    if (!analyser || audio.paused) return;
-    analyser.getByteFrequencyData(freq);
+    if (!freq || audio.paused) return;
+    fillWave(freq);
     var n = freq.length;
     var sum = 0, low = 0, high = 0, lowN = n >> 3, highN = 0;
     for (var i = 0; i < n; i++){
@@ -1608,7 +1610,6 @@
          はじめの音がループする)。触りの行き先が釦なら、ここは退く */
       var t = e && e.target;
       if (t && t.closest && t.closest('button, a, .gate')) return;
-      wakeAudioFromTap();
       audio.play().then(function(){ say(''); }, function(){});
     };
     document.addEventListener('pointerdown', go, true);
@@ -1620,6 +1621,7 @@
     /* 解錠を待ってから差し込む。待たないと解錠を自分で壊してしまう */
     var url = queue[i].audio_url;
     unlockReady.then(function(){
+      setWaveSeed(queue[i]);   // 曲ごとに波の性格を変える
       audio.src = url;
       return audio.play();
     }).then(function(){ noteAudio({ play: 'ok' }); }, function(e){
@@ -1791,7 +1793,6 @@
   var unlockReady = Promise.resolve();
 
   function unlockAudio(){
-    wakeAudioFromTap();
     if (unlocked) return;
     unlocked = true; unlocking = true;
     var settle;
@@ -1817,7 +1818,7 @@
   }
 
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){
-    g.addEventListener('click', function(){ unlockAudio(); wakeAudioFromTap(); start(g.dataset.axis); });
+    g.addEventListener('click', function(){ unlockAudio(); start(g.dataset.axis); });
   });
 
   /* 瞑の曲がまだ1曲も選ばれていないなら、門そのものを出さない。
@@ -2358,7 +2359,7 @@
     if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleOpen(); }
   });
 
-  document.getElementById('btnNext').addEventListener('click', function(){ wakeAudioFromTap(); next(); });
+  document.getElementById('btnNext').addEventListener('click', function(){ next(); });
   document.getElementById('btnPrev').addEventListener('click', prev);
 
   /* 手を離して聴いている画面なので、鍵盤でも送れるようにする。
@@ -2395,11 +2396,6 @@
     gates.style.display = '';
     say('Choose a gate, and it plays.<br><span style="color:var(--washi)">門を選ぶと、流れ始めます。</span>');
     try { if (window.__livingBG) window.__livingBG.resume(); } catch(e){}
-  });
-
-  /* タブに戻ったときにも一度試す。操作ではないので通らないこともあるが害は無い */
-  document.addEventListener('visibilitychange', function(){
-    if (!document.hidden) wakeAudio();
   });
 
   audio.addEventListener('ended', next);

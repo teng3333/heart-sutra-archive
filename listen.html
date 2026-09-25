@@ -1165,27 +1165,25 @@
 
   /* ── 差し色(雨・蝶・桜など) ──
      曲の後半に差し掛かったところで一度だけ出し、終わる前に引く。
-     何を出すかは曲の題と棚から決めるので、同じ曲なら毎回同じものが出る。
-     静の棚は穏やかなもの、動の棚は動きのあるものを選ぶ。 */
-  var ACCENT = {
-    sei: ['sakura', 'bubbles', 'ripple', 'snow', 'stars'],
-    do:  ['rain', 'butterfly', 'leaves', 'fish', 'digital']
-  };
+
+     棚で分けない(2026-09-26 高尾さん指示)。以前は静に5種、動に5種と
+     割り当てていたため、静を聴く限り蝶は一生出ず、動を聴く限り波紋が
+     出なかった。どの曲でも10種すべてから引き、その時その時の楽しみにする。 */
+  var ACCENT = ['sakura', 'bubbles', 'ripple', 'snow',    'stars',
+                'rain',   'butterfly', 'leaves', 'fish',  'digital'];
   var ACCENT_IN = 0.55, ACCENT_OUT = 0.86;
   var accentOn = false;
 
   /* 何が出るかは、そのつど無作為に選ぶ(2026-09-18 高尾さん指示)。
-     以前は曲ごとに固定していたが、同じ曲がいつも同じでは揺らぎがない。
-     棚の性格(静は穏やかなもの、動は動きのあるもの)だけは保つ。 */
-  function accentFor(track){
-    var list = ACCENT[track.axis === 'do' ? 'do' : 'sei'];
-    return list[Math.floor(Math.random() * list.length) % list.length];
+     曲ごとに固定すると、同じ曲がいつも同じで揺らぎがない。 */
+  function accentFor(){
+    return ACCENT[Math.floor(Math.random() * ACCENT.length) % ACCENT.length];
   }
 
   function setAccent(on){
     if (on === accentOn) return;
     accentOn = on;
-    var kind = on && current ? accentFor(current) : 'none';
+    var kind = on && current ? accentFor() : 'none';
     window.__ogsAccent = kind;   // 調整用。見た目には関係しない
     try { if (window.__livingBG) window.__livingBG.setWeather(kind); } catch (e) {}
   }
@@ -2174,7 +2172,7 @@
         var r = fn();
         lb.phase = before;            // 元の段階へ戻す
         // 差し色も元へ。曲の後半なら出したまま、前半なら消す
-        try { lb.setWeather(accentOn && current ? accentFor(current) : 'none'); } catch (e) {}
+        try { lb.setWeather(accentOn && current ? accentFor() : 'none'); } catch (e) {}
         shotFreeze = false;
         res(r);
       })();

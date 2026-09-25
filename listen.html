@@ -393,9 +393,20 @@
 
      resume() は「操作の直後」でないと効かない。startVisual() は play の
      出来事から呼ばれる=操作の外なので、そこでの resume は通らなかった。
-     押された場所から直に呼ぶ。 */
+     押された場所から直に呼ぶ。
+
+     もう一段ある。文脈がまだ無いときは、ここで「作る」ところまでやる。
+     作るのを play の出来事に任せていたため、初回の文脈はいつも操作の外で
+     生まれていた。iOSは操作の外で生まれた文脈を suspended で始め、
+     そのあとの resume も操作の外なので通らない。結果、要素は再生して
+     いるのに音が出ない
+     (2026-09-25 高尾さん報告: iPhoneでPlayを押しても音が出ない)。
+     文脈は、押された中で作る。押された中で作れば running で始まる。 */
   function wakeAudio(){
-    try { if (actx && actx.state === 'suspended') actx.resume(); } catch (e) {}
+    try {
+      if (!actx) { startVisual(); return; }   // 初回。押された中で作る
+      if (actx.state === 'suspended') actx.resume();
+    } catch (e) {}
   }
 
   function togglePlay(){
@@ -1574,10 +1585,17 @@
   function armAnyTap(){
     if (armed) return;
     armed = true;
-    var go = function(){
+    var go = function(e){
       armed = false;
       document.removeEventListener('pointerdown', go, true);
       document.removeEventListener('keydown', go, true);
+      /* 釦の上で起きた触りは、その釦に任せる。
+         ここは画面全体を捕まえる番人なので、何もしないと Play/Pause や
+         次へ/前へ の上でも先に鳴らしてしまう。押した釦と押し合いになり、
+         止めたいのに鳴り出す(2026-09-25 高尾さん報告: pauseを押すと
+         はじめの音がループする)。触りの行き先が釦なら、ここは退く */
+      var t = e && e.target;
+      if (t && t.closest && t.closest('button, a, .gate')) return;
       wakeAudio();
       audio.play().then(function(){ say(''); }, function(){});
     };

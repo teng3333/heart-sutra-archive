@@ -60,6 +60,25 @@
   .no{margin:14px 0 26px;padding:0;list-style:none}
   .no li{padding:0 0 0 1.4em;position:relative;margin:0 0 9px;line-height:1.8}
   .no li::before{content:"×";position:absolute;left:0;opacity:.5}
+  /* 期間中の「いま」(contest-live.js)。順位や点数は出さない。熱だけを見せる */
+  .live{margin:8px 0 34px;padding:22px 0 0;border-top:1px solid rgba(217,196,154,.18)}
+  .live-stats{display:flex;flex-wrap:wrap;gap:14px 40px;align-items:flex-end;margin:0 0 8px}
+  .live-stats .k{display:block;font-size:12px;letter-spacing:.08em;opacity:.65}
+  .live-stats .v{display:block;font-size:30px;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+  .live-stats .v small{font-size:14px;opacity:.75;margin-left:.3em}
+  .live .cl-note{font-size:12px;opacity:.6;line-height:1.7;margin:6px 0 16px}
+  .cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 14px}
+  .cl-card{display:flex;flex-direction:column;gap:6px;min-width:0;color:inherit;text-decoration:none}
+  .cl-cover{display:block;aspect-ratio:1/1;overflow:hidden;background:rgba(13,18,32,.6);
+    border:1px solid rgba(217,196,154,.14)}
+  .cl-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .2s}
+  .cl-cover.empty{display:flex;align-items:center;justify-content:center;
+    font-family:var(--ja,"Shippori Mincho",serif);font-size:34px;opacity:.35}
+  .cl-card:hover .cl-cover img,.cl-card:focus-visible .cl-cover img{opacity:.8}
+  .cl-card:focus-visible{outline:1px solid rgba(217,196,154,.8);outline-offset:3px}
+  .cl-title{font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+  .cl-artist{font-size:12px;opacity:.65;overflow-wrap:anywhere}
+  @media (max-width:560px){.cl-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media (max-width:560px){
     .facts th,.facts td{display:block;width:auto;white-space:normal}
     .facts th{border-top:1px solid rgba(217,196,154,.18);padding-bottom:0;opacity:.6;font-size:13px}
@@ -67,6 +86,7 @@
   }
 </style>
 <script src="src/js/consent.js" defer></script>
+<script src="src/js/contest-live.js" defer></script>
 </head>
 <body>
 <header>
@@ -113,6 +133,23 @@
     <span class="under">Submitting during the period <i>is</i> your entry. Nothing else to do.<br>
       <span class="ja">期間内の投稿が、そのまま応募です。ほかに手続きはありません。</span></span>
   </p>
+
+  <!-- 期間中の「いま」。設定は contests/2026-09.json、動きは src/js/contest-live.js -->
+  <section class="live" id="contest-live" data-contest="2026-09" hidden>
+    <div class="live-stats">
+      <p id="cl-count-box"><span class="k">Entries so far ／ 応募作品</span>
+        <span class="v"><span id="cl-count">…</span><small>tracks ／ 曲</small></span></p>
+      <p><span class="k" id="cl-clock-label">Until entries close ／ 締切まで</span>
+        <span class="v" id="cl-clock"></span></p>
+    </div>
+    <div id="cl-gallery">
+      <h3>The entries<span class="ja">応募作品の展示室</span></h3>
+      <p class="cl-note">Newest first. The order means nothing, and no scores are shown during the contest. Tracks appear here once they are published, usually within a few hours of submission.<br>
+        <span class="ja">新しい順に並べています。並び順に意味はなく、期間中に点数や順位は出しません。投稿から公開まで数時間かかることがあり、公開された作品からここに並びます。</span></p>
+      <p class="cl-note" id="cl-empty" hidden>No published entries yet. Yours could be the first.<br><span class="ja">公開済みの応募作は、まだありません。最初の一曲になりませんか。</span></p>
+      <div class="cl-grid" id="cl-grid"></div>
+    </div>
+  </section>
 
   <h3>What we accept<span class="ja">募集作品</span></h3>
   <p>Any genre. Made by you. One of the following three.</p>

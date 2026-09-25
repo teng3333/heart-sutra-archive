@@ -86,7 +86,8 @@
   var q = location.search;
   if (q.indexOf('diag=clear') >= 0) {
     try { localStorage.removeItem(LOG); localStorage.removeItem(LIVE);
-           localStorage.removeItem('ogs-audio-log'); } catch (e) {}
+           localStorage.removeItem('ogs-audio-log');   // 調査用の記録も消す
+    } catch (e) {}
   }
   if (q.indexOf('diag=1') < 0) return;
 
@@ -113,24 +114,6 @@
           ' / ' + r.at + '<br>';
       });
     }
-    /* 音の出来事(listen.html が残したもの)。画面が消えたときに
-       「ページごと死んだ」のか「ページは生きていて曲だけ止まった」のかを
-       ここで読み分ける。前者なら上の「裏で死亡」に出る。
-       後者なら hid=1 のまま pause や go-ng が並ぶ */
-    var alog = read('ogs-audio-log', []);
-    html += '<br><b>音の記録 ' + alog.length + '件</b>' +
-            ' <span style="color:#8d826d">(hid=1は画面が消えていた間)</span><br>';
-    if (!alog.length) {
-      html += '記録なし。曲を鳴らしてから、もう一度この画面を開いてください。<br>';
-    } else {
-      alog.slice(-30).forEach(function (r) {
-        html += r.t + ' <b>' + r.e + '</b>' +
-                ' hid=' + r.hid + ' 位置' + r.cur + 's' +
-                ' 停止' + r.pau + ' rs' + r.rs +
-                (r.n ? ' ' + r.n : '') + '<br>';
-      });
-    }
-
     html += '<br><a href="?diag=clear" style="color:#6fa8d6">記録を消す</a>';
     box.innerHTML = html;
     document.body.appendChild(box);

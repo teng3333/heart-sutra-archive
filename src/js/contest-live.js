@@ -11,7 +11,9 @@
  *   を置き、この台本を読むだけ。次の回は JSON を1つ足して data-contest を変える。
  *
  * 応募作品の数え方:
- *   /api/archive(公開中の曲)のうち、submitted_at が open_at〜close_at に入るもの。
+ *   /api/archive(公開中の曲)のうち、曲番号が first_id 以上で、submitted_at が close_at までのもの。
+ *   始まりを日付でなく番号で区切るのは、告知の前に同じ日に入った主催者の曲を数えないため
+ *   (2026-09 の回は #167 から。#164〜166 は同じ日付だが応募作ではない)。
  *   投稿から公開までは自動処理で数分〜数時間かかるので、数えられるのは「公開済みの応募作」。
  *   頁の文言もそのとおりに書いてある。exclude_ids に入れた曲は数えない(失格・主催者の曲など)。
  *
@@ -114,14 +116,15 @@
   }
 
   function entriesOf(items, cfg) {
-    var open = Date.parse(cfg.open_at);
+    var first = Number(cfg.first_id);
     var close = Date.parse(cfg.close_at);
+    if (!(first > 0) || isNaN(close)) return [];
     var skip = {};
     (cfg.exclude_ids || []).forEach(function (id) { skip[id] = true; });
     return items.filter(function (t) {
       if (!t || !t.id || !t.title || !t.artist_name || skip[t.id]) return false;
       var at = Date.parse(t.submitted_at);
-      return !isNaN(at) && at >= open && at <= close;
+      return Number(t.id) >= first && !isNaN(at) && at <= close;
     });
   }
 

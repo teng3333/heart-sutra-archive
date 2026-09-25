@@ -24,6 +24,9 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="src/js/consent.js" defer></script>
+<!-- 落ちた記録と音の記録(調査用)。?diag=1 で画面下に一覧が出る。
+     この画面こそ調べたい相手なのに読み込んでいなかった(2026-09-26) -->
+<script src="src/js/diag.js?v=2"></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
 <script src="src/js/living-bg.js?v=35" defer></script>
@@ -1624,7 +1627,8 @@
       setWaveSeed(queue[i]);   // 曲ごとに波の性格を変える
       audio.src = url;
       return audio.play();
-    }).then(function(){ noteAudio({ play: 'ok' }); }, function(e){
+    }).then(function(){ noteAudio({ play: 'ok' }); logAudio('go-ok'); }, function(e){
+      logAudio('go-ng', e && e.name);
       /* 自動再生が拒まれた。札を Play へ戻さないと、押す前から止める釦に見える */
       noteAudio({ play: 'ng ' + (e && e.name), unlocked: unlocked });
       syncPlayBtn();
@@ -1772,6 +1776,32 @@
      無音は0.02秒のWAVを文字として持つ。読みに行かないので待たない。 */
   var SILENCE = 'data:audio/wav;base64,UklGRsQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YaAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
   var unlocked = false, unlocking = false;
+
+  /* ── 音の出来事を時系列で残す(調査用・原因が分かったら消す) ────────
+     iPhoneで画面が消えると曲が途中で止まる件(2026-09-26)。
+     考えられる筋は二つあり、直し方が正反対になる。
+       (1) iOSがページごと捨てた   → 絵の重さを削る話になる
+       (2) ページは生きているが、裏で曲の切り替えに失敗した
+                                   → 次の曲へ移る手順を変える話になる
+     手元では画面ロックを再現できないので、端末に残して後から読む。 */
+  var AUDIO_LOG = 'ogs-audio-log';
+  function logAudio(kind, extra){
+    try {
+      var list = [];
+      try { list = JSON.parse(localStorage.getItem(AUDIO_LOG) || '[]'); } catch (e) {}
+      var a = audio;
+      list.push({
+        t: new Date().toTimeString().slice(0, 8),
+        e: kind,
+        hid: document.hidden ? 1 : 0,          // 画面が消えていたか
+        cur: Math.round((a.currentTime || 0) * 10) / 10,
+        pau: a.paused ? 1 : 0,
+        rs: a.readyState,
+        n: (extra == null ? '' : String(extra)).slice(0, 40)
+      });
+      localStorage.setItem(AUDIO_LOG, JSON.stringify(list.slice(-60)));
+    } catch (e) {}
+  }
 
   /* 解錠の結果は端末に残す。手元では再現できないため(2026-09-21)。
      住所の末尾に #diag を付けて開くと、背景の記録と一緒に読める */
@@ -2398,20 +2428,30 @@
     try { if (window.__livingBG) window.__livingBG.resume(); } catch(e){}
   });
 
+  /* 調査用。画面が消えたときに何が起きたのかを端末に残す(原因が分かったら消す) */
+  ['ended','stalled','suspend','waiting','emptied','abort'].forEach(function(ev){
+    audio.addEventListener(ev, function(){ logAudio(ev); });
+  });
+  document.addEventListener('visibilitychange', function(){
+    logAudio(document.hidden ? 'hidden' : 'visible');
+  });
+
   audio.addEventListener('ended', next);
   audio.addEventListener('play',  function(){
     if (unlocking) return;          // 解錠の無音。画面には出さない
+    logAudio('play');
     syncPlayBtn();
     startVisual();
     say('');
   });
   audio.addEventListener('pause', function(){
     if (unlocking) return;          // 解錠の無音。画面には出さない
+    logAudio('pause');
     syncPlayBtn();
     if (wctx) wctx.clearRect(0, 0, ww, wh);
   });
   /* 1曲読めなくても止めない */
-  audio.addEventListener('error', function(){ if (queue.length) next(); });
+  audio.addEventListener('error', function(){ logAudio('error'); if (queue.length) next(); });
 
   /* 曲のページから「聴く」で来たとき。その曲から始め、続けて同じ棚を流す。
      曲ごとに再生画面を作らず、この画面ひとつに集める。直す場所を一か所に保つため */

@@ -394,6 +394,7 @@
      波を音から切り離したので、曲は素の <audio> がそのまま鳴らす。
      起こす相手がいなくなったので、その仕掛けは取り払った。 */
   function togglePlay(){
+    wakeAudioFromTap();
     if (audio.paused){ audio.play().catch(function(){ syncPlayBtn(); }); }
     else { audio.pause(); }
   }
@@ -428,6 +429,19 @@
        audio.crossOrigin='anonymous' の両方が要る。片方でも欠けると
        **エラーを出さずに無音として解析され、絵が反応しなくなる**。 */
   var freq = null, raf = 0;
+  var actx = null, analyser = null;
+
+  /* 波を本物の音から作るか、こちらで合成するか。
+
+     解析には createMediaElementSource が要り、それを使うと曲の音は
+     AudioContext を通る。iOSもAndroidも画面が消えるとその文脈を止めるので、
+     携帯では曲まで一緒に消える(2026-09-25)。だから携帯では解析しない。
+
+     端末名では見分けない(iPadはMacと名乗る)。指で触れる画面かどうかで分ける。
+     触れる画面のノートPCは合成側に入るが、外す方向の間違いなので
+     「波が同期しない」で済む。逆に間違えると「音が出ない」になる。 */
+  var TOUCH = (navigator.maxTouchPoints || 0) > 0 ||
+              !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   var envFast = 0, envSlow = 0;   // 速い呼吸と、曲全体の腰の重さ、二つの時間軸で見る
   var lastTick = 0;
   var reduceMotion = window.matchMedia &&
@@ -1288,6 +1302,7 @@
        - 音源のCORS許可が欠けても、波が消えるだけの事故が起きない
      代わりに、波はその曲の音そのものには反応しない。
      曲ごとの種から作るので、曲が変われば波の性格も変わる。 */
+  var corsOff = false;   // CORSで読めず、解析を諦めたか
   var waveSeed = 1;
   function setWaveSeed(track){
     /* 投稿IDがあればそれを使う。デモの曲にはIDが無いので、
@@ -1326,15 +1341,39 @@
   }
 
   function startVisual(){
+    if (!TOUCH && !actx && (window.AudioContext || window.webkitAudioContext)){
+      try {
+        actx = new (window.AudioContext || window.webkitAudioContext)();
+        var src = actx.createMediaElementSource(audio);
+        analyser = actx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.85;
+        src.connect(analyser);
+        analyser.connect(actx.destination);
+        freq = new Uint8Array(analyser.frequencyBinCount);
+        if (actx.state === 'suspended') actx.resume();
+      } catch (e) { actx = null; analyser = null; }   // 解析できなくても再生は続ける
+    }
     if (raf) return;                      // すでに回っている
     if (!freq) freq = new Uint8Array(128);
     loop();
   }
 
+  /* 文脈を作ってよいのは押された中だけ。押されていない所(タブが表になった等)で
+     作ると suspended のまま居座る。携帯では何もしない(文脈を持たないため) */
+  function wakeAudioFromTap(){
+    if (TOUCH) return;
+    try {
+      if (!actx) { startVisual(); return; }
+      if (actx.state === 'suspended') actx.resume();
+    } catch (e) {}
+  }
+
   function loop(){
     raf = requestAnimationFrame(loop);
     if (!freq || audio.paused) return;
-    fillWave(freq);
+    if (analyser) analyser.getByteFrequencyData(freq);   // PC: 本物の音
+    else fillWave(freq);                                 // 携帯: 合成した波
     var n = freq.length;
     var sum = 0, low = 0, high = 0, lowN = n >> 3, highN = 0;
     for (var i = 0; i < n; i++){
@@ -1615,6 +1654,7 @@
          はじめの音がループする)。触りの行き先が釦なら、ここは退く */
       var t = e && e.target;
       if (t && t.closest && t.closest('button, a, .gate')) return;
+      wakeAudioFromTap();
       audio.play().then(function(){ say(''); }, function(){});
     };
     document.addEventListener('pointerdown', go, true);
@@ -1627,6 +1667,10 @@
     var url = queue[i].audio_url;
     unlockReady.then(function(){
       setWaveSeed(queue[i]);   // 曲ごとに波の性格を変える
+      /* 解析するPCだけ CORS で読む。携帯は解析しないので付けない。
+         付けたままだと配信元のCORS許可が欠けたときに再生自体が失敗する。
+         src より先に決めること(後から変えても効かない) */
+      if (!TOUCH && !corsOff && audio.crossOrigin !== 'anonymous') audio.crossOrigin = 'anonymous';
       audio.src = url;
       return audio.play();
     }).then(function(){ noteAudio({ play: 'ok' }); }, function(e){
@@ -1798,6 +1842,7 @@
   var unlockReady = Promise.resolve();
 
   function unlockAudio(){
+    wakeAudioFromTap();
     if (unlocked) return;
     unlocked = true; unlocking = true;
     var settle;
@@ -1823,7 +1868,7 @@
   }
 
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){
-    g.addEventListener('click', function(){ unlockAudio(); start(g.dataset.axis); });
+    g.addEventListener('click', function(){ unlockAudio(); wakeAudioFromTap(); start(g.dataset.axis); });
   });
 
   /* 瞑の曲がまだ1曲も選ばれていないなら、門そのものを出さない。
@@ -2364,7 +2409,7 @@
     if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleOpen(); }
   });
 
-  document.getElementById('btnNext').addEventListener('click', function(){ next(); });
+  document.getElementById('btnNext').addEventListener('click', function(){ wakeAudioFromTap(); next(); });
   document.getElementById('btnPrev').addEventListener('click', prev);
 
   /* 手を離して聴いている画面なので、鍵盤でも送れるようにする。
@@ -2416,7 +2461,19 @@
     if (wctx) wctx.clearRect(0, 0, ww, wh);
   });
   /* 1曲読めなくても止めない */
-  audio.addEventListener('error', function(){ if (queue.length) next(); });
+  /* CORSで読めないと、曲そのものが鳴らせない。波を諦めてでも曲を優先する。
+     配信元の許可が外れた日に、PCだけ無音になるのを防ぐ(2026-09-26) */
+  audio.addEventListener('error', function(){
+    if (!corsOff && audio.crossOrigin === 'anonymous' && current && current.audio_url){
+      corsOff = true;
+      audio.crossOrigin = null;
+      analyser = null;                 // 解析は諦める。波は合成に戻る
+      audio.src = current.audio_url;
+      audio.play().catch(function(){ syncPlayBtn(); });
+      return;
+    }
+    if (queue.length) next();
+  });
 
   /* 曲のページから「聴く」で来たとき。その曲から始め、続けて同じ棚を流す。
      曲ごとに再生画面を作らず、この画面ひとつに集める。直す場所を一か所に保つため */

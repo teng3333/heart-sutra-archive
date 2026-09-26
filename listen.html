@@ -29,7 +29,7 @@
 <script src="src/js/diag.js?v=2"></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
-<script src="src/js/living-bg.js?v=35" defer></script>
+<script src="src/js/living-bg.js?v=36" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -1185,7 +1185,17 @@
     accentOn = on;
     var kind = on && current ? accentFor() : 'none';
     window.__ogsAccent = kind;   // 調整用。見た目には関係しない
-    try { if (window.__livingBG) window.__livingBG.setWeather(kind); } catch (e) {}
+    try {
+      var lb = window.__livingBG;
+      if (!lb) return;
+      lb.setWeather(kind);
+      /* スマホの絵は止まっているので、差し色は描かれないままだった(2026-09-26)。
+         出す瞬間だけ数秒動かし、引くときは差し色の無い絵に描き直す(高尾さん判断「B」) */
+      if (lb.still){
+        if (kind !== 'none'){ if (lb.burst) lb.burst(10); }
+        else if (lb.restill) lb.restill();
+      }
+    } catch (e) {}
   }
 
   /* 曲の進み。長さが分からないうちは何もしない(生放送や読み込み中) */

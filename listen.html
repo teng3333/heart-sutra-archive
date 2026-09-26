@@ -1356,7 +1356,9 @@
   }
 
   function startVisual(){
-    if (!TOUCH && !actx && (window.AudioContext || window.webkitAudioContext)){
+    /* CORSを諦めた後は、解析の経路を作らない。CORSの無い音を経路に通すと、
+       ブラウザはその音を無音にする(時間だけ進む)。波は合成で動かす */
+    if (!TOUCH && !corsOff && !actx && (window.AudioContext || window.webkitAudioContext)){
       try {
         actx = new (window.AudioContext || window.webkitAudioContext)();
         var src = actx.createMediaElementSource(audio);
@@ -1701,6 +1703,7 @@
          付けたままだと配信元のCORS許可が欠けたときに再生自体が失敗する。
          src より先に決めること(後から変えても効かない) */
       if (!TOUCH && !corsOff && audio.crossOrigin !== 'anonymous') audio.crossOrigin = 'anonymous';
+      loadingUrl = url;
       audio.src = url;
       return audio.play();
     }).then(function(){ noteAudio({ play: 'ok' }); }, function(e){
@@ -1775,7 +1778,8 @@
      頭・中・終の3か所を聴き比べられるようにしてある。
      分析データに頼らないのは、曲中の起伏を表す development が
      108曲中85曲で同じ値(75)になっていて、使い物にならないため。 */
-  var MEI = [18, 53, 54, 139, 147, 162];   // 2026-09-22 高尾さんが耳で選んだ6曲
+  var MEI = [18, 53, 54, 139, 147, 162,   // 2026-09-22 高尾さんが耳で選んだ6曲
+             166];                         // 2026-09-26 高尾さんが追加
 
   /* ── コンテストの門 ──────────────────────────────────────
      いまの回。次の回は、ここを contests/ の新しいファイル名に書き換えるだけ。
@@ -2543,14 +2547,40 @@
   /* 1曲読めなくても止めない */
   /* CORSで読めないと、曲そのものが鳴らせない。波を諦めてでも曲を優先する。
      配信元の許可が外れた日に、PCだけ無音になるのを防ぐ(2026-09-26) */
+  /* 2曲目以降が無音になる件(2026-09-26 高尾さん報告・Mac の Chrome・門「解」)。
+     手元で再現した: 2曲目の音源が一度CORSに落ちると、下の逃げ道でCORSを外して読み直す。
+     ところが音はすでに解析の経路を通っているので、ブラウザはCORSの無い音を無音にする
+     (時間は進むのに音量0)。しかも corsOff は戻らないので、以後の曲もずっと無音だった。
+
+     解析の経路を作った後は、CORSを外さない。
+       1回目 … 住所に印(?cors=1)を付けて読み直す。ブラウザの控え(先読みした印なしの控え)を避ける
+       2回目 … その曲だけ飛ばす
+     経路を作る前(1曲目で落ちた等)は、これまでどおりCORSを外して鳴らす。
+     その後は経路を作らない(startVisual の !corsOff)ので、無音にはならない */
+  /* 読み直すのは「いま読もうとした音源」。current(画面の曲)は暗転の後に入れ替わるので、
+     その間に落ちると前の曲を指している(実測: 2曲目で落ちて1曲目を読み直していた) */
+  var loadingUrl = null, corsRetryUrl = null;
+  function withCorsMark(url){ return url + (url.indexOf('?') < 0 ? '?' : '&') + 'cors=1'; }
   audio.addEventListener('error', function(){
-    if (!corsOff && audio.crossOrigin === 'anonymous' && current && current.audio_url){
-      corsOff = true;
-      audio.crossOrigin = null;
-      analyser = null;                 // 解析は諦める。波は合成に戻る
-      audio.src = current.audio_url;
-      audio.play().catch(function(){ syncPlayBtn(); });
-      return;
+    if (audio.crossOrigin === 'anonymous' && loadingUrl){
+      if (actx){
+        if (corsRetryUrl !== loadingUrl){
+          corsRetryUrl = loadingUrl;
+          audio.src = withCorsMark(loadingUrl);
+          audio.play().catch(function(){ syncPlayBtn(); });
+          return;
+        }
+        if (queue.length) next();      // 読み直しても駄目な曲は飛ばす。CORSは外さない
+        return;
+      }
+      if (!corsOff){
+        corsOff = true;
+        audio.crossOrigin = null;
+        analyser = null;                 // 解析は諦める。波は合成に戻る
+        audio.src = loadingUrl;
+        audio.play().catch(function(){ syncPlayBtn(); });
+        return;
+      }
     }
     if (queue.length) next();
   });

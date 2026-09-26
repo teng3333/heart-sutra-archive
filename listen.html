@@ -24,6 +24,9 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="src/js/consent.js" defer></script>
+<!-- 落ちた記録と音の記録(調査用)。?diag=1 で画面下に一覧が出る。
+     この画面こそ調べたい相手なのに読み込んでいなかった(2026-09-26) -->
+<script src="src/js/diag.js?v=2"></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
 <script src="src/js/living-bg.js?v=35" defer></script>
@@ -324,8 +327,10 @@
 <canvas id="waves" aria-hidden="true"></canvas>
 <div id="blackout" aria-hidden="true"></div>
 
-<audio id="audio" preload="auto" crossorigin="anonymous"></audio>
-<audio id="pre" preload="auto" crossorigin="anonymous" style="display:none"></audio>
+<!-- 解析をやめたので crossorigin は不要(2026-09-26)。
+     付けたままだとCORS未設定の配信元から読めなくなる -->
+<audio id="audio" preload="auto"></audio>
+<audio id="pre" preload="auto" style="display:none"></audio>
 
 <script>
 (function () {
@@ -383,23 +388,13 @@
     b.setAttribute('aria-label', playing ? '一時停止 / Pause' : '再生 / Play');
   }
 
-  /* 鳴らす操作は一本にまとめる。拒まれたら札を現実へ戻す */
-  /* ── 音の出口を起こす ──────────────────────────────────────
-     波の解析のために createMediaElementSource を使っている。これを使うと、
-     曲の音はすべて AudioContext を通る。iOSは中断やメモリ逼迫でこの文脈を
-     勝手に止める。止まると、要素は再生しているのに音が出ない
-     (2026-09-21 高尾さん報告: 落ちたあと次の曲へ進むのに無音。
-      再生を押しても戻らず、門へ戻って選び直すと鳴る)。
+  /* 鳴らす操作は一本にまとめる。拒まれたら札を現実へ戻す。
 
-     resume() は「操作の直後」でないと効かない。startVisual() は play の
-     出来事から呼ばれる=操作の外なので、そこでの resume は通らなかった。
-     押された場所から直に呼ぶ。 */
-  function wakeAudio(){
-    try { if (actx && actx.state === 'suspended') actx.resume(); } catch (e) {}
-  }
-
+     かつてはここで AudioContext を起こしていた(波の解析に使っていたため)。
+     波を音から切り離したので、曲は素の <audio> がそのまま鳴らす。
+     起こす相手がいなくなったので、その仕掛けは取り払った。 */
   function togglePlay(){
-    wakeAudio();
+    wakeAudioFromTap();
     if (audio.paused){ audio.play().catch(function(){ syncPlayBtn(); }); }
     else { audio.pause(); }
   }
@@ -433,7 +428,20 @@
      ※ R2など別ドメインの音を解析するには、音源側のCORS許可と
        audio.crossOrigin='anonymous' の両方が要る。片方でも欠けると
        **エラーを出さずに無音として解析され、絵が反応しなくなる**。 */
-  var actx = null, analyser = null, freq = null, raf = 0;
+  var freq = null, raf = 0;
+  var actx = null, analyser = null;
+
+  /* 波を本物の音から作るか、こちらで合成するか。
+
+     解析には createMediaElementSource が要り、それを使うと曲の音は
+     AudioContext を通る。iOSもAndroidも画面が消えるとその文脈を止めるので、
+     携帯では曲まで一緒に消える(2026-09-25)。だから携帯では解析しない。
+
+     端末名では見分けない(iPadはMacと名乗る)。指で触れる画面かどうかで分ける。
+     触れる画面のノートPCは合成側に入るが、外す方向の間違いなので
+     「波が同期しない」で済む。逆に間違えると「音が出ない」になる。 */
+  var TOUCH = (navigator.maxTouchPoints || 0) > 0 ||
+              !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   var envFast = 0, envSlow = 0;   // 速い呼吸と、曲全体の腰の重さ、二つの時間軸で見る
   var lastTick = 0;
   var reduceMotion = window.matchMedia &&
@@ -1157,27 +1165,25 @@
 
   /* ── 差し色(雨・蝶・桜など) ──
      曲の後半に差し掛かったところで一度だけ出し、終わる前に引く。
-     何を出すかは曲の題と棚から決めるので、同じ曲なら毎回同じものが出る。
-     静の棚は穏やかなもの、動の棚は動きのあるものを選ぶ。 */
-  var ACCENT = {
-    sei: ['sakura', 'bubbles', 'ripple', 'snow', 'stars'],
-    do:  ['rain', 'butterfly', 'leaves', 'fish', 'digital']
-  };
+
+     棚で分けない(2026-09-26 高尾さん指示)。以前は静に5種、動に5種と
+     割り当てていたため、静を聴く限り蝶は一生出ず、動を聴く限り波紋が
+     出なかった。どの曲でも10種すべてから引き、その時その時の楽しみにする。 */
+  var ACCENT = ['sakura', 'bubbles', 'ripple', 'snow',    'stars',
+                'rain',   'butterfly', 'leaves', 'fish',  'digital'];
   var ACCENT_IN = 0.55, ACCENT_OUT = 0.86;
   var accentOn = false;
 
   /* 何が出るかは、そのつど無作為に選ぶ(2026-09-18 高尾さん指示)。
-     以前は曲ごとに固定していたが、同じ曲がいつも同じでは揺らぎがない。
-     棚の性格(静は穏やかなもの、動は動きのあるもの)だけは保つ。 */
-  function accentFor(track){
-    var list = ACCENT[track.axis === 'do' ? 'do' : 'sei'];
-    return list[Math.floor(Math.random() * list.length) % list.length];
+     曲ごとに固定すると、同じ曲がいつも同じで揺らぎがない。 */
+  function accentFor(){
+    return ACCENT[Math.floor(Math.random() * ACCENT.length) % ACCENT.length];
   }
 
   function setAccent(on){
     if (on === accentOn) return;
     accentOn = on;
-    var kind = on && current ? accentFor(current) : 'none';
+    var kind = on && current ? accentFor() : 'none';
     window.__ogsAccent = kind;   // 調整用。見た目には関係しない
     try { if (window.__livingBG) window.__livingBG.setWeather(kind); } catch (e) {}
   }
@@ -1280,31 +1286,92 @@
   }
 
 
-  function startVisual(){
-    if (actx){
-      // Chromeは操作より先に作った音声文脈を止めたままにする。起こさないと無音を解析し続ける
-      if (actx.state === 'suspended') actx.resume();
-      return;
+  /* ── 波の作り方 ────────────────────────────────────────────
+     以前は AudioContext で本物の音を解析していた。だが解析のために
+     createMediaElementSource を使うと、曲の音はすべてその文脈を通る。
+     iOSは画面が消えると文脈を止めるので、曲まで一緒に消えた
+     (2026-09-25 高尾さん報告: スクリーンセーバーで曲が途中で消える)。
+     文脈は一度つなぐと外せないため、「ロック中だけ解析をやめる」もできない。
+
+     そこで波を音から切り離した(2026-09-26 高尾さん判断)。
+     音は素の <audio> のまま鳴り、波はこちらで作る。これで:
+       - 画面が消えても曲は鳴り続ける
+       - 押した瞬間に音が出ないこともなくなる(文脈が無いので止まりようがない)
+       - 音源のCORS許可が欠けても、波が消えるだけの事故が起きない
+     代わりに、波はその曲の音そのものには反応しない。
+     曲ごとの種から作るので、曲が変われば波の性格も変わる。 */
+  var corsOff = false;   // CORSで読めず、解析を諦めたか
+  var waveSeed = 1;
+  function setWaveSeed(track){
+    /* 投稿IDがあればそれを使う。デモの曲にはIDが無いので、
+       そのときは題名と住所から作る。曲が変われば波の性格も変わる */
+    var t = track || {};
+    var n = parseInt(t.id, 10);
+    if (!isNaN(n)){ waveSeed = n * 2654 + 1013; return; }
+    var key = String(t.title || '') + '|' + String(t.audio_url || '');
+    var h = 5381;
+    for (var i = 0; i < key.length; i++) h = ((h * 33) ^ key.charCodeAt(i)) >>> 0;
+    waveSeed = (h % 100000) + 1;
+  }
+
+  /* 滑らかな揺らぎ。整数の格子で乱数を作り、あいだを滑らかにつなぐ。
+     毎フレーム完全な乱数にすると、目に刺さるちらつきになる */
+  function wobble(t, k){
+    var i = Math.floor(t), f = t - i;
+    var a = Math.sin((i + k * 13 + waveSeed) * 12.9898) * 43758.5453;
+    var b = Math.sin((i + 1 + k * 13 + waveSeed) * 12.9898) * 43758.5453;
+    a -= Math.floor(a); b -= Math.floor(b);
+    var u = f * f * (3 - 2 * f);
+    return a + (b - a) * u;
+  }
+
+  /* 本物の解析結果と同じ形(低い帯ほど強い)の配列を作る。
+     こうしておけば、この先の呼吸・走査線・背景の位相はそのまま動く */
+  function fillWave(out){
+    var n = out.length;
+    var t = performance.now() / 1000;
+    var breath = 0.55 + 0.45 * Math.sin(t * 0.42 + waveSeed * 0.01);   // ゆっくりした満ち引き
+    for (var i = 0; i < n; i++){
+      var tilt = Math.pow(1 - i / n, 1.7);            // 低域を厚く
+      var v = wobble(t * 0.8 + i * 0.09, i);
+      out[i] = Math.max(0, Math.min(255, tilt * breath * (0.35 + v * 0.9) * 255));
     }
-    if (!window.AudioContext && !window.webkitAudioContext) return;
+  }
+
+  function startVisual(){
+    if (!TOUCH && !actx && (window.AudioContext || window.webkitAudioContext)){
+      try {
+        actx = new (window.AudioContext || window.webkitAudioContext)();
+        var src = actx.createMediaElementSource(audio);
+        analyser = actx.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.85;
+        src.connect(analyser);
+        analyser.connect(actx.destination);
+        freq = new Uint8Array(analyser.frequencyBinCount);
+        if (actx.state === 'suspended') actx.resume();
+      } catch (e) { actx = null; analyser = null; }   // 解析できなくても再生は続ける
+    }
+    if (raf) return;                      // すでに回っている
+    if (!freq) freq = new Uint8Array(128);
+    loop();
+  }
+
+  /* 文脈を作ってよいのは押された中だけ。押されていない所(タブが表になった等)で
+     作ると suspended のまま居座る。携帯では何もしない(文脈を持たないため) */
+  function wakeAudioFromTap(){
+    if (TOUCH) return;
     try {
-      actx = new (window.AudioContext || window.webkitAudioContext)();
-      var src = actx.createMediaElementSource(audio);
-      analyser = actx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.85;
-      src.connect(analyser);
-      analyser.connect(actx.destination);
-      freq = new Uint8Array(analyser.frequencyBinCount);
+      if (!actx) { startVisual(); return; }
       if (actx.state === 'suspended') actx.resume();
-      loop();
-    } catch (e) { actx = null; }   // 解析できなくても再生は続ける
+    } catch (e) {}
   }
 
   function loop(){
     raf = requestAnimationFrame(loop);
-    if (!analyser || audio.paused) return;
-    analyser.getByteFrequencyData(freq);
+    if (!freq || audio.paused) return;
+    if (analyser) analyser.getByteFrequencyData(freq);   // PC: 本物の音
+    else fillWave(freq);                                 // 携帯: 合成した波
     var n = freq.length;
     var sum = 0, low = 0, high = 0, lowN = n >> 3, highN = 0;
     for (var i = 0; i < n; i++){
@@ -1574,11 +1641,18 @@
   function armAnyTap(){
     if (armed) return;
     armed = true;
-    var go = function(){
+    var go = function(e){
       armed = false;
       document.removeEventListener('pointerdown', go, true);
       document.removeEventListener('keydown', go, true);
-      wakeAudio();
+      /* 釦の上で起きた触りは、その釦に任せる。
+         ここは画面全体を捕まえる番人なので、何もしないと Play/Pause や
+         次へ/前へ の上でも先に鳴らしてしまう。押した釦と押し合いになり、
+         止めたいのに鳴り出す(2026-09-25 高尾さん報告: pauseを押すと
+         はじめの音がループする)。触りの行き先が釦なら、ここは退く */
+      var t = e && e.target;
+      if (t && t.closest && t.closest('button, a, .gate')) return;
+      wakeAudioFromTap();
       audio.play().then(function(){ say(''); }, function(){});
     };
     document.addEventListener('pointerdown', go, true);
@@ -1590,6 +1664,11 @@
     /* 解錠を待ってから差し込む。待たないと解錠を自分で壊してしまう */
     var url = queue[i].audio_url;
     unlockReady.then(function(){
+      setWaveSeed(queue[i]);   // 曲ごとに波の性格を変える
+      /* 解析するPCだけ CORS で読む。携帯は解析しないので付けない。
+         付けたままだと配信元のCORS許可が欠けたときに再生自体が失敗する。
+         src より先に決めること(後から変えても効かない) */
+      if (!TOUCH && !corsOff && audio.crossOrigin !== 'anonymous') audio.crossOrigin = 'anonymous';
       audio.src = url;
       return audio.play();
     }).then(function(){ noteAudio({ play: 'ok' }); }, function(e){
@@ -1761,7 +1840,7 @@
   var unlockReady = Promise.resolve();
 
   function unlockAudio(){
-    wakeAudio();
+    wakeAudioFromTap();
     if (unlocked) return;
     unlocked = true; unlocking = true;
     var settle;
@@ -1787,7 +1866,7 @@
   }
 
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){
-    g.addEventListener('click', function(){ unlockAudio(); wakeAudio(); start(g.dataset.axis); });
+    g.addEventListener('click', function(){ unlockAudio(); wakeAudioFromTap(); start(g.dataset.axis); });
   });
 
   /* 瞑の曲がまだ1曲も選ばれていないなら、門そのものを出さない。
@@ -2093,7 +2172,7 @@
         var r = fn();
         lb.phase = before;            // 元の段階へ戻す
         // 差し色も元へ。曲の後半なら出したまま、前半なら消す
-        try { lb.setWeather(accentOn && current ? accentFor(current) : 'none'); } catch (e) {}
+        try { lb.setWeather(accentOn && current ? accentFor() : 'none'); } catch (e) {}
         shotFreeze = false;
         res(r);
       })();
@@ -2328,7 +2407,7 @@
     if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleOpen(); }
   });
 
-  document.getElementById('btnNext').addEventListener('click', function(){ wakeAudio(); next(); });
+  document.getElementById('btnNext').addEventListener('click', function(){ wakeAudioFromTap(); next(); });
   document.getElementById('btnPrev').addEventListener('click', prev);
 
   /* 手を離して聴いている画面なので、鍵盤でも送れるようにする。
@@ -2367,11 +2446,6 @@
     try { if (window.__livingBG) window.__livingBG.resume(); } catch(e){}
   });
 
-  /* タブに戻ったときにも一度試す。操作ではないので通らないこともあるが害は無い */
-  document.addEventListener('visibilitychange', function(){
-    if (!document.hidden) wakeAudio();
-  });
-
   audio.addEventListener('ended', next);
   audio.addEventListener('play',  function(){
     if (unlocking) return;          // 解錠の無音。画面には出さない
@@ -2385,7 +2459,19 @@
     if (wctx) wctx.clearRect(0, 0, ww, wh);
   });
   /* 1曲読めなくても止めない */
-  audio.addEventListener('error', function(){ if (queue.length) next(); });
+  /* CORSで読めないと、曲そのものが鳴らせない。波を諦めてでも曲を優先する。
+     配信元の許可が外れた日に、PCだけ無音になるのを防ぐ(2026-09-26) */
+  audio.addEventListener('error', function(){
+    if (!corsOff && audio.crossOrigin === 'anonymous' && current && current.audio_url){
+      corsOff = true;
+      audio.crossOrigin = null;
+      analyser = null;                 // 解析は諦める。波は合成に戻る
+      audio.src = current.audio_url;
+      audio.play().catch(function(){ syncPlayBtn(); });
+      return;
+    }
+    if (queue.length) next();
+  });
 
   /* 曲のページから「聴く」で来たとき。その曲から始め、続けて同じ棚を流す。
      曲ごとに再生画面を作らず、この画面ひとつに集める。直す場所を一か所に保つため */

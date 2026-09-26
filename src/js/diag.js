@@ -85,7 +85,9 @@
   // ── ?diag=1 で結果を見る ──
   var q = location.search;
   if (q.indexOf('diag=clear') >= 0) {
-    try { localStorage.removeItem(LOG); localStorage.removeItem(LIVE); } catch (e) {}
+    try { localStorage.removeItem(LOG); localStorage.removeItem(LIVE);
+           localStorage.removeItem('ogs-audio-log');   // 調査用の記録も消す
+    } catch (e) {}
   }
   if (q.indexOf('diag=1') < 0) return;
 

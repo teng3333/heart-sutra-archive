@@ -1783,24 +1783,33 @@
              172, 184];                    // 2026-09-27 ANの候補(瞑の聴き方)から高尾さんが耳で確かめて追加
 
   /* ── コンテストの門 ──────────────────────────────────────
-     いまの回。次の回は、ここを contests/ の新しいファイル名に書き換えるだけ。
+     いまの回は contests/current.json で決める。
      応募作の数え方はコンテスト頁の展示室(src/js/contest-live.js の entriesOf)と同じにする:
      曲番号が first_id 以上で、close_at までに投稿された、公開中の曲。
      この画面の台本は本文の途中で動き出すため、あちらを読み込んで使うことはできない */
-  var CONTEST = '2026-09';
-  var contestCfg = null;
+  var contestCfg = null, contestLoading = null;
   function loadContest(){
-    return fetch('contests/' + CONTEST + '.json')
-      .then(function(r){ if (!r.ok) throw 0; return r.json(); })
-      .then(function(c){ contestCfg = c; return c; });
+    /* いまの回は contests/current.json が決める(曲ページ・アーカイブと同じ所を見る) */
+    if (!contestLoading){
+      contestLoading = fetch('contests/current.json')
+        .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+        .then(function(cur){
+          if (!/^[0-9A-Za-z_-]+$/.test(cur.slug || '')) throw 0;
+          return fetch('contests/' + cur.slug + '.json');
+        })
+        .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+        .then(function(c){ contestCfg = c; return c; });
+    }
+    return contestLoading;
   }
   function contestEntries(items, c){
-    var first = Number(c.first_id), close = Date.parse(c.close_at), skip = {};
+    var first = Number(c.first_id), last = c.last_id ? Number(c.last_id) : Infinity;
+    var close = Date.parse(c.close_at), skip = {};
     (c.exclude_ids || []).forEach(function(id){ skip[id] = 1; });
     return items.filter(function(t){
       if (!t || skip[t.id]) return false;
       var at = Date.parse(t.submitted_at);
-      return Number(t.id) >= first && !isNaN(at) && at <= close;
+      return Number(t.id) >= first && Number(t.id) <= last && !isNaN(at) && at <= close;
     });
   }
 

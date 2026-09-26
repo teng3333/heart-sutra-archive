@@ -7,5 +7,15 @@
   "first_id": 167,
   "close_at": "2026-09-30T23:59:59+09:00",
   "announce_at": null,
-  "exclude_ids": []
+  "exclude_ids": [],
+  "gate": {
+    "kanji": "解",
+    "en": "CONTEST",
+    "sub": [
+      "ENTRIES",
+      "2026 · 09"
+    ],
+    "shelf": "解 · 心が解ける般若心経 · CONTEST"
+  },
+  "_note_gate": "聞き流し画面(listen.html)の門。応募作だけを流し、球の中心は各曲のジャケットにする(2026-09-26 高尾さん)。漢字は回ごとに変えてよい。"
 }

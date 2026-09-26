@@ -29,7 +29,7 @@
 <script src="src/js/diag.js?v=2"></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
-<script src="src/js/living-bg.js?v=35" defer></script>
+<script src="src/js/living-bg.js?v=36" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -122,6 +122,7 @@
   .gate{background:rgba(13,18,32,.55);border:1px solid var(--hair2);color:inherit;font:inherit;
     width:150px;padding:26px 12px;cursor:pointer;display:flex;flex-direction:column;gap:8px;
     align-items:center;backdrop-filter:blur(3px);transition:border-color .2s,background .2s}
+  .gate[hidden]{display:none}   /* .gate の display:flex が hidden 属性に勝ってしまうため */
   .gate:hover,.gate:focus-visible{border-color:var(--washi);background:rgba(13,18,32,.75)}
   .gate:focus-visible{outline:2px solid var(--ruri);outline-offset:3px}
   .gate b{font-family:var(--ja);font-size:34px;font-weight:500;line-height:1;color:var(--washi-hi)}
@@ -270,6 +271,12 @@
       <button class="gate" type="button" data-axis="all">
         <b aria-hidden="true">全</b><span class="en">ALL</span>
         <small>EVERY<br>SHELF</small>
+      </button>
+      <!-- コンテストの応募作だけを流す門(2026-09-26 高尾さん指示)。
+           漢字と文言は contests/<回>.json の gate から入れる。読めなければ出さない -->
+      <button class="gate" type="button" data-axis="contest" hidden>
+        <b aria-hidden="true" id="gateContestKanji"></b><span class="en" id="gateContestEn"></span>
+        <small id="gateContestSub"></small>
       </button>
     </div>
 
@@ -1185,7 +1192,17 @@
     accentOn = on;
     var kind = on && current ? accentFor() : 'none';
     window.__ogsAccent = kind;   // 調整用。見た目には関係しない
-    try { if (window.__livingBG) window.__livingBG.setWeather(kind); } catch (e) {}
+    try {
+      var lb = window.__livingBG;
+      if (!lb) return;
+      lb.setWeather(kind);
+      /* スマホの絵は止まっているので、差し色は描かれないままだった(2026-09-26)。
+         出す瞬間だけ数秒動かし、引くときは差し色の無い絵に描き直す(高尾さん判断「B」) */
+      if (lb.still){
+        if (kind !== 'none'){ if (lb.burst) lb.burst(10); }
+        else if (lb.restill) lb.restill();
+      }
+    } catch (e) {}
   }
 
   /* 曲の進み。長さが分からないうちは何もしない(生放送や読み込み中) */
@@ -1530,6 +1547,9 @@
 
     var shelf = [t.axis_label_ja, t.mode_label_ja, t.mode_label_en].filter(Boolean).join(' · ');
     if (t.also_on) shelf += '  ＋' + t.also_on.mode_label_ja;
+    if (curAxis === 'contest' && contestCfg && contestCfg.gate && contestCfg.gate.shelf){
+      shelf = contestCfg.gate.shelf;
+    }
     document.getElementById('npShelf').textContent = shelf;
     var titleEl = document.getElementById('npTitle');
     titleEl.textContent = '';
@@ -1579,7 +1599,10 @@
     try {
       if (window.__livingBG && window.__livingBG.setCenterImage){
         var mine = (centerArtId !== null && t.id === centerArtId && !!t.artwork_url);
-        window.__livingBG.setCenterImage(mine ? t.artwork_url : null);
+        /* コンテストの門では、どの曲も中心をジャケットにする(2026-09-26 高尾さん指示)。
+           ジャケットの無い曲だけANのまま */
+        var contestArt = (curAxis === 'contest' && !!t.artwork_url);
+        window.__livingBG.setCenterImage((mine || contestArt) ? t.artwork_url : null);
         if (!mine) centerArtId = null;   // 一度離れたら、巡って戻っても出さない
       }
     } catch (e) {}
@@ -1745,6 +1768,28 @@
      108曲中85曲で同じ値(75)になっていて、使い物にならないため。 */
   var MEI = [18, 53, 54, 139, 147, 162];   // 2026-09-22 高尾さんが耳で選んだ6曲
 
+  /* ── コンテストの門 ──────────────────────────────────────
+     いまの回。次の回は、ここを contests/ の新しいファイル名に書き換えるだけ。
+     応募作の数え方はコンテスト頁の展示室(src/js/contest-live.js の entriesOf)と同じにする:
+     曲番号が first_id 以上で、close_at までに投稿された、公開中の曲。
+     この画面の台本は本文の途中で動き出すため、あちらを読み込んで使うことはできない */
+  var CONTEST = '2026-09';
+  var contestCfg = null;
+  function loadContest(){
+    return fetch('contests/' + CONTEST + '.json')
+      .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+      .then(function(c){ contestCfg = c; return c; });
+  }
+  function contestEntries(items, c){
+    var first = Number(c.first_id), close = Date.parse(c.close_at), skip = {};
+    (c.exclude_ids || []).forEach(function(id){ skip[id] = 1; });
+    return items.filter(function(t){
+      if (!t || skip[t.id]) return false;
+      var at = Date.parse(t.submitted_at);
+      return Number(t.id) >= first && !isNaN(at) && at <= close;
+    });
+  }
+
   function fetchTracks(axis){
     if (DEMO){
       // 開発中は書き換えるたびに読み直したいので、毎回ちがう印をつける
@@ -1759,6 +1804,15 @@
 
     /* 「混ぜて聴く」。静も動も分けずに全曲を流す(2026-09-19 高尾さん指示)。
        棚のAPIは片側しか返さないので、全曲を返すアーカイブのAPIを使う */
+    if (axis === 'contest'){
+      return Promise.all([
+        contestCfg ? Promise.resolve(contestCfg) : loadContest(),
+        fetch(API.replace('/api/shelf/', '/api/archive'), { signal: ctrl.signal })
+          .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); })
+      ]).then(function(v){
+        return { items: contestEntries(v[1].items || [], v[0]) };
+      });
+    }
     if (axis === 'all' || axis === 'mei'){
       return fetch(API.replace('/api/shelf/', '/api/archive'), { signal: ctrl.signal })
         .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); })
@@ -1868,6 +1922,25 @@
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){
     g.addEventListener('click', function(){ unlockAudio(); wakeAudioFromTap(); start(g.dataset.axis); });
   });
+
+  /* コンテストの門は、回の設定が読めたときだけ出す。
+     文字は textContent でだけ入れる(設定ファイルの中身を HTML として扱わない) */
+  (function(){
+    var g = gates.querySelector('.gate[data-axis="contest"]');
+    if (!g) return;
+    loadContest().then(function(c){
+      var gt = c.gate || {};
+      if (!gt.kanji) return;
+      document.getElementById('gateContestKanji').textContent = gt.kanji;
+      document.getElementById('gateContestEn').textContent = gt.en || 'CONTEST';
+      var sub = document.getElementById('gateContestSub');
+      (gt.sub || []).forEach(function(line, i){
+        if (i) sub.appendChild(document.createElement('br'));
+        sub.appendChild(document.createTextNode(line));
+      });
+      g.hidden = false;
+    }).catch(function(){ g.remove(); });
+  })();
 
   /* 瞑の曲がまだ1曲も選ばれていないなら、門そのものを出さない。
      押しても空の棚が出るだけの門は、置かないほうがよい */
@@ -2514,7 +2587,7 @@
   var q = params.get('gate');
   if (q === 'dou') q = 'do';
   var fromTrack = trackParam && /^\d+$/.test(trackParam) && !DEMO;
-  var fromGate = (q === 'sei' || q === 'do' || q === 'all' || q === 'mei');
+  var fromGate = (q === 'sei' || q === 'do' || q === 'all' || q === 'mei' || q === 'contest');
   if (fromTrack || fromGate){
     /* ホームの門から来た人に、ここでもう一度門を見せない。
        棚の一覧を取り終えるまで門が出たままで、「また門が出た」と見えていた(2026-09-16) */

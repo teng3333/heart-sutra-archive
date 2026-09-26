@@ -2095,8 +2095,42 @@ function __restill(p){
 }
 addEventListener('resize', __restill);
 addEventListener('orientationchange', __restill);
+
+/* 止まった絵を、少しのあいだだけ動かす(2026-09-26 高尾さん判断「B」)。
+   スマホの絵は常に静止画なので、曲の後半に出る差し色(蝶・桜・魚・雨など)は
+   「動く絵」として一度も描かれなかった。差し色が出た瞬間だけ数秒動かす。
+
+   落ちる心配について: iPhoneが落ちたのは、動かし続けて2分12秒のところ(2026-09-21)。
+   ここで動かすのは1曲に1度、数秒だけ。その後はまた止まる。
+   ただし実機では未検証なので、秒数は短めにしておく。
+
+   動かすのはスマホの既定の停止のときだけ。
+   端末の設定で動きを減らしている人と、PCで自分で止めた人には動かさない(その選択が優先)。
+   相は止まった絵と同じ値に固定する。listen.html は曲の進みで相を動かすため、
+   固定しないと、動き出した瞬間に絵柄が別物へ跳ぶ。 */
+var __burstGen = 0;
+function __burst(sec){
+  if (!MOBILE || REDUCED || __chose || !__stopped || __hidden) return false;
+  var until = performance.now() + Math.max(1, Math.min(15, sec || 10)) * 1000;
+  var mine = ++__burstGen;
+  /* 差し色は約20秒かけて濃くなる作りなので、数秒では薄いまま終わる。
+     動かす分だけ、降り始めを前へずらして、はじめから見える濃さにする */
+  try {
+    var tn = (performance.now() - t0) / 1000;
+    if (weather !== 'none') wStart = Math.min(wStart, tn - 26);
+  } catch(e){}
+  (function step(ts){
+    if (mine !== __burstGen || __hidden) return;
+    if (performance.now() > until) return;      // 最後のコマが、そのまま止まった絵になる
+    auto = false; manualP = __stillPhase;
+    draw(ts || performance.now());
+    requestAnimationFrame(step);
+  })();
+  return true;
+}
 try {
   if (window.__livingBG){
+    window.__livingBG.burst = __burst;
     window.__livingBG.restill = __restill;
     /* この画面の絵が止まっているか。呼び手が「止まっているときだけ」の
        手当てをするために見る(listen.html の曲ごとの色合いなど) */

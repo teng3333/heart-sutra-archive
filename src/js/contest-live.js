@@ -98,17 +98,14 @@
     a.setAttribute('data-ogs-placement', 'contest_entries');
 
     var cover = el('span', 'cl-cover');
-    if (t.artwork_url) {
-      var img = document.createElement('img');
-      img.src = t.artwork_url;
-      img.alt = '';
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      cover.appendChild(img);
-    } else {
-      cover.classList.add('empty');
-      cover.appendChild(el('span', null, '開'));
-    }
+    /* ジャケットの無い投稿は、ANの顔を代わりに置く(2026-09-27 高尾さん指示。以前は「開」の字) */
+    var img = document.createElement('img');
+    img.src = t.artwork_url || 'assets/an/face-human.webp';
+    if (!t.artwork_url) img.className = 'an-fallback';
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    cover.appendChild(img);
     a.appendChild(cover);
     a.appendChild(el('span', 'cl-title', t.title));
     a.appendChild(el('span', 'cl-artist', 'by ' + t.artist_name));

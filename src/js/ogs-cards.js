@@ -64,16 +64,17 @@
   function card(t, badge, placement) {
     var c = el('div', 'work');
 
-    if (t.artwork_url) {
-      var cover = el('span', 'cover');
-      var img = document.createElement('img');
-      img.src = t.artwork_url;
-      img.alt = '';
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      cover.appendChild(img);
-      c.appendChild(cover);
-    }
+    /* ジャケットの無い投稿は、ANの顔を代わりに置く(2026-09-27 高尾さん指示)。
+       以前は枠ごと出さなかったので、新着の並びでその曲だけ絵が抜けて見えた */
+    var cover = el('span', 'cover');
+    var img = document.createElement('img');
+    img.src = t.artwork_url || 'assets/an/face-human.webp';
+    if (!t.artwork_url) img.className = 'an-fallback';
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    cover.appendChild(img);
+    c.appendChild(cover);
 
     var body = el('div', 'body');
     c.appendChild(body);

@@ -123,7 +123,9 @@ def page(t, base, tmpl):
 
     body.append('<div class="play">')
     # 聴くときは、聞き流し画面でビジュアルと一緒に。再生器を曲ごとに持たない
-    body.append('<a class="btn main" href="../listen.html?track=%d">▶ 聴く ／ Play</a>' % t["id"])
+    # 応募作は、聴いた後も応募作だけを流す(門「解」・背景はジャケット)。2026-09-27 高尾さん指示
+    gate = "&amp;gate=contest" if t.get("_entry") else ""
+    body.append('<a class="btn main" href="../listen.html?track=%d%s">▶ 聴く ／ Play</a>' % (t["id"], gate))
     body.append('<a class="btn" href="../listen.html?gate=%s">この棚を流す ／ Play the shelf</a>'
                 % e(t.get("axis") or "sei"))
     body.append('</div>')
@@ -215,6 +217,35 @@ def page(t, base, tmpl):
            card=card, css=css, script=SCRIPT, body="\n      ".join(body))
 
 
+def load_contest():
+    """いまの回の設定(contests/current.json が指すもの)。無い・壊れているなら None"""
+    try:
+        cur = json.loads((ROOT / "contests" / "current.json").read_text(encoding="utf-8"))
+        slug = cur.get("slug") or ""
+        if not re.fullmatch(r"[0-9A-Za-z_-]+", slug):
+            return None
+        return json.loads((ROOT / "contests" / ("%s.json" % slug)).read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def is_entry(t, c):
+    """いまの回の応募作か。展示室・門「解」と同じ数え方
+    (曲番号が first_id 以上・last_id 以下、close_at までの投稿、exclude_ids に無い)"""
+    if not c or not c.get("first_id"):
+        return False
+    tid = int(t["id"])
+    if tid < int(c["first_id"]) or tid in (c.get("exclude_ids") or []):
+        return False
+    if c.get("last_id") and tid > int(c["last_id"]):
+        return False
+    at = t.get("submitted_at")
+    if not at:
+        return False
+    from datetime import datetime
+    return datetime.fromisoformat(at.replace("Z", "+00:00")) <= datetime.fromisoformat(c["close_at"])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=SITE, help="公開時の住所")
@@ -268,8 +299,10 @@ def main():
               % (len(before), len(items)))
         return 1
 
+    contest = load_contest()
     keep = set()
     for t in sorted(items, key=lambda x: x["id"]):
+        t["_entry"] = is_entry(t, contest)
         (OUT / ("%d.html" % t["id"])).write_text(page(t, args.base, tmpl), encoding="utf-8")
         keep.add("%d.html" % t["id"])
 

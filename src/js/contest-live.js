@@ -117,6 +117,7 @@
 
   function entriesOf(items, cfg) {
     var first = Number(cfg.first_id);
+    var last = cfg.last_id ? Number(cfg.last_id) : Infinity;   // 締切後に最後の応募作の番号を入れる
     var close = Date.parse(cfg.close_at);
     if (!(first > 0) || isNaN(close)) return [];
     var skip = {};
@@ -124,7 +125,7 @@
     return items.filter(function (t) {
       if (!t || !t.id || !t.title || !t.artist_name || skip[t.id]) return false;
       var at = Date.parse(t.submitted_at);
-      return Number(t.id) >= first && !isNaN(at) && at <= close;
+      return Number(t.id) >= first && Number(t.id) <= last && !isNaN(at) && at <= close;
     });
   }
 

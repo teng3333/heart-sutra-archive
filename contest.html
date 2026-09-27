@@ -74,6 +74,10 @@
   .cl-play a:hover,.cl-play a:focus-visible{border-color:rgba(217,196,154,.8);background:rgba(13,18,32,.78)}
   .cl-play b{flex:none;width:38px;height:38px;display:flex;align-items:center;justify-content:center;
     border:1px solid rgba(217,196,154,.4);font-family:var(--ja,"Shippori Mincho",serif);font-size:20px;font-weight:500}
+  .cl-play .cl-list{display:inline-block;margin:10px 0 0 16px;padding:0;border:0;background:none;
+    font-size:13px;letter-spacing:.04em;color:var(--washi-hi,#e9dcba);opacity:.8;text-decoration:underline;
+    text-underline-offset:3px}
+  .cl-play .cl-list:hover,.cl-play .cl-list:focus-visible{opacity:1;background:none}
   .cl-play .en{display:block;font-size:14px;letter-spacing:.06em}
   .cl-play .ja{display:block;font-size:12px;opacity:.8;margin-top:2px}
   .cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 14px}
@@ -159,7 +163,9 @@
       <!-- 応募作だけを流す門「解」へ(2026-09-26 高尾さん指示)。聞き流し画面で、球の中心は各曲のジャケット -->
       <p class="cl-play"><a href="listen.html?gate=contest" data-ogs-event="listen_open" data-ogs-placement="contest_playlist">
         <b aria-hidden="true">解</b><span><span class="en">&#9654; Play all entries</span>
-        <span class="ja">応募作をまとめて聴く</span></span></a></p>
+        <span class="ja">応募作をまとめて聴く</span></span></a>
+        <!-- 応募作だけの一覧(アーカイブのコンテスト表示)。2026-09-27 高尾さん指示 -->
+        <a class="cl-list" href="archive.html?contest=2026-09">List &amp; search ／ 一覧で探す →</a></p>
       <div class="cl-grid" id="cl-grid"></div>
     </div>
   </section>

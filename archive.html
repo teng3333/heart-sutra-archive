@@ -184,6 +184,39 @@
 
   var pick = { axis: '', genre: '' };
 
+  /* コンテストの応募作だけを見せる表示(2026-09-27 高尾さん指示)。
+     archive.html?contest=2026-09 で開く。検索・絞り込み・並びはそのまま使え、
+     「流す」は門「解」(応募作だけ・背景はジャケット)を開く。
+     応募作の数え方は展示室・門「解」と同じ(contests/<回>.json の first_id / last_id / close_at / exclude_ids) */
+  var contestSlug = (new URLSearchParams(location.search)).get('contest') || '';
+  if (!/^[0-9A-Za-z_-]+$/.test(contestSlug)) contestSlug = '';
+  var contestCfg = null;
+
+  function entriesOf(items, c){
+    var first = Number(c.first_id), last = c.last_id ? Number(c.last_id) : Infinity;
+    var close = Date.parse(c.close_at), skip = {};
+    (c.exclude_ids || []).forEach(function(id){ skip[id] = 1; });
+    return items.filter(function(t){
+      if (!t || skip[t.id]) return false;
+      var at = Date.parse(t.submitted_at);
+      return Number(t.id) >= first && Number(t.id) <= last && !isNaN(at) && at <= close;
+    });
+  }
+  function genresOf(items){
+    var n = {};
+    items.forEach(function(t){ if (t.genre_group) n[t.genre_group] = (n[t.genre_group] || 0) + 1; });
+    return Object.keys(n).sort(function(a, b){ return n[b] - n[a]; })
+      .map(function(k){ return { name: k, count: n[k] }; });
+  }
+  function showContestHead(c){
+    var title = c.title_ja || c.slug;
+    document.title = '応募作 — ' + title + ' — Open Gate Sutra';
+    document.querySelector('.lead').textContent = 'Contest — 応募作';
+    document.querySelector('h1').textContent = '「' + title + '」の応募作';
+    document.querySelector('.h-sub').textContent =
+      '投稿いただいた曲だけを集めています。順位や点数とは関係なく、公開された曲から並びます。';
+  }
+
   function say(head, body, gates){
     state.innerHTML = '<b>' + head + '</b>' + body +
       (gates ? '<span class="gates"><a href="listen.html?gate=sei">静の棚を流す</a>' +
@@ -193,11 +226,22 @@
     grid.innerHTML = '';
   }
 
-  fetch(API)
+  var gotContest = contestSlug
+    ? fetch('contests/' + contestSlug + '.json')
+        .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+        .then(function(c){ contestCfg = c; showContestHead(c); })
+        .catch(function(){ contestSlug = ''; })     // 読めない回は、ふつうのアーカイブとして開く
+    : Promise.resolve();
+
+  gotContest.then(function(){ return fetch(API); })
     .then(function(r){ if (!r.ok) throw 0; return r.json(); })
     .then(function(d){
       all = d.items || [];
       genres = d.genres || [];
+      if (contestCfg){
+        all = entriesOf(all, contestCfg);
+        genres = genresOf(all);
+      }
       if (!all.length){
         say('The hall is quiet.', 'まだ曲がありません。'); return;
       }
@@ -297,6 +341,10 @@
     playAll.href = 'listen.html' + (pick.axis ? '?gate=' + pick.axis : '');
     playAll.textContent = pick.axis === 'sei' ? '静の棚を流す'
                         : pick.axis === 'do' ? '動の棚を流す' : '棚を流す';
+    if (contestCfg){
+      playAll.href = 'listen.html?gate=contest';
+      playAll.textContent = ((contestCfg.gate && contestCfg.gate.kanji) || '解') + ' 応募作を流す';
+    }
 
     if (!out.length){
       say('Nothing here.',
@@ -349,6 +397,7 @@
   /* 絞った状態を住所に残す。共有でき、戻るボタンでも壊れない */
   function writeUrl(){
     var p = new URLSearchParams();
+    if (contestSlug) p.set('contest', contestSlug);
     if (q.value.trim()) p.set('q', q.value.trim());
     if (pick.axis) p.set('gate', pick.axis);
     if (pick.genre) p.set('genre', pick.genre);

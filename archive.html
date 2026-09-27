@@ -98,6 +98,9 @@
   .card:hover .sq{border-color:var(--washi)}
   .card:focus-visible .sq{outline:2px solid var(--ruri);outline-offset:2px}
   .card .sq img{width:100%;height:100%;object-fit:cover;display:block}
+  .entry-count{margin:10px 0 0;font-size:13px;letter-spacing:.08em;color:var(--nibi,#a39a86)}
+  .entry-count b{font-size:26px;font-weight:400;letter-spacing:.02em;margin:0 .15em;color:var(--washi-hi,#e9dcba)}
+  .card .sq img.an-fallback{object-position:50% 30%}   /* ANの顔(縦長)を、顔が中央に来るように */
   .card .mode{position:absolute;left:0;bottom:0;font-family:var(--ja);font-size:10px;
     letter-spacing:.14em;padding:3px 7px;background:rgba(3,5,10,.82);color:var(--washi-hi)}
   .card h3{font-family:var(--ja);font-size:13px;font-weight:400;color:var(--washi-hi);
@@ -287,6 +290,18 @@
     return Object.keys(n).sort(function(a, b){ return n[b] - n[a]; })
       .map(function(k){ return { name: k, count: n[k] }; });
   }
+  /* 投稿数を見出しの下に出す(2026-09-27 高尾さん指示)。数えるのは公開済みの応募作 */
+  function showEntryCount(n){
+    var p = document.createElement('p');
+    p.className = 'entry-count';
+    var b = document.createElement('b');
+    b.textContent = String(n);
+    p.appendChild(document.createTextNode('投稿数 '));
+    p.appendChild(b);
+    p.appendChild(document.createTextNode(' 曲'));
+    var sub = document.querySelector('.h-sub');
+    sub.parentNode.insertBefore(p, sub.nextSibling);
+  }
   function showContestHead(c){
     var title = c.title_ja || c.slug;
     document.title = '応募作 — ' + title + ' — Open Gate Sutra';
@@ -320,6 +335,7 @@
       if (contestCfg){
         all = entriesOf(all, contestCfg);
         genres = genresOf(all);
+        showEntryCount(all.length);
       }
       if (!all.length){
         say('The hall is quiet.', 'まだ曲がありません。'); return;
@@ -441,11 +457,11 @@
 
       var sq = document.createElement('div');
       sq.className = 'sq';
-      if (t.artwork_url){
-        var img = document.createElement('img');
-        img.src = t.artwork_url; img.alt = ''; img.loading = 'lazy';
-        sq.appendChild(img);
-      }
+      /* ジャケットの無い投稿は、ANの顔を代わりに置く(2026-09-27 高尾さん指示) */
+      var img = document.createElement('img');
+      img.src = t.artwork_url || 'assets/an/face-human.webp'; img.alt = ''; img.loading = 'lazy';
+      if (!t.artwork_url) img.className = 'an-fallback';
+      sq.appendChild(img);
       var m = document.createElement('span');
       m.className = 'mode';
       m.textContent = (t.axis_label_ja || '') + ' ' + (t.mode_label_ja || '');

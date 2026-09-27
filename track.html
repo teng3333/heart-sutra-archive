@@ -274,8 +274,7 @@
     /* 聴くときは、聞き流し画面でビジュアルと一緒に */
     document.getElementById('btnPlay').href = 'listen.html?track=' + t.id;
     /* 応募作は、聴いた後も応募作だけを流す(門「解」・背景はジャケット)。2026-09-27 高尾さん指示。
-       この頁の曲情報には投稿日時が無いので、番号で見分ける(first_id 以上・last_id 以下)。
-       締切後の投稿は、設定の last_id が入ってから外れる */
+       締切は投稿日時(submitted_at)で見る。APIが返さない間は番号(last_id)で代わりに見る */
     fetch('contests/current.json')
       .then(function(r){ if (!r.ok) throw 0; return r.json(); })
       .then(function(cur){
@@ -285,8 +284,12 @@
       .then(function(r){ if (!r.ok) throw 0; return r.json(); })
       .then(function(c){
         var id = Number(t.id);
+        /* 投稿日時がAPIから返るようになったら(2026-09-27〜)、締切はそれで見る。
+           返らない間は、番号(last_id)で代わりに見る */
+        var at = Date.parse(t.submitted_at), close = Date.parse(c.close_at);
         var entry = c.first_id && id >= Number(c.first_id) &&
                     (!c.last_id || id <= Number(c.last_id)) &&
+                    (isNaN(at) || isNaN(close) || at <= close) &&
                     (c.exclude_ids || []).indexOf(id) < 0;
         if (entry) document.getElementById('btnPlay').href = 'listen.html?track=' + id + '&gate=contest';
       })

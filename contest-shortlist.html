@@ -48,56 +48,17 @@
     color:var(--washi-hi);text-decoration:none;font-size:14px;letter-spacing:.04em}
   .go-row a:hover,.go-row a:focus-visible{border-color:var(--washi-hi)}
   @media (max-width:560px){.cl-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}}
-  /* 12曲のプレイリスト(2026-10 高尾さん)。この頁の中で順に流す。
-     音は素の audio 1本だけ(AudioContext を通さない)。携帯で画面が消えても止まらないようにするため */
-  .pl{margin:22px 0 8px;border:1px solid rgba(217,196,154,.2);background:rgba(13,18,32,.45)}
-  .pl-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px 18px;
-    border-bottom:1px solid rgba(217,196,154,.14)}
-  .pl-all{display:inline-flex;align-items:center;gap:14px;padding:10px 22px 10px 10px;cursor:pointer;
-    font:inherit;color:var(--washi-hi);background:rgba(13,18,32,.6);border:1px solid rgba(217,196,154,.34)}
-  .pl-all:hover,.pl-all:focus-visible{border-color:var(--washi-hi)}
-  .pl-all b{flex:none;width:40px;height:40px;display:flex;align-items:center;justify-content:center;
-    background:var(--shu);color:#f5ecd8;font-family:var(--ja);font-size:21px;font-weight:500}
-  .pl-all .en{display:block;font-size:15px;letter-spacing:.05em;text-align:left}
-  .pl-all .ja{display:block;font-size:12px;opacity:.8;margin-top:2px;text-align:left}
-  .pl-meta{font-size:12.5px;opacity:.65}
-  .pl-list{list-style:none;margin:0;padding:6px 0}
-  .pl-row{display:grid;grid-template-columns:2.2em 1fr auto;gap:12px;align-items:baseline;width:100%;
-    padding:9px 18px;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
-  .pl-row:hover,.pl-row:focus-visible{background:rgba(217,196,154,.06)}
-  .pl-row:focus-visible{outline:1px solid rgba(217,196,154,.7);outline-offset:-1px}
-  .pl-n{font-size:12px;opacity:.5;font-variant-numeric:tabular-nums}
-  .pl-t{font-size:14px;line-height:1.45;overflow-wrap:anywhere}
-  .pl-t small{display:block;font-size:12px;opacity:.6}
-  .pl-d{font-size:12px;opacity:.55;font-variant-numeric:tabular-nums}
-  .pl-row.on{background:rgba(178,58,46,.14)}
-  .pl-row.on .pl-n{opacity:1;color:var(--washi-hi)}
-  /* 再生中の操作。画面の下に張りつける */
-  .pl-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(10,14,24,.97);
-    border-top:1px solid rgba(217,196,154,.24);padding:10px 16px calc(10px + env(safe-area-inset-bottom));
-    backdrop-filter:blur(6px)}
-  .pl-bar[hidden]{display:none}
-  .pl-bar-in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
-  .pl-bar img{width:44px;height:44px;object-fit:cover;display:block;border:1px solid rgba(217,196,154,.14)}
-  .pl-now{min-width:0}
-  .pl-now b{display:block;font-weight:400;font-size:14px;color:var(--washi-hi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pl-now small{display:block;font-size:11.5px;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pl-ctl{display:flex;gap:6px}
-  .pl-ctl button{width:38px;height:38px;padding:0;cursor:pointer;font-size:14px;color:var(--washi-hi);
-    background:rgba(13,18,32,.6);border:1px solid rgba(217,196,154,.3)}
-  .pl-ctl button:hover,.pl-ctl button:focus-visible{border-color:var(--washi-hi)}
-  .pl-seek{grid-column:1 / -1;display:flex;gap:10px;align-items:center}
-  .pl-seek input{flex:1;accent-color:var(--shu)}
-  .pl-seek span{font-size:11px;opacity:.6;font-variant-numeric:tabular-nums;min-width:6.6em;text-align:right}
-  body.pl-playing main{padding-bottom:120px}
-  /* 再生バーが出ている間は、プライバシー設定のボタン(consent.js・右下)をバーの上へ逃がす */
-  body.pl-playing #privacy-settings{bottom:112px}
-  @media (max-width:420px){
-    .pl-bar-in{gap:10px}
-    .pl-bar img{width:38px;height:38px}
-    .pl-ctl{gap:4px}
-    .pl-ctl button{width:34px;height:34px}
-  }
+  /* 12曲を聞き流しプレイヤー(listen.html の門「選」)で聴く入口 */
+  .listen-go{margin:22px 0 6px}
+  .listen-go a{display:inline-flex;align-items:center;gap:16px;padding:12px 26px 12px 12px;text-decoration:none;
+    color:var(--washi-hi);border:1px solid rgba(217,196,154,.34);background:rgba(13,18,32,.5);
+    transition:border-color .2s,background .2s}
+  .listen-go a:hover,.listen-go a:focus-visible{border-color:rgba(217,196,154,.8);background:rgba(13,18,32,.78)}
+  .listen-go a b{flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+    background:var(--shu);color:#f5ecd8;font-family:var(--ja);font-size:22px;font-weight:500}
+  .listen-go .en{display:block;font-size:16px;letter-spacing:.05em}
+  .listen-go .ja{display:block;font-size:12.5px;opacity:.8;margin-top:2px}
+  .listen-go small{display:block;font-size:12px;opacity:.6;margin-top:8px}
 </style>
 <script src="src/js/consent.js" defer></script>
 </head>
@@ -200,39 +161,10 @@
   </div>
   <p class="order-note">Listed in the order they were submitted — this is not a ranking.<span class="ja"> ／ 並びは投稿順です。順位ではありません。</span></p>
 
-  <h3>Listen to the twelve<span class="ja">12曲を通して聴く</span></h3>
-  <div class="pl" id="pl">
-    <div class="pl-head">
-      <button type="button" class="pl-all" id="plAll" data-ogs-event="shortlist_play" data-ogs-placement="contest_shortlist">
-        <b aria-hidden="true">解</b><span><span class="en">Play all twelve</span><span class="ja">12曲を通して聴く</span></span></button>
-      <span class="pl-meta">12 tracks · about 51 min ／ 12曲・約51分　·　Tap a title to start there. ／ 曲名を押すと、そこから流れます。</span>
-    </div>
-    <ol class="pl-list" id="plList">
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000172.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000172-949b24ec.jpg" data-title="薄暮の波羅蜜多 - Cozy Ambient Folk" data-artist="MiRin / NoxP3">
-        <span class="pl-n">01</span><span class="pl-t">薄暮の波羅蜜多 - Cozy Ambient Folk<small>MiRin / NoxP3</small></span><span class="pl-d">2:32</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000173.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000173-4e22387f.jpg" data-title="空にほどける" data-artist="djhugu">
-        <span class="pl-n">02</span><span class="pl-t">空にほどける<small>djhugu</small></span><span class="pl-d">5:49</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000184.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000184-e6da85b7.jpg" data-title="色即是空 — à Giverny:Étude" data-artist="Sion">
-        <span class="pl-n">03</span><span class="pl-t">色即是空 — à Giverny:Étude<small>Sion</small></span><span class="pl-d">5:26</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000192.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000192-4fdde823.jpg" data-title="空へほどける般若心経" data-artist="Noir Project">
-        <span class="pl-n">04</span><span class="pl-t">空へほどける般若心経<small>Noir Project</small></span><span class="pl-d">5:07</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000203.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000203-5a0dc90b.jpg" data-title="般若心経 — 華のみち:Étude" data-artist="Sion">
-        <span class="pl-n">05</span><span class="pl-t">般若心経 — 華のみち:Étude<small>Sion</small></span><span class="pl-d">3:26</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000205.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000205-5bc57329.jpg" data-title="世界は優しい言葉でできている、僕も優しい言葉でできている。" data-artist="らくごまる">
-        <span class="pl-n">06</span><span class="pl-t">世界は優しい言葉でできている、僕も優しい言葉でできている。<small>らくごまる</small></span><span class="pl-d">4:28</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000221.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000221-e0275ee4.jpg" data-title="śūnyā" data-artist="yamato">
-        <span class="pl-n">07</span><span class="pl-t">śūnyā<small>yamato</small></span><span class="pl-d">4:15</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000224.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000224-19dcd1ee.jpg" data-title="KU" data-artist="yuka">
-        <span class="pl-n">08</span><span class="pl-t">KU<small>yuka</small></span><span class="pl-d">4:13</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000232.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000232-89438be5.jpg" data-title="akatsukinosukinaoto8 - 心の空 - Treblo" data-artist="暁の好きな音">
-        <span class="pl-n">09</span><span class="pl-t">akatsukinosukinaoto8 - 心の空 - Treblo<small>暁の好きな音</small></span><span class="pl-d">4:44</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000234.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000234-4f7bafaf.jpg" data-title="koko" data-artist="picapicarida">
-        <span class="pl-n">10</span><span class="pl-t">koko<small>picapicarida</small></span><span class="pl-d">2:59</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000235.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000235-f5251a81.jpg" data-title="海は波、波は海" data-artist="Rotten Saint">
-        <span class="pl-n">11</span><span class="pl-t">海は波、波は海<small>Rotten Saint</small></span><span class="pl-d">3:51</span></button></li>
-      <li><button type="button" class="pl-row" data-src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/audio/000238.mp3" data-art="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000238-88b87328.jpg" data-title="You Don’t Have to Hold It" data-artist="2525family">
-        <span class="pl-n">12</span><span class="pl-t">You Don’t Have to Hold It<small>2525family</small></span><span class="pl-d">3:44</span></button></li>
-    </ol>
+  <div class="listen-go">
+    <a href="listen.html?gate=final" data-ogs-event="listen_open" data-ogs-placement="contest_shortlist">
+      <b aria-hidden="true">選</b><span><span class="en">Listen to the twelve</span><span class="ja">12曲をプレイヤーで聴く</span></span></a>
+    <small>12 tracks · about 51 min, in the same player as the Still and Move shelves. ／ 12曲・約51分。静・動・瞑と同じプレイヤーで流れます。</small>
   </div>
 
   <h3>How we chose<span class="ja">どう選んだか</span></h3>
@@ -278,68 +210,5 @@
     <a href="./">Home</a>
   </nav>
 </main>
-
-<div class="pl-bar" id="plBar" hidden>
-  <div class="pl-bar-in">
-    <img id="plArt" src="" alt="">
-    <div class="pl-now"><b id="plTitle"></b><small id="plArtist"></small></div>
-    <div class="pl-ctl">
-      <button type="button" id="plPrev" aria-label="Previous track ／ 前の曲">⏮</button>
-      <button type="button" id="plPlay" aria-label="Play or pause ／ 再生・一時停止">⏸</button>
-      <button type="button" id="plNext" aria-label="Next track ／ 次の曲">⏭</button>
-    </div>
-    <div class="pl-seek"><input type="range" id="plPos" min="0" max="1000" value="0" aria-label="Position ／ 再生位置"><span id="plTime">0:00 / 0:00</span></div>
-  </div>
-</div>
-<audio id="plAudio" preload="none"></audio>
-<script>
-/* 12曲のプレイリスト。上から順に流し、12曲目で止まる */
-(function(){
-  var au = document.getElementById('plAudio'), bar = document.getElementById('plBar');
-  var rows = [].slice.call(document.querySelectorAll('#plList .pl-row'));
-  var cur = -1, failed = 0;
-  function $(id){ return document.getElementById(id); }
-  function fmt(s){ if (!isFinite(s)) return '0:00'; s = Math.floor(s); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
-  function play(i){
-    if (i < 0 || i >= rows.length) return;
-    var r = rows[i]; cur = i;
-    rows.forEach(function(x, k){ x.classList.toggle('on', k === i); });
-    au.src = r.getAttribute('data-src');
-    au.play().catch(function(){});
-    $('plArt').src = r.getAttribute('data-art');
-    $('plTitle').textContent = r.getAttribute('data-title');
-    $('plArtist').textContent = r.getAttribute('data-artist') + '　·　' + (i + 1) + ' / ' + rows.length;
-    bar.hidden = false; document.body.classList.add('pl-playing');
-    if ('mediaSession' in navigator && window.MediaMetadata){
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: r.getAttribute('data-title'), artist: r.getAttribute('data-artist'),
-        album: '心が解ける般若心経 · 最終選考の12曲',
-        artwork: [{ src: r.getAttribute('data-art'), sizes: '512x512', type: 'image/jpeg' }]
-      });
-    }
-  }
-  $('plAll').addEventListener('click', function(){ play(0); });
-  rows.forEach(function(r, i){ r.addEventListener('click', function(){ i === cur ? (au.paused ? au.play() : au.pause()) : play(i); }); });
-  $('plPrev').addEventListener('click', function(){ (au.currentTime > 3 || cur === 0) ? (au.currentTime = 0) : play(cur - 1); });
-  $('plNext').addEventListener('click', function(){ if (cur < rows.length - 1) play(cur + 1); });
-  $('plPlay').addEventListener('click', function(){ au.paused ? au.play() : au.pause(); });
-  au.addEventListener('play', function(){ $('plPlay').textContent = '⏸'; failed = 0; });
-  au.addEventListener('pause', function(){ $('plPlay').textContent = '▶'; });
-  au.addEventListener('ended', function(){ if (cur < rows.length - 1) play(cur + 1); });
-  /* 読めない曲は飛ばす。続けて3曲読めなければ止める(延々と飛ばし続けないため) */
-  au.addEventListener('error', function(){ if (++failed < 3 && cur < rows.length - 1) play(cur + 1); });
-  au.addEventListener('timeupdate', function(){
-    $('plTime').textContent = fmt(au.currentTime) + ' / ' + fmt(au.duration);
-    if (isFinite(au.duration) && au.duration > 0) $('plPos').value = Math.round(au.currentTime / au.duration * 1000);
-  });
-  $('plPos').addEventListener('input', function(e){ if (isFinite(au.duration)) au.currentTime = e.target.value / 1000 * au.duration; });
-  if ('mediaSession' in navigator){
-    try {
-      navigator.mediaSession.setActionHandler('previoustrack', function(){ $('plPrev').click(); });
-      navigator.mediaSession.setActionHandler('nexttrack', function(){ $('plNext').click(); });
-    } catch (e) {}
-  }
-})();
-</script>
 </body>
 </html>

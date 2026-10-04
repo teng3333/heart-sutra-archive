@@ -88,7 +88,8 @@
     '.ang-launch{position:fixed;right:16px;bottom:16px;z-index:9990;width:64px;height:64px;border-radius:50%;',
     ' padding:0;border:1px solid rgba(217,196,154,.45);background:#05070c;cursor:pointer;overflow:hidden;',
     ' box-shadow:0 6px 24px rgba(0,0,0,.6);animation:ang-breath 4.2s ease-in-out infinite}',
-    '.ang-launch img{width:100%;height:100%;object-fit:cover;object-position:50% 26%;display:block}',
+    /* 小さな丸でも顔が分かるよう、胸像の絵の顔のあたりを拡大して見せる */
+    '.ang-launch img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.5);transform-origin:66% 44%}',
     '.ang-launch:focus-visible{outline:2px solid #9ec9dd;outline-offset:3px}',
     '.ang-hint{position:fixed;right:88px;bottom:30px;z-index:9990;max-width:200px;padding:8px 12px;',
     ' background:rgba(10,13,22,.92);border:1px solid rgba(217,196,154,.3);color:#e9dcba;font-size:13px;',

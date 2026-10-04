@@ -95,7 +95,8 @@
 
   /* ── 見た目 ─────────────────────────────────────────────── */
   var CSS = [
-    '.ang-launch{position:fixed;right:16px;bottom:20px;z-index:9990;width:64px;height:64px;border-radius:50%;',
+    /* 右下の「Privacy · Analytics」(下から12〜39px)の上に置く */
+    '.ang-launch{position:fixed;right:16px;bottom:60px;z-index:9990;width:64px;height:64px;border-radius:50%;',
     ' padding:0;border:0;background:none;cursor:pointer;animation:ang-breath 4.2s ease-in-out infinite}',
     '.ang-face{display:block;width:100%;height:100%;border-radius:50%;overflow:hidden;background:#05070c;',
     ' border:1px solid rgba(217,196,154,.45);box-shadow:0 6px 24px rgba(0,0,0,.6)}',
@@ -106,7 +107,7 @@
     /* 小さな丸でも顔が分かるよう、胸像の絵の顔のあたりを拡大して見せる */
     '.ang-face img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.5);transform-origin:66% 44%}',
     '.ang-launch:focus-visible{outline:2px solid #9ec9dd;outline-offset:3px}',
-    '.ang-hint{position:fixed;right:88px;bottom:30px;z-index:9990;max-width:200px;padding:8px 12px;',
+    '.ang-hint{position:fixed;right:88px;bottom:70px;z-index:9990;max-width:200px;padding:8px 12px;',
     ' background:rgba(10,13,22,.92);border:1px solid rgba(217,196,154,.3);color:#e9dcba;font-size:13px;',
     ' line-height:1.5;border-radius:12px 12px 2px 12px;opacity:0;transform:translateY(6px);',
     ' transition:opacity .4s,transform .4s;pointer-events:none}',
@@ -160,12 +161,26 @@
     '@keyframes ang-blink{0%{opacity:0}30%,60%{opacity:1}100%{opacity:0}}',
     '@keyframes ang-talk{0%{translate:0 0}100%{translate:0 -1.5px}}',
     '@media (max-width:560px){.ang-stage{width:100vw;height:86vh}.ang-char{height:min(44%,84vw);right:-20px}}',
+    /* 同意の案内(下から12〜68px)が出ている間は、その上まで持ち上げる。幅の狭いタブレットでは案内と横に重なるため */
+    'html.ogs-consent-open .ang-launch{bottom:96px}html.ogs-consent-open .ang-hint{bottom:106px}',
+    /* 会話の画面も、同意の案内に選択肢が隠れないよう上へずらす */
+    'html.ogs-consent-open .ang-stage{bottom:76px;height:min(640px,calc(86vh - 76px))}',
+    /* スマホ(620px以下)では右端に絵・音のボタンが並ぶので、左下の「Privacy」(下から8〜32px)の上に置く。
+       同意の案内が出ている間は、その上まで持ち上げる(consent.js がほかのボタンを持ち上げるのと同じ) */
+    '@media (max-width:620px){.ang-launch{left:12px;right:auto;bottom:48px}',
+    ' .ang-hint{left:88px;right:auto;bottom:58px;border-radius:12px 12px 12px 2px}',
+    ' html.ogs-consent-open .ang-launch{bottom:84px}html.ogs-consent-open .ang-hint{bottom:94px}',
+    ' html.ogs-consent-open .ang-stage{bottom:66px;height:calc(86vh - 66px)}}',
+    /* スマホで開いている間だけ、後ろを暗くしてページの文字が透けないようにする */
+    '.ang-dim{display:none}',
+    '@media (max-width:620px){.ang-dim{display:block;position:fixed;inset:0;z-index:9990;background:rgba(3,5,10,.62);',
+    ' opacity:0;pointer-events:none;transition:opacity .35s}.ang-dim.on{opacity:1;pointer-events:auto}}',
     '@media (prefers-reduced-motion:reduce){.ang-launch,.ang-char .breath{animation:none}',
     ' .ang-stage.talking .ang-char img{animation:none}}'
   ].join('\n');
 
   /* ── 組み立て ───────────────────────────────────────────── */
-  var stage, faceImgs = {}, shown = '', fadeUntil = 0, textEl, choicesEl, launch, hint, tracks = null, last = null, cur = null;
+  var stage, dim, faceImgs = {}, shown = '', fadeUntil = 0, textEl, choicesEl, launch, hint, tracks = null, last = null, cur = null;
 
   function build() {
     var st = el('style'); st.textContent = CSS; document.head.appendChild(st);
@@ -191,6 +206,9 @@
   }
 
   function buildStage() {
+    dim = el('div', 'ang-dim');
+    dim.addEventListener('click', close);   // 暗いところを押すと閉じる
+    document.body.appendChild(dim);
     stage = el('div', 'ang-stage' + (REAL_FACES ? '' : ' ph'));
     stage.setAttribute('role', 'dialog');
     stage.setAttribute('aria-label', 'ANとの会話');
@@ -260,7 +278,7 @@
         setTimeout(function () { stage.classList.remove('blinking'); }, 220);
       }
       blinkLoop();
-    }, 2500 + Math.random() * 3500);
+    }, 3000 + Math.random() * 1000);   // 3〜4秒おき(人のまばたきに近い間隔)
   }
 
   /* 文字を1字ずつ出す。出しているあいだは口パク */
@@ -309,7 +327,7 @@
     if (!stage) buildStage();
     hint.classList.remove('on');
     launch.style.display = 'none';
-    stage.classList.add('on');
+    stage.classList.add('on'); dim.classList.add('on');
     loadTracks();   // 押されてから読む(ホームを重くしない)
     var prev = store.get('mood'), h = new Date().getHours();
     var prevLabel = null;
@@ -321,8 +339,15 @@
     }));
   }
 
+  /* 話し終えたあと、せりふを出し直さずに表情だけ変える */
+  function settle(face) {
+    stage.dataset.face = face;
+    placeParts(face);
+    showFace(face, true);
+  }
+
   function close() {
-    stage.classList.remove('on', 'mouthing');
+    stage.classList.remove('on', 'mouthing'); dim.classList.remove('on');
     launch.style.display = '';
     typing++;
   }
@@ -392,7 +417,11 @@
     var shelf = el('a', '', want.mei ? '瞑の棚を流す' : want.any ? 'ぜんぶ流す' : 'この棚を流す');
     shelf.href = 'listen.html?gate=' + gate;
     var restart = btn('気分を選び直す', open);
-    say(pick(PICK_LINE), 'smile', [card, play, again, shelf, restart]);
+    /* 笑顔で差し出したあと、少し経ったら通常の顔に戻す(ずっと笑顔のままだと不自然) */
+    say(pick(PICK_LINE), 'smile', [card, play, again, shelf, restart], function () {
+      if (typing === tk && stage.classList.contains('on')) settle('normal');
+    }, 3000);
+    var tk = typing;
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);

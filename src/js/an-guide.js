@@ -22,7 +22,8 @@
   var FACES = {
     normal: 'assets/an/guide/an-normal.webp',
     blink:  'assets/an/guide/an-blink.webp',
-    talk:   'assets/an/guide/an-talk.webp',
+    talk:   'assets/an/guide/an-talk.webp',   // 口あけ・口半開きは、通常の顔に口のまわりだけ貼った絵
+    mid:    'assets/an/guide/an-mid.webp',    // (別々に描いた絵を丸ごと替えると、髪や飾りがちらつくため)
     smile:  'assets/an/guide/an-smile.webp',
     tsun:   'assets/an/guide/an-tsun.webp',
     think:  'assets/an/guide/an-think.webp'
@@ -121,7 +122,8 @@
     '.ang-stage.ph[data-face=smile] .ang-char img{filter:brightness(1.08) saturate(1.1)}',
     '.ang-stage.ph[data-face=tsun] .ang-char img{transform:rotate(-2.5deg) translateX(-4px)}',
     '.ang-stage.ph[data-face=think] .ang-char img{transform:rotate(2deg) translateY(2px);filter:brightness(.92)}',
-    '.ang-stage.talking .ang-char img{animation:ang-talk .24s steps(2) infinite}',
+    /* 話すときの小さな揺れは、口パクの絵が無いとき(仮の絵・通常以外の表情)だけ。口パクと重なるとがたつく */
+    '.ang-stage.ph.talking .ang-char img,.ang-stage.talking:not([data-face=normal]) .ang-char img{animation:ang-talk .24s steps(2) infinite}',
     '.ang-box{position:absolute;left:12px;right:12px;bottom:12px;padding:16px 16px 14px;border-radius:14px;',
     ' background:rgba(8,11,19,.9);border:1px solid rgba(217,196,154,.32);color:#e9dcba;',
     ' backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 10px 40px rgba(0,0,0,.6)}',
@@ -232,7 +234,7 @@
     face = face || 'normal';
     stage.dataset.face = face;
     /* 今の顔(口パク・まばたき中の絵も同じ顔として扱う)と違う表情になるときだけ、ゆっくり変える */
-    var base = (shown === 'talk' || shown === 'blink') ? 'normal' : shown;
+    var base = (shown === 'talk' || shown === 'mid' || shown === 'blink') ? 'normal' : shown;
     var changed = REAL_FACES && base !== face;
     showFace(face, changed);
     choicesEl.innerHTML = '';
@@ -242,9 +244,11 @@
     var mouth = 0;
     /* 表情が溶け終わってから口を動かす(途中で一瞬の切り替えが入ると、溶ける動きが途切れる) */
     var mouthStart = (REAL_FACES && face === 'normal') ? setTimeout(function () {
+      /* 閉じ → 半開き → 開き → 半開き → … と、中間の口をはさんで滑らかに動かす */
+      var seq = ['mid', 'talk', 'mid', 'normal'], si = 0;
       if (my === typing && stage.classList.contains('talking')) mouth = setInterval(function () {
-        showFace(shown === 'talk' ? face : 'talk');
-      }, 120);
+        showFace(seq[si++ % seq.length]);
+      }, 75);
     }, changed ? FADE_MS : 0) : 0;
     function done() {
       clearTimeout(mouthStart); clearInterval(mouth); showFace(face);

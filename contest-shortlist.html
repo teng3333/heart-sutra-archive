@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The 12 finalists — Open Gate Sutra</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="description" content="Music that loosens a heart: the 12 tracks going to the final, out of 55 entries — and how they were chosen.">
+
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Open Gate Sutra">
+<meta property="og:title" content="最終選考に進む12曲 — 心が解ける般若心経">
+<meta property="og:description" content="応募55曲から、最終選考に進む12曲を選びました。本当は10曲のつもりでした。選び方もお伝えします。">
+<meta property="og:url" content="https://teng3333.github.io/heart-sutra-archive/contest-shortlist.html">
+<meta property="og:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/css/doc.css">
+<style>
+  /* 12曲の棚。contest.html の応募作一覧(cl-)と同じ形にそろえる */
+  .cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:22px 16px;margin:18px 0 10px}
+  .cl-card{display:flex;flex-direction:column;gap:6px;min-width:0;color:inherit;text-decoration:none}
+  .cl-cover{display:block;aspect-ratio:1/1;overflow:hidden;background:rgba(13,18,32,.6);
+    border:1px solid rgba(217,196,154,.14)}
+  .cl-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .2s}
+  .cl-card:hover .cl-cover img,.cl-card:focus-visible .cl-cover img{opacity:.8}
+  .cl-card:focus-visible{outline:1px solid rgba(217,196,154,.8);outline-offset:3px}
+  .cl-title{font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+  .cl-artist{font-size:12px;opacity:.65;overflow-wrap:anywhere}
+  .cl-tag{font-family:var(--ja);font-size:12px;line-height:1.6;opacity:.8;overflow-wrap:anywhere}
+  .order-note{font-size:13px;opacity:.65;margin-top:4px}
+  /* 何を聴いたか。並びに意味は無いので番号は付けない */
+  .heard{margin:12px 0 22px;padding:0;list-style:none}
+  .heard li{position:relative;padding:0 0 0 1.4em;margin:0 0 10px;line-height:1.8}
+  .heard li::before{content:"";position:absolute;left:.2em;top:.8em;width:6px;height:6px;
+    border:1px solid rgba(217,196,154,.6);border-radius:50%}
+  .go-row{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 8px}
+  .go-row a{display:inline-block;padding:10px 20px;border:1px solid rgba(217,196,154,.34);
+    color:var(--washi-hi);text-decoration:none;font-size:14px;letter-spacing:.04em}
+  .go-row a:hover,.go-row a:focus-visible{border-color:var(--washi-hi)}
+  @media (max-width:560px){.cl-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}}
+</style>
+<script src="src/js/consent.js" defer></script>
+</head>
+<body>
+<header>
+  <a class="brand" href="./">
+    <span class="logo" aria-hidden="true"><span>開</span><span>羯</span><span>諦</span><span>経</span></span>
+    <h1>Open Gate Sutra<small>ひらかれた般若心経の家</small></h1>
+  </a>
+  <a class="back" href="contest.html">← Contest</a>
+</header>
+
+<main>
+  <p class="eyebrow">Contest — 心が解ける般若心経</p>
+  <h2>The twelve going to the final.</h2>
+  <p class="sub-ja">一次選考の発表 ／ 最終選考に進む12曲</p>
+  <p class="updated">Announced: 2026-10-04 · 一次選考の結果</p>
+
+  <p class="lead">Thank you for 55 tracks. Every one of them was made to help someone let go a little. From them, twelve go on to the final.</p>
+  <p class="ja">55曲の応募、ありがとうございました。どの曲も、誰かの肩の力を少し抜こうとして作られていました。その中から、最終選考に進む12曲を選びました。</p>
+
+  <h3>We meant to choose ten<span class="ja">本当は10曲のつもりでした</span></h3>
+  <p>The plan was a shortlist of ten. But around the tenth place, the scores came out almost level. Choosing was hard, so we added the tracks at that edge to the final as well — and ten became twelve.</p>
+  <p class="ja">一次選考は10曲に絞る予定でした。けれど、10曲目の前後で、点がほとんど並びました。選ぶのが難しく、その境目の曲も最終選考に加えることにしました。そのため、10曲が12曲になりました。</p>
+
+  <h3>The twelve<span class="ja">12曲</span></h3>
+  <div class="cl-grid">
+    <a class="cl-card" href="t/172.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000172-949b24ec.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">薄暮の波羅蜜多 - Cozy Ambient Folk</span>
+      <span class="cl-artist">MiRin / NoxP3</span>
+      <span class="cl-tag">身体の力がゆっくり抜ける般若心経</span>
+    </a>
+    <a class="cl-card" href="t/173.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000173-4e22387f.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">空にほどける</span>
+      <span class="cl-artist">djhugu</span>
+      <span class="cl-tag">身体の境界が溶けていく般若心経</span>
+    </a>
+    <a class="cl-card" href="t/184.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000184-e6da85b7.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">色即是空 — à Giverny:Étude</span>
+      <span class="cl-artist">Sion</span>
+      <span class="cl-tag">絵筆の先から色が溶ける般若心経</span>
+    </a>
+    <a class="cl-card" href="t/192.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000192-4fdde823.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">空へほどける般若心経</span>
+      <span class="cl-artist">Noir Project</span>
+      <span class="cl-tag">白い花びらが水面を滑る般若心経</span>
+    </a>
+    <a class="cl-card" href="t/203.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000203-5a0dc90b.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">般若心経 — 華のみち:Étude</span>
+      <span class="cl-artist">Sion</span>
+      <span class="cl-tag">閉じた蕾が静かに開く般若心経</span>
+    </a>
+    <a class="cl-card" href="t/205.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000205-5bc57329.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">世界は優しい言葉でできている、僕も優しい言葉でできている。</span>
+      <span class="cl-artist">らくごまる</span>
+      <span class="cl-tag">呼吸ひとつで視界が開ける般若心経</span>
+    </a>
+    <a class="cl-card" href="t/221.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000221-e0275ee4.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">śūnyā</span>
+      <span class="cl-artist">yamato</span>
+      <span class="cl-tag">呼吸が霧に溶けていく般若心経</span>
+    </a>
+    <a class="cl-card" href="t/224.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000224-19dcd1ee.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">KU</span>
+      <span class="cl-artist">yuka</span>
+      <span class="cl-tag">香の煙が空に溶ける般若心経</span>
+    </a>
+    <a class="cl-card" href="t/232.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000232-89438be5.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">akatsukinosukinaoto8 - 心の空 - Treblo</span>
+      <span class="cl-artist">暁の好きな音</span>
+      <span class="cl-tag">地平線が光で染まる般若心経</span>
+    </a>
+    <a class="cl-card" href="t/234.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000234-4f7bafaf.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">koko</span>
+      <span class="cl-artist">picapicarida</span>
+      <span class="cl-tag">閉じた瞼に広がる波紋の般若心経</span>
+    </a>
+    <a class="cl-card" href="t/235.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000235-f5251a81.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">海は波、波は海</span>
+      <span class="cl-artist">Rotten Saint</span>
+      <span class="cl-tag">全ての川が海へ注ぐ般若心経</span>
+    </a>
+    <a class="cl-card" href="t/238.html" data-ogs-event="track_open" data-ogs-placement="contest_shortlist">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000238-88b87328.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">You Don’t Have to Hold It</span>
+      <span class="cl-artist">2525family</span>
+      <span class="cl-tag">肩の力がそっと抜ける般若心経</span>
+    </a>
+  </div>
+  <p class="order-note">Listed in the order they were submitted — this is not a ranking.<span class="ja"> ／ 並びは投稿順です。順位ではありません。</span></p>
+
+  <h3>How we chose<span class="ja">どう選んだか</span></h3>
+  <p>We listened for one thing only: when the track ends, has the listener's heart loosened? Genre, technique and sound quality were not judged.</p>
+  <p class="ja">見たのは一点だけです。<b>聴き終えたとき、心がほどけているか。</b>ジャンル、演奏の巧拙、音質は問いませんでした。</p>
+
+  <p><b>AN listened first.</b> AN had already heard each of the 55 entries (the operator's own tracks excluded) at least three times since they were submitted. For this contest we added one more way of listening, made for this theme alone: the whole track, and then its last sixty seconds on their own.</p>
+  <p class="ja"><b>まず、ANが聴きました。</b>応募55曲（主催者の作品を除く）を、ANは投稿の時点から3回以上聴いています。今回はそれに加えて、このテーマのためだけの聴き方を用意しました。曲の全体を聴き、そのあと最後の60秒だけを、もう一度聴きます。</p>
+
+  <p>What AN listened for:</p>
+  <p class="ja">ANが聴いたところ:</p>
+  <ul class="heard">
+    <li>Few sudden jumps in volume, few hits that make you brace.<span class="ja"> ／ 急な音量の変化や、身構えさせる強い打撃が少ないか</span></li>
+    <li>Repetition that rocks you, rather than repetition that rushes you.<span class="ja"> ／ 繰り返しが、せき立てるのではなく、揺られる心地よさになっているか</span></li>
+    <li>A voice — chant, song or speech — that stays close without pressing.<span class="ja"> ／ 声（読経・歌・語り）が押しつけず、そばに寄り添う距離にあるか</span></li>
+    <li>An ending that comes to rest in stillness.<span class="ja"> ／ 終わりにかけて、静けさへ着地しているか</span></li>
+    <li>How tense the track is, from beginning to middle to end.<span class="ja"> ／ 曲の始め・中ほど・終わりが、それぞれどれくらい張りつめているか</span></li>
+  </ul>
+  <p>AN was never asked for a total. It scored each point separately, and the scores were combined with fixed weights. Tracks that stay tense right to the last note were set aside from the shortlist — they remain entries, and they stay in the hall.</p>
+  <p class="ja">ANには合計点を言わせていません。項目ごとに点を付けてもらい、あらかじめ決めた重みで合わせました。最後の音まで張りつめたまま終わる曲は、候補から外しました（応募は成立していて、展示室にも残ります）。</p>
+
+  <h3>Why most of the twelve are quiet<span class="ja">静かな曲が多く残ったことについて</span></h3>
+  <p>Most of the twelve are quiet tracks. We promised genre would not matter, so we want to be straight about this. We measured "a heart that loosens" by whether your shoulders have dropped when the track ends — and by that measure, heat in the middle of a track inevitably counted against it.</p>
+  <p class="ja">12曲を並べると、静かな曲が多く残りました。ジャンルは問わないとお約束していたので、このことは正直にお伝えしておきます。今回は「心が解ける」を、聴き終えたときに肩の力が抜けているか、で測りました。その物差しでは、曲の途中の熱さが、どうしても点に響きました。</p>
+  <p>Yet more than half of all entries — 32 of 55 — were full of energy. Dancing until it lets go, shouting until it lets go: your tracks showed us there are many ways for a heart to loosen. We will carry that into the next contest.</p>
+  <p class="ja">一方で、応募作の半分以上（55曲中32曲）は、エネルギーのある曲でした。踊ってほどける。叫んでほどける。そういうほどけ方もあることを、皆さんの曲が教えてくれました。このことは、次の回に持ち越します。</p>
+
+  <h3>What happens next<span class="ja">これから</span></h3>
+  <p>AN will listen to these twelve again, and the operator will choose one winner from what AN finds. The result will be announced around 2026-10-10.</p>
+  <p class="ja">この12曲を、ANがもう一度聴いて診断します。その結果をもとに、主催者が優勝の1曲を決めます。発表は10月10日ごろの予定です。</p>
+  <p>The top three get a shelf of their own on the home page for one month. Since twelve went to the final, 4th to 12th will all be listed with links to their track pages for one month. Every entry stays in the hall, whatever the result.</p>
+  <p class="ja">上位3曲は、ホームに専用の棚を設けて1か月掲示します。最終選考が12曲になったので、4位〜12位の曲も、曲ページへのリンクを1か月掲載します。結果にかかわらず、すべての応募作は堂（アーカイブ）に残ります。</p>
+  <p><small>We cannot answer questions about individual results.</small><span class="ja"><small> ／ 審査結果に関する個別のお問い合わせにはお答えできません。</small></span></p>
+
+  <div class="go-row">
+    <a href="archive.html?contest=2026-09" data-ogs-event="contest_entries_open" data-ogs-placement="contest_shortlist">All 55 entries — 応募作をすべて見る</a>
+    <a href="contest.html" data-ogs-event="contest_open" data-ogs-placement="contest_shortlist">Contest rules — 応募要項</a>
+  </div>
+
+  <nav class="doc-nav">
+    <a href="contest.html">Contest</a>
+    <a href="archive.html">Archive</a>
+    <a href="./">Home</a>
+  </nav>
+</main>
+</body>
+</html>

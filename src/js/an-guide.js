@@ -102,8 +102,12 @@
     '.ang-char{position:absolute;right:-30px;top:0;height:min(56%,380px);aspect-ratio:1/1;',
     ' -webkit-mask-image:linear-gradient(to bottom,#000 70%,transparent 98%);mask-image:linear-gradient(to bottom,#000 70%,transparent 98%)}',
     '.ang-char img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 90%;',
-    ' transition:filter .3s,transform .3s;visibility:hidden}',
-    '.ang-char img.on{visibility:visible}',
+    ' transition:filter .3s,transform .3s,opacity .4s ease;opacity:0}',
+    /* 表情の切り替えは、新しい顔を上に重ねて溶かし入れ、前の顔は少し遅れて消す(途中で透けないように) */
+    '.ang-char img.on{opacity:1;z-index:2}',
+    '.ang-char img.prev{z-index:1;transition:opacity .3s ease .2s}',
+    /* まばたき・口パクは一瞬で切り替える */
+    '.ang-stage.snap .ang-char img{transition:none}',
     '.ang-char .breath{position:absolute;inset:0;animation:ang-breath 4.2s ease-in-out infinite;transform-origin:50% 100%}',
     /* 仮の絵(黒い背景つき)のあいだだけ、縁を闇に溶かして四角を見せない。透過の絵が届けば外れる */
     '.ang-stage.ph .ang-char{-webkit-mask-image:radial-gradient(ellipse 52% 48% at 50% 38%,#000 55%,transparent 100%);',
@@ -140,7 +144,7 @@
   ].join('\n');
 
   /* ── 組み立て ───────────────────────────────────────────── */
-  var stage, faceImgs = {}, shown = 'normal', textEl, choicesEl, launch, hint, tracks = null, last = null, cur = null;
+  var stage, faceImgs = {}, shown = '', fadeUntil = 0, textEl, choicesEl, launch, hint, tracks = null, last = null, cur = null;
 
   function build() {
     var st = el('style'); st.textContent = CSS; document.head.appendChild(st);
@@ -188,16 +192,26 @@
     if (REAL_FACES) blinkLoop();
   }
 
-  function showFace(k) {
+  /* fade: 表情が変わるとき true(ゆっくり重ねる)。まばたき・口パクは false(一瞬) */
+  var FADE_MS = 500;
+  function showFace(k, fade) {
     if (!faceImgs[k]) k = 'normal';
+    if (k === shown) return;
+    fade = fade && !reduce;
+    stage.classList.toggle('snap', !fade);
+    var before = shown;
     shown = k;
-    Object.keys(faceImgs).forEach(function (n) { faceImgs[n].classList.toggle('on', n === k); });
+    if (fade) fadeUntil = Date.now() + FADE_MS;
+    Object.keys(faceImgs).forEach(function (n) {
+      faceImgs[n].classList.toggle('on', n === k);
+      faceImgs[n].classList.toggle('prev', fade && n === before);
+    });
   }
 
   /* まばたき(表情違いの絵が揃ってから) */
   function blinkLoop() {
     setTimeout(function () {
-      if (stage.classList.contains('on') && !stage.classList.contains('talking') && stage.dataset.face === 'normal') {
+      if (stage.classList.contains('on') && !stage.classList.contains('talking') && stage.dataset.face === 'normal' && Date.now() > fadeUntil) {
         showFace('blink');
         setTimeout(function () { if (shown === 'blink') showFace('normal'); }, 130);
       }
@@ -210,23 +224,30 @@
   function say(text, face, choices, after, wait) {
     face = face || 'normal';
     stage.dataset.face = face;
-    showFace(face);
+    /* 今の顔(口パク・まばたき中の絵も同じ顔として扱う)と違う表情になるときだけ、ゆっくり変える */
+    var base = (shown === 'talk' || shown === 'blink') ? 'normal' : shown;
+    var changed = REAL_FACES && base !== face;
+    showFace(face, changed);
     choicesEl.innerHTML = '';
     textEl.textContent = '';
     var i = 0, my = ++typing;
     stage.classList.add('talking');
-    var mouth = (REAL_FACES && face === 'normal') ? setInterval(function () {
-      showFace(shown === 'talk' ? face : 'talk');
-    }, 120) : 0;
+    var mouth = 0;
+    /* 表情が溶け終わってから口を動かす(途中で一瞬の切り替えが入ると、溶ける動きが途切れる) */
+    var mouthStart = (REAL_FACES && face === 'normal') ? setTimeout(function () {
+      if (my === typing && stage.classList.contains('talking')) mouth = setInterval(function () {
+        showFace(shown === 'talk' ? face : 'talk');
+      }, 120);
+    }, changed ? FADE_MS : 0) : 0;
     function done() {
-      clearInterval(mouth); showFace(face);
+      clearTimeout(mouthStart); clearInterval(mouth); showFace(face);
       stage.classList.remove('talking');
       (choices || []).forEach(function (c) { choicesEl.appendChild(c); });
       if (after) setTimeout(after, wait || 0);
     }
     if (reduce) { textEl.textContent = text; return done(); }
     (function step() {
-      if (my !== typing) return clearInterval(mouth);
+      if (my !== typing) { clearTimeout(mouthStart); return clearInterval(mouth); }
       textEl.textContent = text.slice(0, ++i);
       if (i < text.length) setTimeout(step, /[、。…？！]/.test(text[i - 1]) ? 140 : 38);
       else done();

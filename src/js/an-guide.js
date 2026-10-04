@@ -8,7 +8,7 @@
  *
  * 表情(FACES)は、背景透明・同じ構図の絵5枚(480×480)を差し替えて見せる(2026-10-04 高尾さん作)。
  * 口パクとまばたきは、口だけ・目だけの部品(MOUTH・EYES)を重ねて動かす。
- * まばたき・口パクは「通常」の顔のときだけ行う(部品は通常の顔に合わせて作ったもの)。
+ * まばたき・口パクは、通常・笑顔・ツンの顔で行う(考えるはポーズが違うので行わない)。
  *
  * 使い方: <script src="src/js/an-guide.js" defer></script> を置くだけ。
  */
@@ -28,9 +28,15 @@
   };
   /* 口パクは顔を丸ごと替えず、口だけの小さな部品(約2KB)を通常の顔の上に重ね、濃さを上下させて動かす。
      別々に描いた絵を丸ごと替えると、髪や飾りまでちらつくため。位置は通常の顔(480×480)に対する割合 */
-  var MOUTH = { src: 'assets/an/guide/an-mouth.webp', left: 50, top: 56.25, width: 15.208 };
+  var MOUTH = { src: 'assets/an/guide/an-mouth.webp', left: 47.5, top: 56.042, width: 20.208 };
   /* まばたきも同じ方式。目を閉じた両目だけの部品(約3KB)を一瞬だけ濃くする */
   var EYES  = { src: 'assets/an/guide/an-eyes.webp', left: 49.583, top: 39.167, width: 26.875 };
+  /* 部品を重ねてよい顔と、その顔での部品のずれ(480×480での画素)。考えるはポーズが違うので重ねない */
+  var PART_FACES = {
+    normal: { eyes: [0, 0],  mouth: [0, 0] },
+    smile:  { eyes: [-2, 0], mouth: [-2, 0] },
+    tsun:   { eyes: [1, 1],  mouth: [1, -2] }
+  };
   var REAL_FACES = true;    // false にすると、通常の顔1枚+CSSの動きで代わりにする
 
   /* ── せりふと流れ ─────────────────────────────────────────────
@@ -128,8 +134,8 @@
     '.ang-stage.ph[data-face=smile] .ang-char img{filter:brightness(1.08) saturate(1.1)}',
     '.ang-stage.ph[data-face=tsun] .ang-char img{transform:rotate(-2.5deg) translateX(-4px)}',
     '.ang-stage.ph[data-face=think] .ang-char img{transform:rotate(2deg) translateY(2px);filter:brightness(.92)}',
-    /* 話すときの小さな揺れは、口パクの絵が無いとき(仮の絵・通常以外の表情)だけ。口パクと重なるとがたつく */
-    '.ang-stage.ph.talking .ang-char img,.ang-stage.talking:not([data-face=normal]) .ang-char img{animation:ang-talk .24s steps(2) infinite}',
+    /* 話すときの小さな揺れは、口パクできないとき(仮の絵・考える顔)だけ。口パクと重なるとがたつく */
+    '.ang-stage.ph.talking .ang-char img,.ang-stage.talking[data-face=think] .ang-char img{animation:ang-talk .24s steps(2) infinite}',
     '.ang-box{position:absolute;left:12px;right:12px;bottom:12px;padding:16px 16px 14px;border-radius:14px;',
     ' background:rgba(8,11,19,.9);border:1px solid rgba(217,196,154,.32);color:#e9dcba;',
     ' backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 10px 40px rgba(0,0,0,.6)}',
@@ -196,11 +202,12 @@
     });
     showFace('normal');
     if (REAL_FACES) {
-      [['ang-mouth', MOUTH], ['ang-eyes', EYES]].forEach(function (p) {
-        var im = el('img', p[0]); im.alt = ''; im.src = p[1].src;
-        im.style.left = p[1].left + '%'; im.style.top = p[1].top + '%'; im.style.width = p[1].width + '%';
-        br.appendChild(im);
+      [['mouth', MOUTH], ['eyes', EYES]].forEach(function (p) {
+        var im = el('img', 'ang-' + p[0]); im.alt = ''; im.src = p[1].src;
+        im.style.width = p[1].width + '%';
+        partImgs[p[0]] = im; br.appendChild(im);
       });
+      placeParts('normal');
     }
     ch.appendChild(br); stage.appendChild(ch);
     var box = el('div', 'ang-box');
@@ -218,6 +225,19 @@
 
   /* fade: 表情が変わるとき true(ゆっくり重ねる)。まばたき・口パクは false(一瞬) */
   var FADE_MS = 500;
+  /* 目・口の部品を、その顔の目・口の位置に置く */
+  var partImgs = {};
+  function placeParts(face) {
+    var off = PART_FACES[face];
+    if (!off) return;
+    [['mouth', MOUTH], ['eyes', EYES]].forEach(function (p) {
+      var im = partImgs[p[0]], d = off[p[0]];
+      if (!im) return;
+      im.style.left = (p[1].left + d[0] / 4.8) + '%';
+      im.style.top = (p[1].top + d[1] / 4.8) + '%';
+    });
+  }
+
   function showFace(k, fade) {
     if (!faceImgs[k]) k = 'normal';
     if (k === shown) return;
@@ -235,7 +255,7 @@
   /* まばたき(表情違いの絵が揃ってから) */
   function blinkLoop() {
     setTimeout(function () {
-      if (stage.classList.contains('on') && !stage.classList.contains('talking') && stage.dataset.face === 'normal' && Date.now() > fadeUntil) {
+      if (stage.classList.contains('on') && !stage.classList.contains('talking') && PART_FACES[stage.dataset.face] && Date.now() > fadeUntil) {
         stage.classList.add('blinking');
         setTimeout(function () { stage.classList.remove('blinking'); }, 220);
       }
@@ -256,8 +276,9 @@
     var i = 0, my = ++typing;
     stage.classList.add('talking');
     stage.classList.remove('mouthing', 'blinking');
-    /* 通常の顔のときだけ口を動かす。表情が溶け終わってから(溶けている途中の顔に口だけ浮かないように) */
-    var mouthStart = (REAL_FACES && face === 'normal') ? setTimeout(function () {
+    /* 部品を重ねられる顔(通常・笑顔・ツン)のとき口を動かす。表情が溶け終わってから(溶けている途中の顔に口だけ浮かないように) */
+    placeParts(face);
+    var mouthStart = (REAL_FACES && PART_FACES[face]) ? setTimeout(function () {
       if (my === typing && stage.classList.contains('talking')) stage.classList.add('mouthing');
     }, changed ? FADE_MS : 0) : 0;
     function done() {

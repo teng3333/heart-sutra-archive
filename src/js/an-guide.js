@@ -85,11 +85,16 @@
 
   /* ── 見た目 ─────────────────────────────────────────────── */
   var CSS = [
-    '.ang-launch{position:fixed;right:16px;bottom:16px;z-index:9990;width:64px;height:64px;border-radius:50%;',
-    ' padding:0;border:1px solid rgba(217,196,154,.45);background:#05070c;cursor:pointer;overflow:hidden;',
-    ' box-shadow:0 6px 24px rgba(0,0,0,.6);animation:ang-breath 4.2s ease-in-out infinite}',
+    '.ang-launch{position:fixed;right:16px;bottom:20px;z-index:9990;width:64px;height:64px;border-radius:50%;',
+    ' padding:0;border:0;background:none;cursor:pointer;animation:ang-breath 4.2s ease-in-out infinite}',
+    '.ang-face{display:block;width:100%;height:100%;border-radius:50%;overflow:hidden;background:#05070c;',
+    ' border:1px solid rgba(217,196,154,.45);box-shadow:0 6px 24px rgba(0,0,0,.6)}',
+    /* 何をしてくれるボタンか、絵だけでは分からないので、丸の下端に小さく札を添える */
+    '.ang-tag{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);padding:2px 6px;border-radius:999px;',
+    ' background:#b23a2e;color:#f5ecd8;font:600 8px/1.3 system-ui,sans-serif;letter-spacing:.08em;white-space:nowrap;',
+    ' box-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none}',
     /* 小さな丸でも顔が分かるよう、胸像の絵の顔のあたりを拡大して見せる */
-    '.ang-launch img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.5);transform-origin:66% 44%}',
+    '.ang-face img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.5);transform-origin:66% 44%}',
     '.ang-launch:focus-visible{outline:2px solid #9ec9dd;outline-offset:3px}',
     '.ang-hint{position:fixed;right:88px;bottom:30px;z-index:9990;max-width:200px;padding:8px 12px;',
     ' background:rgba(10,13,22,.92);border:1px solid rgba(217,196,154,.3);color:#e9dcba;font-size:13px;',
@@ -152,8 +157,10 @@
     launch = el('button', 'ang-launch');
     launch.type = 'button';
     launch.setAttribute('aria-label', 'ANに今の気分を話す');
+    var face = el('span', 'ang-face');
     var li = el('img'); li.src = FACES.normal; li.alt = ''; li.loading = 'lazy';
-    launch.appendChild(li);
+    face.appendChild(li); launch.appendChild(face);
+    launch.appendChild(el('span', 'ang-tag', 'RECOMMEND'));
     launch.addEventListener('click', open);
     document.body.appendChild(launch);
 

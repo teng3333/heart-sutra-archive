@@ -6,8 +6,8 @@
  *   - チャット欄に打つのではなく、ANが話しかけ、選択肢を押して答える(ノベルゲームの会話の見せ方)
  *   - 軽くする。最初は右下の小さな顔だけ。押されてから曲の一覧を読む
  *
- * 表情(FACES)は、今は同じ顔の絵1枚を使い、CSSの小さな動きで代わりにしている。
- * 表情違いの絵(背景透明・同じ構図)が届いたら、FACES の住所を差し替えるだけでよい。
+ * 表情(FACES)は、背景透明・同じ構図の絵6枚(480×480)を差し替えて見せる(2026-10-04 高尾さん作)。
+ * まばたき・口パクは「通常」の顔のときだけ行う(目とじ・口あけの絵は通常の顔から描いたもの)。
  *
  * 使い方: <script src="src/js/an-guide.js" defer></script> を置くだけ。
  */
@@ -20,14 +20,14 @@
 
   /* 表情。絵が届いたら差し替える(同じ大きさ・同じ位置で描かれていること) */
   var FACES = {
-    normal: 'assets/an/face-human.webp',
-    blink:  'assets/an/face-human.webp',
-    talk:   'assets/an/face-human.webp',
-    smile:  'assets/an/face-human.webp',
-    tsun:   'assets/an/face-human.webp',
-    think:  'assets/an/face-human.webp'
+    normal: 'assets/an/guide/an-normal.webp',
+    blink:  'assets/an/guide/an-blink.webp',
+    talk:   'assets/an/guide/an-talk.webp',
+    smile:  'assets/an/guide/an-smile.webp',
+    tsun:   'assets/an/guide/an-tsun.webp',
+    think:  'assets/an/guide/an-think.webp'
   };
-  var REAL_FACES = false;   // 表情違いの絵が揃ったら true(まばたき・口パクを絵で行う)
+  var REAL_FACES = true;    // false にすると、通常の顔1枚+CSSの動きで代わりにする
 
   /* ── せりふと流れ ─────────────────────────────────────────────
      line は候補の配列。毎回ランダムに1つ選ぶ(同じ言い回しが続かないように)。
@@ -98,18 +98,19 @@
     '.ang-stage{position:fixed;inset:auto 0 0 auto;z-index:9991;width:min(440px,100vw);height:min(640px,86vh);',
     ' pointer-events:none;opacity:0;transform:translateY(24px);transition:opacity .35s,transform .35s}',
     '.ang-stage.on{opacity:1;transform:none;pointer-events:auto}',
-    '.ang-char{position:absolute;right:-10px;bottom:0;height:78%;aspect-ratio:528/880;',
+    '.ang-char{position:absolute;right:-30px;top:0;height:min(56%,380px);aspect-ratio:1/1;',
     ' -webkit-mask-image:linear-gradient(to bottom,#000 70%,transparent 98%);mask-image:linear-gradient(to bottom,#000 70%,transparent 98%)}',
     '.ang-char img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 90%;',
-    ' transition:filter .3s,transform .3s}',
+    ' transition:filter .3s,transform .3s;visibility:hidden}',
+    '.ang-char img.on{visibility:visible}',
     '.ang-char .breath{position:absolute;inset:0;animation:ang-breath 4.2s ease-in-out infinite;transform-origin:50% 100%}',
     /* 仮の絵(黒い背景つき)のあいだだけ、縁を闇に溶かして四角を見せない。透過の絵が届けば外れる */
     '.ang-stage.ph .ang-char{-webkit-mask-image:radial-gradient(ellipse 52% 48% at 50% 38%,#000 55%,transparent 100%);',
     ' mask-image:radial-gradient(ellipse 52% 48% at 50% 38%,#000 55%,transparent 100%)}',
     /* 表情の代わり(絵1枚のあいだだけ使う) */
-    '.ang-stage[data-face=smile] .ang-char img{filter:brightness(1.08) saturate(1.1)}',
-    '.ang-stage[data-face=tsun] .ang-char img{transform:rotate(-2.5deg) translateX(-4px)}',
-    '.ang-stage[data-face=think] .ang-char img{transform:rotate(2deg) translateY(2px);filter:brightness(.92)}',
+    '.ang-stage.ph[data-face=smile] .ang-char img{filter:brightness(1.08) saturate(1.1)}',
+    '.ang-stage.ph[data-face=tsun] .ang-char img{transform:rotate(-2.5deg) translateX(-4px)}',
+    '.ang-stage.ph[data-face=think] .ang-char img{transform:rotate(2deg) translateY(2px);filter:brightness(.92)}',
     '.ang-stage.talking .ang-char img{animation:ang-talk .24s steps(2) infinite}',
     '.ang-box{position:absolute;left:12px;right:12px;bottom:12px;padding:16px 16px 14px;border-radius:14px;',
     ' background:rgba(8,11,19,.9);border:1px solid rgba(217,196,154,.32);color:#e9dcba;',
@@ -132,13 +133,13 @@
     '.ang-card i{display:block;font-style:normal;font-size:12px;opacity:.85;margin-top:4px}',
     '@keyframes ang-breath{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}',
     '@keyframes ang-talk{0%{translate:0 0}100%{translate:0 -1.5px}}',
-    '@media (max-width:560px){.ang-stage{width:100vw;height:72vh}.ang-char{height:66%;right:-24px}}',
+    '@media (max-width:560px){.ang-stage{width:100vw;height:86vh}.ang-char{height:min(44%,84vw);right:-20px}}',
     '@media (prefers-reduced-motion:reduce){.ang-launch,.ang-char .breath{animation:none}',
     ' .ang-stage.talking .ang-char img{animation:none}}'
   ].join('\n');
 
   /* ── 組み立て ───────────────────────────────────────────── */
-  var stage, charImg, textEl, choicesEl, launch, hint, tracks = null, last = null, cur = null;
+  var stage, faceImgs = {}, shown = 'normal', textEl, choicesEl, launch, hint, tracks = null, last = null, cur = null;
 
   function build() {
     var st = el('style'); st.textContent = CSS; document.head.appendChild(st);
@@ -166,8 +167,13 @@
     stage.setAttribute('role', 'dialog');
     stage.setAttribute('aria-label', 'ANとの会話');
     var ch = el('div', 'ang-char'), br = el('div', 'breath');
-    charImg = el('img'); charImg.alt = ''; charImg.src = FACES.normal;
-    br.appendChild(charImg); ch.appendChild(br); stage.appendChild(ch);
+    /* 表情の絵は重ねて置き、見せる1枚だけ切り替える(src を替えると毎回読み直しになり、ちらつく) */
+    (REAL_FACES ? Object.keys(FACES) : ['normal']).forEach(function (k) {
+      var im = el('img'); im.alt = ''; im.src = FACES[k];
+      faceImgs[k] = im; br.appendChild(im);
+    });
+    showFace('normal');
+    ch.appendChild(br); stage.appendChild(ch);
     var box = el('div', 'ang-box');
     box.appendChild(el('span', 'ang-name', 'AN'));
     textEl = el('p', 'ang-text'); textEl.setAttribute('aria-live', 'polite');
@@ -181,12 +187,18 @@
     if (REAL_FACES) blinkLoop();
   }
 
+  function showFace(k) {
+    if (!faceImgs[k]) k = 'normal';
+    shown = k;
+    Object.keys(faceImgs).forEach(function (n) { faceImgs[n].classList.toggle('on', n === k); });
+  }
+
   /* まばたき(表情違いの絵が揃ってから) */
   function blinkLoop() {
     setTimeout(function () {
-      if (stage.classList.contains('on') && !stage.classList.contains('talking')) {
-        var keep = charImg.src; charImg.src = FACES.blink;
-        setTimeout(function () { charImg.src = keep; }, 130);
+      if (stage.classList.contains('on') && !stage.classList.contains('talking') && stage.dataset.face === 'normal') {
+        showFace('blink');
+        setTimeout(function () { if (shown === 'blink') showFace('normal'); }, 130);
       }
       blinkLoop();
     }, 2500 + Math.random() * 3500);
@@ -197,17 +209,16 @@
   function say(text, face, choices, after, wait) {
     face = face || 'normal';
     stage.dataset.face = face;
-    var base = FACES[face] || FACES.normal;
-    charImg.src = base;
+    showFace(face);
     choicesEl.innerHTML = '';
     textEl.textContent = '';
     var i = 0, my = ++typing;
     stage.classList.add('talking');
-    var mouth = REAL_FACES ? setInterval(function () {
-      charImg.src = (charImg.src.indexOf(FACES.talk) >= 0) ? base : FACES.talk;
+    var mouth = (REAL_FACES && face === 'normal') ? setInterval(function () {
+      showFace(shown === 'talk' ? face : 'talk');
     }, 120) : 0;
     function done() {
-      clearInterval(mouth); charImg.src = base;
+      clearInterval(mouth); showFace(face);
       stage.classList.remove('talking');
       (choices || []).forEach(function (c) { choicesEl.appendChild(c); });
       if (after) setTimeout(after, wait || 0);

@@ -278,6 +278,12 @@
         <b aria-hidden="true" id="gateContestKanji"></b><span class="en" id="gateContestEn"></span>
         <small id="gateContestSub"></small>
       </button>
+      <!-- 最終選考の12曲だけを流す門(2026-10-04 高尾さん指示)。
+           曲番号と文言は contests/<回>.json の finalists / final_gate から入れる。無ければ出さない -->
+      <button class="gate" type="button" data-axis="final" hidden>
+        <b aria-hidden="true" id="gateFinalKanji"></b><span class="en" id="gateFinalEn"></span>
+        <small id="gateFinalSub"></small>
+      </button>
     </div>
 
     <div class="np" id="np">
@@ -1552,6 +1558,9 @@
     if (curAxis === 'contest' && contestCfg && contestCfg.gate && contestCfg.gate.shelf){
       shelf = contestCfg.gate.shelf;
     }
+    if (curAxis === 'final' && contestCfg && contestCfg.final_gate && contestCfg.final_gate.shelf){
+      shelf = contestCfg.final_gate.shelf;
+    }
     document.getElementById('npShelf').textContent = shelf;
     var titleEl = document.getElementById('npTitle');
     titleEl.textContent = '';
@@ -1603,7 +1612,7 @@
         var mine = (centerArtId !== null && t.id === centerArtId && !!t.artwork_url);
         /* コンテストの門では、どの曲も中心をジャケットにする(2026-09-26 高尾さん指示)。
            ジャケットの無い曲だけANのまま */
-        var contestArt = (curAxis === 'contest' && !!t.artwork_url);
+        var contestArt = ((curAxis === 'contest' || curAxis === 'final') && !!t.artwork_url);
         window.__livingBG.setCenterImage((mine || contestArt) ? t.artwork_url : null);
         if (!mine) centerArtId = null;   // 一度離れたら、巡って戻っても出さない
       }
@@ -1837,6 +1846,19 @@
         return { items: contestEntries(v[1].items || [], v[0]) };
       });
     }
+    /* 最終選考の12曲(門「選」)。回の設定の finalists に載った番号だけを流す。
+       一覧に無い番号(取り下げられた曲)は黙って落ちる */
+    if (axis === 'final'){
+      return Promise.all([
+        contestCfg ? Promise.resolve(contestCfg) : loadContest(),
+        fetch(API.replace('/api/shelf/', '/api/archive'), { signal: ctrl.signal })
+          .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); })
+      ]).then(function(v){
+        var want = {};
+        (v[0].finalists || []).forEach(function(id){ want[id] = 1; });
+        return { items: (v[1].items || []).filter(function(t){ return t && want[t.id]; }) };
+      });
+    }
     if (axis === 'all' || axis === 'mei'){
       return fetch(API.replace('/api/shelf/', '/api/archive'), { signal: ctrl.signal })
         .then(function(r){ clearTimeout(timer); if (!r.ok) throw 0; return r.json(); })
@@ -1960,6 +1982,24 @@
       document.getElementById('gateContestKanji').textContent = gt.kanji;
       document.getElementById('gateContestEn').textContent = gt.en || 'CONTEST';
       var sub = document.getElementById('gateContestSub');
+      (gt.sub || []).forEach(function(line, i){
+        if (i) sub.appendChild(document.createElement('br'));
+        sub.appendChild(document.createTextNode(line));
+      });
+      g.hidden = false;
+    }).catch(function(){ g.remove(); });
+  })();
+
+  /* 最終選考の門も、回の設定に12曲と文言があるときだけ出す */
+  (function(){
+    var g = gates.querySelector('.gate[data-axis="final"]');
+    if (!g) return;
+    loadContest().then(function(c){
+      var gt = c.final_gate || {};
+      if (!gt.kanji || !(c.finalists || []).length) { g.remove(); return; }
+      document.getElementById('gateFinalKanji').textContent = gt.kanji;
+      document.getElementById('gateFinalEn').textContent = gt.en || 'FINAL';
+      var sub = document.getElementById('gateFinalSub');
       (gt.sub || []).forEach(function(line, i){
         if (i) sub.appendChild(document.createElement('br'));
         sub.appendChild(document.createTextNode(line));
@@ -2639,7 +2679,7 @@
   var q = params.get('gate');
   if (q === 'dou') q = 'do';
   var fromTrack = trackParam && /^\d+$/.test(trackParam) && !DEMO;
-  var fromGate = (q === 'sei' || q === 'do' || q === 'all' || q === 'mei' || q === 'contest');
+  var fromGate = (q === 'sei' || q === 'do' || q === 'all' || q === 'mei' || q === 'contest' || q === 'final');
   if (fromTrack || fromGate){
     /* ホームの門から来た人に、ここでもう一度門を見せない。
        棚の一覧を取り終えるまで門が出たままで、「また門が出た」と見えていた(2026-09-16) */

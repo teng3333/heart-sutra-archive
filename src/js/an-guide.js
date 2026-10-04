@@ -6,8 +6,9 @@
  *   - チャット欄に打つのではなく、ANが話しかけ、選択肢を押して答える(ノベルゲームの会話の見せ方)
  *   - 軽くする。最初は右下の小さな顔だけ。押されてから曲の一覧を読む
  *
- * 表情(FACES)は、背景透明・同じ構図の絵6枚(480×480)を差し替えて見せる(2026-10-04 高尾さん作)。
- * まばたき・口パクは「通常」の顔のときだけ行う(目とじ・口あけの絵は通常の顔から描いたもの)。
+ * 表情(FACES)は、背景透明・同じ構図の絵5枚(480×480)を差し替えて見せる(2026-10-04 高尾さん作)。
+ * 口パクとまばたきは、口だけ・目だけの部品(MOUTH・EYES)を重ねて動かす。
+ * まばたき・口パクは「通常」の顔のときだけ行う(部品は通常の顔に合わせて作ったもの)。
  *
  * 使い方: <script src="src/js/an-guide.js" defer></script> を置くだけ。
  */
@@ -21,12 +22,15 @@
   /* 表情。絵が届いたら差し替える(同じ大きさ・同じ位置で描かれていること) */
   var FACES = {
     normal: 'assets/an/guide/an-normal.webp',
-    blink:  'assets/an/guide/an-blink.webp',
-    talk:   'assets/an/guide/an-talk.webp',
     smile:  'assets/an/guide/an-smile.webp',
     tsun:   'assets/an/guide/an-tsun.webp',
     think:  'assets/an/guide/an-think.webp'
   };
+  /* 口パクは顔を丸ごと替えず、口だけの小さな部品(約2KB)を通常の顔の上に重ね、濃さを上下させて動かす。
+     別々に描いた絵を丸ごと替えると、髪や飾りまでちらつくため。位置は通常の顔(480×480)に対する割合 */
+  var MOUTH = { src: 'assets/an/guide/an-mouth.webp', left: 50, top: 56.25, width: 15.208 };
+  /* まばたきも同じ方式。目を閉じた両目だけの部品(約3KB)を一瞬だけ濃くする */
+  var EYES  = { src: 'assets/an/guide/an-eyes.webp', left: 49.583, top: 39.167, width: 26.875 };
   var REAL_FACES = true;    // false にすると、通常の顔1枚+CSSの動きで代わりにする
 
   /* ── せりふと流れ ─────────────────────────────────────────────
@@ -85,11 +89,16 @@
 
   /* ── 見た目 ─────────────────────────────────────────────── */
   var CSS = [
-    '.ang-launch{position:fixed;right:16px;bottom:16px;z-index:9990;width:64px;height:64px;border-radius:50%;',
-    ' padding:0;border:1px solid rgba(217,196,154,.45);background:#05070c;cursor:pointer;overflow:hidden;',
-    ' box-shadow:0 6px 24px rgba(0,0,0,.6);animation:ang-breath 4.2s ease-in-out infinite}',
+    '.ang-launch{position:fixed;right:16px;bottom:20px;z-index:9990;width:64px;height:64px;border-radius:50%;',
+    ' padding:0;border:0;background:none;cursor:pointer;animation:ang-breath 4.2s ease-in-out infinite}',
+    '.ang-face{display:block;width:100%;height:100%;border-radius:50%;overflow:hidden;background:#05070c;',
+    ' border:1px solid rgba(217,196,154,.45);box-shadow:0 6px 24px rgba(0,0,0,.6)}',
+    /* 何をしてくれるボタンか、絵だけでは分からないので、丸の下端に小さく札を添える */
+    '.ang-tag{position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);padding:2px 6px;border-radius:999px;',
+    ' background:#b23a2e;color:#f5ecd8;font:600 8px/1.3 system-ui,sans-serif;letter-spacing:.08em;white-space:nowrap;',
+    ' box-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none}',
     /* 小さな丸でも顔が分かるよう、胸像の絵の顔のあたりを拡大して見せる */
-    '.ang-launch img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.5);transform-origin:66% 44%}',
+    '.ang-face img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.5);transform-origin:66% 44%}',
     '.ang-launch:focus-visible{outline:2px solid #9ec9dd;outline-offset:3px}',
     '.ang-hint{position:fixed;right:88px;bottom:30px;z-index:9990;max-width:200px;padding:8px 12px;',
     ' background:rgba(10,13,22,.92);border:1px solid rgba(217,196,154,.3);color:#e9dcba;font-size:13px;',
@@ -102,8 +111,15 @@
     '.ang-char{position:absolute;right:-30px;top:0;height:min(56%,380px);aspect-ratio:1/1;',
     ' -webkit-mask-image:linear-gradient(to bottom,#000 70%,transparent 98%);mask-image:linear-gradient(to bottom,#000 70%,transparent 98%)}',
     '.ang-char img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 90%;',
-    ' transition:filter .3s,transform .3s;visibility:hidden}',
-    '.ang-char img.on{visibility:visible}',
+    ' transition:filter .3s,transform .3s,opacity .4s ease;opacity:0}',
+    '.ang-char img.ang-mouth,.ang-char img.ang-eyes{inset:auto;height:auto;z-index:3;opacity:0;transition:opacity .12s}',
+    '.ang-stage.blinking .ang-char img.ang-eyes{animation:ang-blink .2s ease-in-out}',
+    '.ang-stage.mouthing .ang-char img.ang-mouth{animation:ang-mouth .16s ease-in-out infinite alternate}',
+    /* 表情の切り替えは、新しい顔を上に重ねて溶かし入れ、前の顔は少し遅れて消す(途中で透けないように) */
+    '.ang-char img.on{opacity:1;z-index:2}',
+    '.ang-char img.prev{z-index:1;transition:opacity .3s ease .2s}',
+    /* まばたき・口パクは一瞬で切り替える */
+    '.ang-stage.snap .ang-char img{transition:none}',
     '.ang-char .breath{position:absolute;inset:0;animation:ang-breath 4.2s ease-in-out infinite;transform-origin:50% 100%}',
     /* 仮の絵(黒い背景つき)のあいだだけ、縁を闇に溶かして四角を見せない。透過の絵が届けば外れる */
     '.ang-stage.ph .ang-char{-webkit-mask-image:radial-gradient(ellipse 52% 48% at 50% 38%,#000 55%,transparent 100%);',
@@ -112,7 +128,8 @@
     '.ang-stage.ph[data-face=smile] .ang-char img{filter:brightness(1.08) saturate(1.1)}',
     '.ang-stage.ph[data-face=tsun] .ang-char img{transform:rotate(-2.5deg) translateX(-4px)}',
     '.ang-stage.ph[data-face=think] .ang-char img{transform:rotate(2deg) translateY(2px);filter:brightness(.92)}',
-    '.ang-stage.talking .ang-char img{animation:ang-talk .24s steps(2) infinite}',
+    /* 話すときの小さな揺れは、口パクの絵が無いとき(仮の絵・通常以外の表情)だけ。口パクと重なるとがたつく */
+    '.ang-stage.ph.talking .ang-char img,.ang-stage.talking:not([data-face=normal]) .ang-char img{animation:ang-talk .24s steps(2) infinite}',
     '.ang-box{position:absolute;left:12px;right:12px;bottom:12px;padding:16px 16px 14px;border-radius:14px;',
     ' background:rgba(8,11,19,.9);border:1px solid rgba(217,196,154,.32);color:#e9dcba;',
     ' backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 10px 40px rgba(0,0,0,.6)}',
@@ -133,6 +150,8 @@
     '.ang-card small{display:block;opacity:.7;font-size:12px;margin-top:2px}',
     '.ang-card i{display:block;font-style:normal;font-size:12px;opacity:.85;margin-top:4px}',
     '@keyframes ang-breath{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}',
+    '@keyframes ang-mouth{0%{opacity:0}100%{opacity:1}}',
+    '@keyframes ang-blink{0%{opacity:0}30%,60%{opacity:1}100%{opacity:0}}',
     '@keyframes ang-talk{0%{translate:0 0}100%{translate:0 -1.5px}}',
     '@media (max-width:560px){.ang-stage{width:100vw;height:86vh}.ang-char{height:min(44%,84vw);right:-20px}}',
     '@media (prefers-reduced-motion:reduce){.ang-launch,.ang-char .breath{animation:none}',
@@ -140,7 +159,7 @@
   ].join('\n');
 
   /* ── 組み立て ───────────────────────────────────────────── */
-  var stage, faceImgs = {}, shown = 'normal', textEl, choicesEl, launch, hint, tracks = null, last = null, cur = null;
+  var stage, faceImgs = {}, shown = '', fadeUntil = 0, textEl, choicesEl, launch, hint, tracks = null, last = null, cur = null;
 
   function build() {
     var st = el('style'); st.textContent = CSS; document.head.appendChild(st);
@@ -148,8 +167,10 @@
     launch = el('button', 'ang-launch');
     launch.type = 'button';
     launch.setAttribute('aria-label', 'ANに今の気分を話す');
+    var face = el('span', 'ang-face');
     var li = el('img'); li.src = FACES.normal; li.alt = ''; li.loading = 'lazy';
-    launch.appendChild(li);
+    face.appendChild(li); launch.appendChild(face);
+    launch.appendChild(el('span', 'ang-tag', 'RECOMMEND'));
     launch.addEventListener('click', open);
     document.body.appendChild(launch);
 
@@ -174,6 +195,13 @@
       faceImgs[k] = im; br.appendChild(im);
     });
     showFace('normal');
+    if (REAL_FACES) {
+      [['ang-mouth', MOUTH], ['ang-eyes', EYES]].forEach(function (p) {
+        var im = el('img', p[0]); im.alt = ''; im.src = p[1].src;
+        im.style.left = p[1].left + '%'; im.style.top = p[1].top + '%'; im.style.width = p[1].width + '%';
+        br.appendChild(im);
+      });
+    }
     ch.appendChild(br); stage.appendChild(ch);
     var box = el('div', 'ang-box');
     box.appendChild(el('span', 'ang-name', 'AN'));
@@ -188,18 +216,28 @@
     if (REAL_FACES) blinkLoop();
   }
 
-  function showFace(k) {
+  /* fade: 表情が変わるとき true(ゆっくり重ねる)。まばたき・口パクは false(一瞬) */
+  var FADE_MS = 500;
+  function showFace(k, fade) {
     if (!faceImgs[k]) k = 'normal';
+    if (k === shown) return;
+    fade = fade && !reduce;
+    stage.classList.toggle('snap', !fade);
+    var before = shown;
     shown = k;
-    Object.keys(faceImgs).forEach(function (n) { faceImgs[n].classList.toggle('on', n === k); });
+    if (fade) fadeUntil = Date.now() + FADE_MS;
+    Object.keys(faceImgs).forEach(function (n) {
+      faceImgs[n].classList.toggle('on', n === k);
+      faceImgs[n].classList.toggle('prev', fade && n === before);
+    });
   }
 
   /* まばたき(表情違いの絵が揃ってから) */
   function blinkLoop() {
     setTimeout(function () {
-      if (stage.classList.contains('on') && !stage.classList.contains('talking') && stage.dataset.face === 'normal') {
-        showFace('blink');
-        setTimeout(function () { if (shown === 'blink') showFace('normal'); }, 130);
+      if (stage.classList.contains('on') && !stage.classList.contains('talking') && stage.dataset.face === 'normal' && Date.now() > fadeUntil) {
+        stage.classList.add('blinking');
+        setTimeout(function () { stage.classList.remove('blinking'); }, 220);
       }
       blinkLoop();
     }, 2500 + Math.random() * 3500);
@@ -210,23 +248,27 @@
   function say(text, face, choices, after, wait) {
     face = face || 'normal';
     stage.dataset.face = face;
-    showFace(face);
+    /* 今と違う表情になるときだけ、ゆっくり変える */
+    var changed = REAL_FACES && shown !== face;
+    showFace(face, changed);
     choicesEl.innerHTML = '';
     textEl.textContent = '';
     var i = 0, my = ++typing;
     stage.classList.add('talking');
-    var mouth = (REAL_FACES && face === 'normal') ? setInterval(function () {
-      showFace(shown === 'talk' ? face : 'talk');
-    }, 120) : 0;
+    stage.classList.remove('mouthing', 'blinking');
+    /* 通常の顔のときだけ口を動かす。表情が溶け終わってから(溶けている途中の顔に口だけ浮かないように) */
+    var mouthStart = (REAL_FACES && face === 'normal') ? setTimeout(function () {
+      if (my === typing && stage.classList.contains('talking')) stage.classList.add('mouthing');
+    }, changed ? FADE_MS : 0) : 0;
     function done() {
-      clearInterval(mouth); showFace(face);
+      clearTimeout(mouthStart); stage.classList.remove('mouthing'); showFace(face);
       stage.classList.remove('talking');
       (choices || []).forEach(function (c) { choicesEl.appendChild(c); });
       if (after) setTimeout(after, wait || 0);
     }
     if (reduce) { textEl.textContent = text; return done(); }
     (function step() {
-      if (my !== typing) return clearInterval(mouth);
+      if (my !== typing) return clearTimeout(mouthStart);
       textEl.textContent = text.slice(0, ++i);
       if (i < text.length) setTimeout(step, /[、。…？！]/.test(text[i - 1]) ? 140 : 38);
       else done();
@@ -259,7 +301,7 @@
   }
 
   function close() {
-    stage.classList.remove('on');
+    stage.classList.remove('on', 'mouthing');
     launch.style.display = '';
     typing++;
   }

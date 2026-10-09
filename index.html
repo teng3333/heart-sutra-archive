@@ -339,6 +339,40 @@
     .contest-call{margin:38px 16px 0;padding:22px 20px}
     .contest-call h3{font-size:20px}
   }
+
+  /* ── コンテストの受賞作の棚(2026-10〜1か月)──────────────────
+     AN三選と同じカードの形。受賞作だけは白黒にせず、最初から色で見せる */
+  #contest-winners .prize-work .cover img{filter:none}
+  #contest-winners .prize-seal{display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;margin-right:10px;background:var(--shu);color:#f5ecd8;
+    font-family:var(--ja);font-size:13px;letter-spacing:0;vertical-align:middle}
+  #contest-winners .win{color:var(--washi-hi);font-size:11px}
+  /* 優勝だけ「優」を大きく。準優勝・第三位と見分けがつくように */
+  #contest-winners .first .prize-seal{width:38px;height:38px;font-size:22px;margin-right:12px}
+  #contest-winners .first .win{font-size:13px;letter-spacing:.24em}
+  #contest-winners .first{border-color:rgba(217,196,154,.38);border-top:2px solid var(--shu)}
+  #contest-winners{padding-top:34px}
+  .prize-selected{margin:26px 0 0;border-top:1px solid var(--hair);padding-top:18px}
+  .prize-selected .ps-head{margin:0 0 10px;font-family:var(--ui);font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--nibi)}
+  .prize-selected .ps-head small{margin-left:12px;font-family:var(--ja);letter-spacing:.1em;text-transform:none}
+  .prize-selected ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:0 28px}
+  @media (min-width:760px){.prize-selected ul{grid-template-columns:repeat(3,1fr)}}
+  .prize-selected li a{display:flex;align-items:center;gap:12px;padding:9px 0;
+    border-bottom:1px solid rgba(217,196,154,.08);color:inherit;text-decoration:none}
+  .prize-selected .ps-iw{position:relative;flex:none;display:block}
+  .prize-selected .ps-i{display:block;width:44px;height:44px;object-fit:cover;border:1px solid var(--hair)}
+  /* 入選の印は見出しにだけ置く(ジャケットには重ねない。2026-10-05 高尾さん) */
+  .prize-selected .ps-head .prize-seal{display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;margin-right:10px;background:var(--shu);color:#f5ecd8;font-family:var(--ja);
+    font-size:13px;letter-spacing:0;vertical-align:middle}
+  .prize-selected .ps-txt{min-width:0}
+  .prize-selected li a:hover .ps-t,.prize-selected li a:focus-visible .ps-t{color:var(--ruri)}
+  .prize-selected .ps-t{display:block;font-size:14px;line-height:1.5;color:var(--washi-hi);overflow-wrap:anywhere}
+  .prize-selected .ps-a{display:block;font-family:var(--ui);font-size:11px;letter-spacing:.1em;color:var(--nibi);margin-top:2px}
+  .prize-more{margin:18px 0 0;text-align:center}
+  .prize-more a{color:var(--washi-hi);text-decoration:none;font-size:13px;letter-spacing:.08em;
+    border-bottom:1px solid var(--hair2);padding-bottom:3px}
 </style>
 <link rel="stylesheet" href="src/css/home-listen.css?v=3">
 </head>
@@ -437,21 +471,72 @@
 
   <!-- コンテストの告知(2026-09-21〜10-19)。期間が終わったら、この枠と上のCSSを外す -->
   <section class="contest-call" aria-labelledby="contestCallLabel">
-    <!-- 締切後は一次選考の発表に差し替え(2026-10 高尾さん指示)。本来10曲の予定が12曲になった -->
-    <p class="eyebrow">Contest · 一次選考の発表</p>
+    <!-- 結果発表に差し替え(2026-10 高尾さん指示)。受賞作の棚は「今日のAN三選」の下 -->
+    <p class="eyebrow">Contest · 結果発表</p>
     <h3 id="contestCallLabel">心が解ける般若心経</h3>
-    <p>Twelve tracks go on to the final. We meant to choose ten.</p>
-    <p class="ja">最終選考に進む12曲を発表しました。本当は10曲のつもりでした。</p>
-    <p class="terms"><b>55</b> entries ／ 応募55曲　·　<b>12</b> to the final ／ 最終選考12曲　·　
-       winner around <b>2026-10-10</b> ／ 優勝の発表は10月10日ごろ</p>
-    <a class="go" href="contest-shortlist.html" data-ogs-event="contest_shortlist_open" data-ogs-placement="home">
-      See the twelve — 12曲と選び方を見る</a>
+    <p>The winner is “空にほどける” by djhugu.</p>
+    <p class="ja">優勝は、djhugu さんの「空にほどける」。準優勝「薄暮の波羅蜜多」MiRin / NoxP3、第三位「KU」yuka。</p>
+    <p class="terms"><b>55</b> entries ／ 応募55曲　·　<b>12</b> in the final ／ 最終選考12曲</p>
+    <a class="go" href="contest-result.html" data-ogs-event="contest_result_open" data-ogs-placement="home">
+      See the results — 結果を見る</a>
+    <a class="go" href="listen.html?gate=final" data-ogs-event="listen_open" data-ogs-placement="home_contest">
+      <span aria-hidden="true">選</span> Listen — 12曲を聴く</a>
     <!-- 応募作の一覧と、応募作だけの聞き流し(門「解」)へ。2026-09-27 高尾さん指示 -->
     <a class="go" href="archive.html?contest=2026-09" data-ogs-event="contest_entries_open" data-ogs-placement="home">
       See the entries — 応募作を見る</a>
     <a class="go" href="listen.html?gate=contest" data-ogs-event="listen_open" data-ogs-placement="home_contest">
       <span aria-hidden="true">解</span> Listen — 応募作を聴く</a>
   </section>
+  <!-- コンテストの受賞作(2026-10 高尾さん指示)。上の「結果発表」の欄のすぐ下に置く(当初の「AN選の下」から上げた)。
+       応募要項の約束「上位3作品はホームに専用の棚を1か月、4位〜12位は曲ページへのリンクを1か月」。2026-11-10 を過ぎたら、下の小さな台本が枠ごと外す -->
+  <section id="contest-winners" data-until="2026-11-10T23:59:59+09:00">
+    <div class="sec-head"><h3>Contest Winners</h3><span>受賞作 · 心が解ける般若心経</span></div>
+    <div class="nine">
+      <div class="work prize-work first">
+        <span class="cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000173-4e22387f.jpg" alt="" loading="lazy" decoding="async"></span>
+        <div class="body">
+          <span class="win"><b class="prize-seal" aria-hidden="true">優</b>優勝 · WINNER</span>
+          <a class="work-main" href="t/173.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_winners"><span class="title"><span class="play">▶</span>空にほどける</span></a>
+          <span class="artist">by djhugu</span>
+        </div>
+      </div>
+      <div class="work prize-work">
+        <span class="cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000172-949b24ec.jpg" alt="" loading="lazy" decoding="async"></span>
+        <div class="body">
+          <span class="win"><b class="prize-seal" aria-hidden="true">二</b>準優勝 · SECOND</span>
+          <a class="work-main" href="t/172.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_winners"><span class="title"><span class="play">▶</span>薄暮の波羅蜜多 - Cozy Ambient Folk</span></a>
+          <span class="artist">by MiRin / NoxP3</span>
+        </div>
+      </div>
+      <div class="work prize-work">
+        <span class="cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000224-19dcd1ee.jpg" alt="" loading="lazy" decoding="async"></span>
+        <div class="body">
+          <span class="win"><b class="prize-seal" aria-hidden="true">三</b>第三位 · THIRD</span>
+          <a class="work-main" href="t/224.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_winners"><span class="title"><span class="play">▶</span>KU</span></a>
+          <span class="artist">by yuka</span>
+        </div>
+      </div>
+    </div>
+    <div class="prize-selected">
+      <p class="ps-head"><b class="prize-seal" aria-hidden="true">入</b>Selected ／ 入選<small>投稿順 · 順位なし</small></p>
+      <ul>
+        <li><a href="t/184.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_selected"><span class="ps-iw"><img class="ps-i" src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000184-e6da85b7.jpg" alt="" width="44" height="44" loading="lazy" decoding="async"></span><span class="ps-txt"><span class="ps-t">色即是空 — à Giverny:Étude</span><span class="ps-a">Sion</span></span></a></li>
+        <li><a href="t/192.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_selected"><span class="ps-iw"><img class="ps-i" src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000192-4fdde823.jpg" alt="" width="44" height="44" loading="lazy" decoding="async"></span><span class="ps-txt"><span class="ps-t">空へほどける般若心経</span><span class="ps-a">Noir Project</span></span></a></li>
+        <li><a href="t/203.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_selected"><span class="ps-iw"><img class="ps-i" src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000203-5a0dc90b.jpg" alt="" width="44" height="44" loading="lazy" decoding="async"></span><span class="ps-txt"><span class="ps-t">般若心経 — 華のみち:Étude</span><span class="ps-a">Sion</span></span></a></li>
+        <li><a href="t/205.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_selected"><span class="ps-iw"><img class="ps-i" src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000205-5bc57329.jpg" alt="" width="44" height="44" loading="lazy" decoding="async"></span><span class="ps-txt"><span class="ps-t">世界は優しい言葉でできている、僕も優しい言葉でできている。</span><span class="ps-a">らくごまる</span></span></a></li>
+        <li><a href="t/221.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_selected"><span class="ps-iw"><img class="ps-i" src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000221-e0275ee4.jpg" alt="" width="44" height="44" loading="lazy" decoding="async"></span><span class="ps-txt"><span class="ps-t">śūnyā</span><span class="ps-a">yamato</span></span></a></li>
+        <li><a href="t/232.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_selected"><span class="ps-iw"><img class="ps-i" src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000232-89438be5.jpg" alt="" width="44" height="44" loading="lazy" decoding="async"></span><span class="ps-txt"><span class="ps-t">akatsukinosukinaoto8 - 心の空 - Treblo</span><span class="ps-a">暁の好きな音</span></span></a></li>
+        <li><a href="t/234.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_selected"><span class="ps-iw"><img class="ps-i" src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000234-4f7bafaf.jpg" alt="" width="44" height="44" loading="lazy" decoding="async"></span><span class="ps-txt"><span class="ps-t">koko</span><span class="ps-a">picapicarida</span></span></a></li>
+        <li><a href="t/235.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_selected"><span class="ps-iw"><img class="ps-i" src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000235-f5251a81.jpg" alt="" width="44" height="44" loading="lazy" decoding="async"></span><span class="ps-txt"><span class="ps-t">海は波、波は海</span><span class="ps-a">Rotten Saint</span></span></a></li>
+        <li><a href="t/238.html" data-ogs-event="listen_open" data-ogs-placement="home_contest_selected"><span class="ps-iw"><img class="ps-i" src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000238-88b87328.jpg" alt="" width="44" height="44" loading="lazy" decoding="async"></span><span class="ps-txt"><span class="ps-t">You Don’t Have to Hold It</span><span class="ps-a">2525family</span></span></a></li>
+      </ul>
+    </div>
+    <p class="prize-more"><a href="contest-result.html" data-ogs-event="contest_result_open" data-ogs-placement="home_winners">The results and AN's notes — 結果と講評を見る →</a></p>
+  </section>
+  <script>
+  (function(){ var s = document.getElementById('contest-winners');
+    if (s && Date.now() > Date.parse(s.getAttribute('data-until'))) s.remove(); })();
+  </script>
 
   <section id="gate">
     <div class="sec-head"><h3>How to cross</h3><span>渡り方</span></div>
@@ -483,6 +568,7 @@
     <div class="nine" id="nine-grid"></div>
   </section>
   <noscript><p style="text-align:center;margin-top:34px"><a href="listen.html?gate=all" style="color:inherit">Listen to every track in the Hall →</a></p></noscript>
+
 
   <!-- 公開された順に新しい3曲。latest.js が /api/archive を読んで描く。
        行き先は各曲のページ(t/<id>.html)。三選と同じ一覧を使い回すので通信は増えない。

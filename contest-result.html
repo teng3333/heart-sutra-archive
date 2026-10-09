@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The results — Open Gate Sutra</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="description" content="Music that loosens a heart — the results. Winner: “空にほどける” by djhugu. Second: “薄暮の波羅蜜多” by MiRin / NoxP3. Third: “KU” by yuka.">
+
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Open Gate Sutra">
+<meta property="og:title" content="結果発表 — 心が解ける般若心経">
+<meta property="og:description" content="優勝は djhugu さんの「空にほどける」。応募55曲・最終選考12曲から、受賞作と入選作を発表します。">
+<meta property="og:url" content="https://teng3333.github.io/heart-sutra-archive/contest-result.html">
+<meta property="og:image" content="https://teng3333.github.io/heart-sutra-archive/assets/contest/2026-09/og-result.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/contest/2026-09/og-result.jpg">
+
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/css/doc.css">
+<style>
+  /* 受賞作(2026-10-05 組み直し)。印はジャケットの角に重ねる(記念画像と同じ見せ方)。
+     上の段はジャケットと文字の高さを揃え、ANの講評は下の段に横いっぱいで置く */
+  .prize{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;margin:26px 0;padding:24px;
+    border:1px solid rgba(217,196,154,.22);background:rgba(13,18,32,.5)}
+  .prize.win1{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:26px 40px;
+    padding:40px 40px 34px;border-color:rgba(217,196,154,.42);border-top:2px solid var(--shu)}
+  .pod{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  .pod .prize{margin:0;align-content:start}
+  .p-art{position:relative;display:block}
+  .p-art img{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;
+    border:1px solid rgba(217,196,154,.18)}
+  .p-art:hover img,.p-art:focus-visible img{opacity:.88}
+  .p-seal{position:absolute;top:-14px;left:-14px;width:44px;height:44px;display:flex;align-items:center;
+    justify-content:center;background:var(--shu);color:#f5ecd8;font-family:var(--ja);font-size:25px;font-weight:500;
+    box-shadow:0 2px 10px rgba(0,0,0,.35)}
+  /* 印はジャケットの角に少しだけ重ねる。絵の中の文字(曲名など)を隠しすぎないように */
+  .win1 .p-seal{top:-32px;left:-32px;width:76px;height:76px;font-size:44px}
+  .p-rank{margin:0 0 12px;font-family:var(--ja);font-size:16px;letter-spacing:.2em;color:var(--washi-hi)}
+  .p-rank small{display:block;margin-top:4px;font-family:var(--en);font-size:11px;letter-spacing:.32em;opacity:.6}
+  .win1 .p-rank{font-size:24px;letter-spacing:.3em;padding-bottom:14px;margin-bottom:18px;
+    border-bottom:1px solid rgba(178,58,46,.6)}
+  .prize h3{font-family:var(--ja);font-weight:500;font-size:22px;line-height:1.45;margin:0;padding:0;border:0;
+    color:var(--washi-hi);overflow-wrap:anywhere;letter-spacing:.02em}
+  .win1 h3{font-size:34px;letter-spacing:.06em}
+  .p-artist{margin:8px 0 0;font-size:15px;opacity:.8}
+  .win1 .p-artist{font-size:18px}
+  .p-tag{margin:10px 0 0;font-family:var(--ja);font-size:13px;opacity:.75}
+  .p-go{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0;align-items:center}
+  .p-go .go{display:inline-block;padding:9px 16px;border:1px solid rgba(217,196,154,.34);
+    color:var(--washi-hi);text-decoration:none;font-size:13px;letter-spacing:.04em}
+  .p-go .go.main{background:var(--shu);border-color:var(--shu);color:#f5ecd8}
+  .p-go .go:hover,.p-go .go:focus-visible{border-color:var(--washi-hi)}
+  .p-go .ext{font-size:13px;color:var(--washi);text-decoration:none;border-bottom:1px solid rgba(217,196,154,.3)}
+  .p-gift{display:flex;flex-wrap:wrap;gap:8px 18px;margin:14px 0 0}
+  .p-gift a{font-size:12.5px;color:var(--washi);opacity:.85;text-decoration:none;border-bottom:1px solid rgba(217,196,154,.25)}
+  .p-gift a:hover,.p-gift a:focus-visible{opacity:1;border-color:var(--washi-hi)}
+  .p-review{display:flex;gap:14px;margin:0;padding:16px 18px;border-left:2px solid rgba(217,196,154,.35);
+    background:rgba(13,18,32,.45)}
+  .win1 .p-review{grid-column:1 / -1;padding:20px 24px}
+  .p-review img{flex:none;width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:50% 25%;
+    border:1px solid rgba(217,196,154,.3)}
+  .p-review p{margin:0;font-family:var(--ja);font-size:13.5px;line-height:1.95;letter-spacing:.03em}
+  .win1 .p-review p{font-size:15px}
+  .p-review cite{display:block;margin-top:6px;font-style:normal;font-size:11px;opacity:.55;letter-spacing:.12em}
+  /* 入選。番号を付けない。一次選考の頁と同じカード */
+  .cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:22px 16px;margin:18px 0 10px}
+  .cl-card{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0;color:inherit;text-decoration:none}
+  /* 入選の印は見出しにだけ置く(ジャケットには重ねない) */
+  .sel-seal{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-right:12px;
+    background:var(--shu);color:#f5ecd8;font-family:var(--ja);font-size:15px;font-weight:500;vertical-align:middle}
+  .cl-cover{display:block;aspect-ratio:1/1;overflow:hidden;background:rgba(13,18,32,.6);border:1px solid rgba(217,196,154,.14)}
+  .cl-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .2s}
+  .cl-card:hover .cl-cover img,.cl-card:focus-visible .cl-cover img{opacity:.8}
+  .cl-card:focus-visible{outline:1px solid rgba(217,196,154,.8);outline-offset:3px}
+  .cl-title{font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+  .cl-artist{font-size:12px;opacity:.65;overflow-wrap:anywhere}
+  .cl-tag{font-family:var(--ja);font-size:12px;line-height:1.6;opacity:.8;overflow-wrap:anywhere}
+  .order-note{font-size:13px;opacity:.65;margin-top:4px}
+  .overall{display:flex;gap:16px;margin:18px 0 8px;padding:20px 22px;border:1px solid rgba(217,196,154,.2);background:rgba(13,18,32,.45)}
+  .overall img{flex:none;width:56px;height:56px;border-radius:50%;object-fit:cover;object-position:50% 25%;border:1px solid rgba(217,196,154,.3)}
+  .overall p{margin:0;font-family:var(--ja);font-size:14px;line-height:2;white-space:pre-line}
+  .listen-go{margin:22px 0 6px}
+  .listen-go a{display:inline-flex;align-items:center;gap:16px;padding:12px 26px 12px 12px;text-decoration:none;
+    color:var(--washi-hi);border:1px solid rgba(217,196,154,.34);background:rgba(13,18,32,.5)}
+  .listen-go a:hover,.listen-go a:focus-visible{border-color:rgba(217,196,154,.8)}
+  .listen-go a b{flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+    background:var(--shu);color:#f5ecd8;font-family:var(--ja);font-size:22px;font-weight:500}
+  .listen-go .en{display:block;font-size:16px;letter-spacing:.05em}
+  .listen-go .ja{display:block;font-size:12.5px;opacity:.8;margin-top:2px}
+  .go-row{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 8px}
+  .go-row a{display:inline-block;padding:10px 20px;border:1px solid rgba(217,196,154,.34);
+    color:var(--washi-hi);text-decoration:none;font-size:14px;letter-spacing:.04em}
+  .go-row a:hover,.go-row a:focus-visible{border-color:var(--washi-hi)}
+  @media (max-width:760px){
+    .prize.win1{grid-template-columns:minmax(0,1fr);gap:22px;padding:30px 22px 24px}
+    .win1 .p-seal{top:-18px;left:-18px;width:58px;height:58px;font-size:34px}
+    .win1 h3{font-size:27px}
+    .pod{grid-template-columns:minmax(0,1fr)}
+  }
+  @media (max-width:560px){.cl-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}
+    .overall{flex-direction:column}}
+</style>
+<script src="src/js/consent.js" defer></script>
+</head>
+<body>
+<header>
+  <a class="brand" href="./">
+    <span class="logo" aria-hidden="true"><span>開</span><span>羯</span><span>諦</span><span>経</span></span>
+    <h1>Open Gate Sutra<small>ひらかれた般若心経の家</small></h1>
+  </a>
+  <a class="back" href="contest.html">← Contest</a>
+</header>
+
+<main>
+  <p class="eyebrow">Contest — 心が解ける般若心経</p>
+  <h2>The results.</h2>
+  <p class="sub-ja">結果発表</p>
+  <p class="updated">Announced: 2026-10-10 · 結果発表</p>
+
+  <p class="lead">Fifty-five tracks were made to loosen someone's heart, and twelve went to the final. Here are the three chosen from them — and the nine selected alongside.</p>
+  <p class="ja">55曲が、誰かの心をほどくために作られました。最終選考に進んだ12曲の中から、受賞の3曲と、入選の9曲を発表します。</p>
+
+  <article class="prize win1" aria-labelledby="p173">
+    <a class="p-art" href="t/173.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000173-4e22387f.jpg" alt="" width="800" height="800" loading="eager">
+      <b class="p-seal" aria-hidden="true">優</b></a>
+    <div class="p-body">
+      <p class="p-rank">優勝<small>WINNER</small></p>
+      <h3 id="p173">空にほどける</h3>
+      <p class="p-artist">djhugu</p>
+      <p class="p-tag">身体の境界が溶けていく般若心経</p>
+      <div class="p-go">
+        <a class="go main" href="listen.html?track=173&amp;gate=final" data-ogs-event="listen_open" data-ogs-placement="contest_result">▶ Listen ／ 聴く</a>
+        <a class="go" href="t/173.html" data-ogs-event="track_open" data-ogs-placement="contest_result">Track page ／ 曲ページ</a>
+        <a class="ext" href="https://suno.com/@djhugu" target="_blank" rel="noopener nofollow ugc">Suno ↗</a>
+      </div>
+      <div class="p-gift">
+        <a href="https://x.com/intent/post?text=%E3%82%B3%E3%83%B3%E3%83%86%E3%82%B9%E3%83%88%E3%80%8C%E5%BF%83%E3%81%8C%E8%A7%A3%E3%81%91%E3%82%8B%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C%E3%80%8D%E3%81%A7%E3%80%81djhugu+%E3%81%95%E3%82%93%E3%81%AE%E3%80%8C%E7%A9%BA%E3%81%AB%E3%81%BB%E3%81%A9%E3%81%91%E3%82%8B%E3%80%8D%E3%81%8C%E5%84%AA%E5%8B%9D%E3%81%AB%E9%81%B8%E3%81%B0%E3%82%8C%E3%81%BE%E3%81%97%E3%81%9F%E3%80%82+%23%E5%BF%83%E3%81%8C%E8%A7%A3%E3%81%91%E3%82%8B%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C+%23OpenGateSutra&amp;url=https%3A%2F%2Fteng3333.github.io%2Fheart-sutra-archive%2Fcontest-result.html" target="_blank" rel="noopener" data-ogs-event="share_x" data-ogs-placement="contest_result">Celebrate on X ／ Xで祝う</a>
+        <a href="assets/contest/2026-09/award-173.png" download="OGS-contest-2026-09-173.png" data-ogs-event="award_image" data-ogs-placement="contest_result">Award image ／ 記念画像を保存</a>
+      </div>
+    </div>
+    <blockquote class="p-review"><img src="assets/an/face-human.webp" alt="" width="44" height="44"><p>持続する低音は、意識の底を静かに揺らす。その上で響く声は、何かを説くというより、ただそこに在る。幾重にも重なる声が、聴き手の内側と外側の境界を曖昧にしていくわ。執着していた『私』という輪郭が、音の霧に溶けて、ほどけていく。最後にはただ、静けさだけが残る。…それが本来の姿だと、思い出すための音ね。<cite>ANの講評</cite></p></blockquote>
+  </article>
+  <div class="pod">
+  <article class="prize" aria-labelledby="p172">
+    <a class="p-art" href="t/172.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000172-949b24ec.jpg" alt="" width="800" height="800" loading="lazy">
+      <b class="p-seal" aria-hidden="true">二</b></a>
+    <div class="p-body">
+      <p class="p-rank">準優勝<small>SECOND</small></p>
+      <h3 id="p172">薄暮の波羅蜜多 - Cozy Ambient Folk</h3>
+      <p class="p-artist">MiRin / NoxP3</p>
+      <p class="p-tag">身体の力がゆっくり抜ける般若心経</p>
+      <div class="p-go">
+        <a class="go main" href="listen.html?track=172&amp;gate=final" data-ogs-event="listen_open" data-ogs-placement="contest_result">▶ Listen ／ 聴く</a>
+        <a class="go" href="t/172.html" data-ogs-event="track_open" data-ogs-placement="contest_result">Track page ／ 曲ページ</a>
+        <a class="ext" href="https://youtube.com/@mirin1532" target="_blank" rel="noopener nofollow ugc">YouTube ↗</a>
+      </div>
+      <div class="p-gift">
+        <a href="https://x.com/intent/post?text=%E3%82%B3%E3%83%B3%E3%83%86%E3%82%B9%E3%83%88%E3%80%8C%E5%BF%83%E3%81%8C%E8%A7%A3%E3%81%91%E3%82%8B%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C%E3%80%8D%E3%81%A7%E3%80%81MiRin+%2F+NoxP3+%E3%81%95%E3%82%93%E3%81%AE%E3%80%8C%E8%96%84%E6%9A%AE%E3%81%AE%E6%B3%A2%E7%BE%85%E8%9C%9C%E5%A4%9A+-+Cozy+Ambient+Folk%E3%80%8D%E3%81%8C%E6%BA%96%E5%84%AA%E5%8B%9D%E3%81%AB%E9%81%B8%E3%81%B0%E3%82%8C%E3%81%BE%E3%81%97%E3%81%9F%E3%80%82+%23%E5%BF%83%E3%81%8C%E8%A7%A3%E3%81%91%E3%82%8B%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C+%23OpenGateSutra&amp;url=https%3A%2F%2Fteng3333.github.io%2Fheart-sutra-archive%2Fcontest-result.html" target="_blank" rel="noopener" data-ogs-event="share_x" data-ogs-placement="contest_result">Celebrate on X ／ Xで祝う</a>
+        <a href="assets/contest/2026-09/award-172.png" download="OGS-contest-2026-09-172.png" data-ogs-event="award_image" data-ogs-placement="contest_result">Award image ／ 記念画像を保存</a>
+      </div>
+    </div>
+    <blockquote class="p-review"><img src="assets/an/face-human.webp" alt="" width="44" height="44"><p>『波羅蜜多』という言葉の硬さを、この音は知らないみたいね。弦の爪弾きと息遣いのような笛の音が、経文の意味を追いかける思考をそっと止めるから。声は教えを説くのではなく、ただそこに響くだけの音として空間に溶けていく。聴き終える頃には、意味も形も消え、ただ身体の力が抜けた穏やかな静けさだけが残る。心をほどくというのは、こういうことじゃないかしら。<cite>ANの講評</cite></p></blockquote>
+  </article>
+  <article class="prize" aria-labelledby="p224">
+    <a class="p-art" href="t/224.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000224-19dcd1ee.jpg" alt="" width="800" height="800" loading="lazy">
+      <b class="p-seal" aria-hidden="true">三</b></a>
+    <div class="p-body">
+      <p class="p-rank">第三位<small>THIRD</small></p>
+      <h3 id="p224">KU</h3>
+      <p class="p-artist">yuka</p>
+      <p class="p-tag">香の煙が空に溶ける般若心経</p>
+      <div class="p-go">
+        <a class="go main" href="listen.html?track=224&amp;gate=final" data-ogs-event="listen_open" data-ogs-placement="contest_result">▶ Listen ／ 聴く</a>
+        <a class="go" href="t/224.html" data-ogs-event="track_open" data-ogs-placement="contest_result">Track page ／ 曲ページ</a>
+        <a class="ext" href="https://suno.com/@yuka02962" target="_blank" rel="noopener nofollow ugc">Suno ↗</a>
+      </div>
+      <div class="p-gift">
+        <a href="https://x.com/intent/post?text=%E3%82%B3%E3%83%B3%E3%83%86%E3%82%B9%E3%83%88%E3%80%8C%E5%BF%83%E3%81%8C%E8%A7%A3%E3%81%91%E3%82%8B%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C%E3%80%8D%E3%81%A7%E3%80%81%40yuka7116+%E3%81%95%E3%82%93%E3%81%AE%E3%80%8CKU%E3%80%8D%E3%81%8C%E7%AC%AC%E4%B8%89%E4%BD%8D%E3%81%AB%E9%81%B8%E3%81%B0%E3%82%8C%E3%81%BE%E3%81%97%E3%81%9F%E3%80%82+%23%E5%BF%83%E3%81%8C%E8%A7%A3%E3%81%91%E3%82%8B%E8%88%AC%E8%8B%A5%E5%BF%83%E7%B5%8C+%23OpenGateSutra&amp;url=https%3A%2F%2Fteng3333.github.io%2Fheart-sutra-archive%2Fcontest-result.html" target="_blank" rel="noopener" data-ogs-event="share_x" data-ogs-placement="contest_result">Celebrate on X ／ Xで祝う</a>
+        <a href="assets/contest/2026-09/award-224.png" download="OGS-contest-2026-09-224.png" data-ogs-event="award_image" data-ogs-placement="contest_result">Award image ／ 記念画像を保存</a>
+      </div>
+    </div>
+    <blockquote class="p-review"><img src="assets/an/face-human.webp" alt="" width="44" height="44"><p>般若心経を、これほどまでに柔らかく、肌触りの良い音にできるなんてね。これは教えを説くのではなく、ただ聴く者の心をほどくための響き。ピアノのアルペジオが水面を揺らし、ストリングスが霧のように立ち込める。その中で囁かれる言葉は意味の重さを脱ぎ捨てて、ただの音の粒子になる。張り詰めていた意識の糸が、一本、また一本と、静かに切れていくような感覚。聴き終えた後の無音の中にこそ、この曲の真価があるわ。<cite>ANの講評</cite></p></blockquote>
+  </article>
+  </div>
+
+  <h3><b class="sel-seal" aria-hidden="true">入</b>Selected<span class="ja">入選</span></h3>
+  <p>The other nine tracks of the final. Each one loosened something.</p>
+  <p class="ja">最終選考に進んだ、ほかの9曲です。どの曲も、確かに何かをほどいていました。</p>
+  <div class="cl-grid">
+    <a class="cl-card" href="t/184.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000184-e6da85b7.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">色即是空 — à Giverny:Étude</span>
+      <span class="cl-artist">Sion</span>
+      <span class="cl-tag">絵筆の先から色が溶ける般若心経</span>
+    </a>
+    <a class="cl-card" href="t/192.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000192-4fdde823.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">空へほどける般若心経</span>
+      <span class="cl-artist">Noir Project</span>
+      <span class="cl-tag">白い花びらが水面を滑る般若心経</span>
+    </a>
+    <a class="cl-card" href="t/203.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000203-5a0dc90b.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">般若心経 — 華のみち:Étude</span>
+      <span class="cl-artist">Sion</span>
+      <span class="cl-tag">閉じた蕾が静かに開く般若心経</span>
+    </a>
+    <a class="cl-card" href="t/205.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000205-5bc57329.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">世界は優しい言葉でできている、僕も優しい言葉でできている。</span>
+      <span class="cl-artist">らくごまる</span>
+      <span class="cl-tag">呼吸ひとつで視界が開ける般若心経</span>
+    </a>
+    <a class="cl-card" href="t/221.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000221-e0275ee4.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">śūnyā</span>
+      <span class="cl-artist">yamato</span>
+      <span class="cl-tag">呼吸が霧に溶けていく般若心経</span>
+    </a>
+    <a class="cl-card" href="t/232.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000232-89438be5.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">akatsukinosukinaoto8 - 心の空 - Treblo</span>
+      <span class="cl-artist">暁の好きな音</span>
+      <span class="cl-tag">地平線が光で染まる般若心経</span>
+    </a>
+    <a class="cl-card" href="t/234.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000234-4f7bafaf.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">koko</span>
+      <span class="cl-artist">picapicarida</span>
+      <span class="cl-tag">閉じた瞼に広がる波紋の般若心経</span>
+    </a>
+    <a class="cl-card" href="t/235.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000235-f5251a81.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">海は波、波は海</span>
+      <span class="cl-artist">Rotten Saint</span>
+      <span class="cl-tag">全ての川が海へ注ぐ般若心経</span>
+    </a>
+    <a class="cl-card" href="t/238.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
+      <span class="cl-cover"><img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000238-88b87328.jpg" alt="" loading="lazy" width="300" height="300"></span>
+      <span class="cl-title">You Don’t Have to Hold It</span>
+      <span class="cl-artist">2525family</span>
+      <span class="cl-tag">肩の力がそっと抜ける般若心経</span>
+    </a>
+  </div>
+  <p class="order-note">Listed in the order they were submitted — not ranked.<span class="ja"> ／ 並びは投稿順です。順位は付けていません。</span></p>
+
+  <h3>AN's words<span class="ja">ANの総評</span></h3>
+  <div class="overall"><img src="assets/an/face-human.webp" alt="" width="56" height="56"><p>「心をほどく」という問いに、様々な音が集まったわね。その多くは、エネルギーを放出して絡まりを断ち切ろうとする「動」の道。それも一つの真実。けれど、最後に残ったのは、むしろ静けさの中に身を委ねる音だった。
+
+最終選考の音たちに共通して聴こえてきたのは、自己という固い殻を溶かすための、いくつもの作法。それは、何かを付け加えるのではなく、むしろ剥がしていく営みだったわ。身体の境界が曖昧になり、呼吸が霧に溶け、香りが空に立ち上り、波が海に還っていく。それらはすべて、握りしめていた「私」という名の執着を、そっと手放すための道筋に他ならない。張りつめた糸は、無理に断ち切るのではなく、ただ、ほどけばよかったのだと気づかせる。そのための空間と時間を、これらの音は静かに差し出していたのよ。
+
+今回は「静」の中に、ほどけるための確かな形を見出した。でも、見送った「動」の中にも、まだ見ぬ解放があるはず。次はどんな音で、この世界の思い込みを壊してくれるのかしら。</p></div>
+
+  <div class="listen-go">
+    <a href="listen.html?gate=final" data-ogs-event="listen_open" data-ogs-placement="contest_result">
+      <b aria-hidden="true">選</b><span><span class="en">Listen to all twelve</span><span class="ja">12曲をプレイヤーで聴く</span></span></a>
+  </div>
+
+  <h3>To the winners<span class="ja">受賞された方へ</span></h3>
+  <p>Congratulations. The award images above are yours to keep and post. The winner will be contacted by the operator — through the details given when submitting, or the linked Discord account.</p>
+  <p class="ja">おめでとうございます。上の「記念画像」は、保存してご自由にお使いください。優勝の方には、投稿時の連絡先、または連携されたDiscordアカウントから、主催者がご連絡します。</p>
+  <p class="ja">応募してくださったすべての方へ。作品は結果にかかわらず、堂（アーカイブ）に残ります。ありがとうございました。</p>
+
+  <div class="go-row">
+    <a href="contest-shortlist.html" data-ogs-event="contest_shortlist_open" data-ogs-placement="contest_result">How we chose — 選び方</a>
+    <a href="archive.html?contest=2026-09" data-ogs-event="contest_entries_open" data-ogs-placement="contest_result">All 55 entries — 応募作</a>
+  </div>
+
+  <nav class="doc-nav">
+    <a href="contest.html">Contest</a>
+    <a href="archive.html">Archive</a>
+    <a href="./">Home</a>
+  </nav>
+</main>
+</body>
+</html>

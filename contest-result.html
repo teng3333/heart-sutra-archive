@@ -38,14 +38,22 @@
   .p-art img{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover;
     border:1px solid rgba(217,196,154,.18)}
   .p-art:hover img,.p-art:focus-visible img{opacity:.88}
-  .p-seal{position:absolute;top:-14px;left:-14px;width:44px;height:44px;display:flex;align-items:center;
-    justify-content:center;background:var(--shu);color:#f5ecd8;font-family:var(--ja);font-size:25px;font-weight:500;
-    box-shadow:0 2px 10px rgba(0,0,0,.35)}
-  /* 印はジャケットの角に少しだけ重ねる。絵の中の文字(曲名など)を隠しすぎないように */
-  .win1 .p-seal{top:-32px;left:-32px;width:76px;height:76px;font-size:44px}
-  .p-rank{margin:0 0 12px;font-family:var(--ja);font-size:16px;letter-spacing:.2em;color:var(--washi-hi)}
-  .p-rank small{display:block;margin-top:4px;font-family:var(--en);font-size:11px;letter-spacing:.32em;opacity:.6}
-  .win1 .p-rank{font-size:24px;letter-spacing:.3em;padding-bottom:14px;margin-bottom:18px;
+  /* 1〜3位の印を、金・銀・銅の月桂樹で囲む(2026-10-10 高尾さん)。
+     ジャケットには重ねない(絵の中の曲名を隠したため)。順位の行にメダルとして置く */
+  .p-medal{position:relative;flex:none;display:block;width:64px;height:64px}
+  .p-medal .laurel{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))}
+  .p-medal.gold .laurel{fill:url(#lg-gold);stroke:url(#lg-gold)}
+  .p-medal.silver .laurel{fill:url(#lg-silver);stroke:url(#lg-silver)}
+  .p-medal.bronze .laurel{fill:url(#lg-bronze);stroke:url(#lg-bronze)}
+  .p-seal{position:absolute;top:50%;left:50%;transform:translate(-50%,-52%);width:28px;height:28px;display:flex;
+    align-items:center;justify-content:center;background:var(--shu);color:#f5ecd8;font-family:var(--ja);font-size:16px;
+    font-weight:500;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .win1 .p-medal{width:100px;height:100px}
+  .win1 .p-seal{width:44px;height:44px;font-size:26px}
+  .p-rank{display:flex;align-items:center;gap:14px;margin:0 0 12px;font-family:var(--ja);font-size:16px;
+    letter-spacing:.2em;color:var(--washi-hi)}
+  .p-rank-t small{display:block;margin-top:4px;font-family:var(--en);font-size:11px;letter-spacing:.32em;opacity:.6}
+  .win1 .p-rank{gap:18px;font-size:24px;letter-spacing:.3em;padding-bottom:14px;margin-bottom:18px;
     border-bottom:1px solid rgba(178,58,46,.6)}
   .prize h3{font-family:var(--ja);font-weight:500;font-size:22px;line-height:1.45;margin:0;padding:0;border:0;
     color:var(--washi-hi);overflow-wrap:anywhere;letter-spacing:.02em}
@@ -101,7 +109,8 @@
   .go-row a:hover,.go-row a:focus-visible{border-color:var(--washi-hi)}
   @media (max-width:760px){
     .prize.win1{grid-template-columns:minmax(0,1fr);gap:22px;padding:30px 22px 24px}
-    .win1 .p-seal{top:-18px;left:-18px;width:58px;height:58px;font-size:34px}
+    .win1 .p-medal{width:84px;height:84px}
+    .win1 .p-seal{width:36px;height:36px;font-size:21px}
     .win1 h3{font-size:27px}
     .pod{grid-template-columns:minmax(0,1fr)}
   }
@@ -111,6 +120,56 @@
 <script src="src/js/consent.js" defer></script>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="lg-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e7a6"/><stop offset=".45" stop-color="#d4af45"/><stop offset="1" stop-color="#8f6b1c"/></linearGradient>
+    <linearGradient id="lg-silver" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f8fa"/><stop offset=".45" stop-color="#bfc5cc"/><stop offset="1" stop-color="#7c838d"/></linearGradient>
+    <linearGradient id="lg-bronze" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2c79a"/><stop offset=".45" stop-color="#bf7f45"/><stop offset="1" stop-color="#7b4a20"/></linearGradient>
+    <symbol id="laurel" viewBox="0 0 100 100">
+      <path d="M37.3 84.8 A37 37 0 0 1 31.5 18.0" fill="none" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M0 0 C 5.6 -4.2 3.7 -11.2 0 -14.0 C -3.7 -11.2 -5.6 -4.2 0 0 Z" transform="translate(33.8 83.3) rotate(96.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.6 3.7 -9.6 0 -12.04 C -3.7 -9.6 -5.6 -3.6 0 0 Z" transform="translate(33.8 83.3) rotate(34.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -4.1 3.7 -10.8 0 -13.55 C -3.7 -10.8 -5.6 -4.1 0 0 Z" transform="translate(26.2 78.3) rotate(82.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.5 3.7 -9.3 0 -11.653 C -3.7 -9.3 -5.6 -3.5 0 0 Z" transform="translate(26.2 78.3) rotate(20.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.9 3.7 -10.5 0 -13.1 C -3.7 -10.5 -5.6 -3.9 0 0 Z" transform="translate(20.1 71.7) rotate(68.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.4 3.7 -9.0 0 -11.266 C -3.7 -9.0 -5.6 -3.4 0 0 Z" transform="translate(20.1 71.7) rotate(6.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.8 3.7 -10.1 0 -12.65 C -3.7 -10.1 -5.6 -3.8 0 0 Z" transform="translate(15.7 63.9) rotate(54.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.3 3.7 -8.7 0 -10.879 C -3.7 -8.7 -5.6 -3.3 0 0 Z" transform="translate(15.7 63.9) rotate(-8.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.7 3.7 -9.8 0 -12.2 C -3.7 -9.8 -5.6 -3.7 0 0 Z" transform="translate(13.4 55.1) rotate(40.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.1 3.7 -8.4 0 -10.491999999999999 C -3.7 -8.4 -5.6 -3.1 0 0 Z" transform="translate(13.4 55.1) rotate(-22.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.5 3.7 -9.4 0 -11.75 C -3.7 -9.4 -5.6 -3.5 0 0 Z" transform="translate(13.2 46.1) rotate(26.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.0 3.7 -8.1 0 -10.105 C -3.7 -8.1 -5.6 -3.0 0 0 Z" transform="translate(13.2 46.1) rotate(-36.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.4 3.7 -9.0 0 -11.3 C -3.7 -9.0 -5.6 -3.4 0 0 Z" transform="translate(15.2 37.3) rotate(12.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -2.9 3.7 -7.8 0 -9.718 C -3.7 -7.8 -5.6 -2.9 0 0 Z" transform="translate(15.2 37.3) rotate(-50.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.3 3.7 -8.7 0 -10.85 C -3.7 -8.7 -5.6 -3.3 0 0 Z" transform="translate(19.3 29.3) rotate(-2.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -2.8 3.7 -7.5 0 -9.331 C -3.7 -7.5 -5.6 -2.8 0 0 Z" transform="translate(19.3 29.3) rotate(-64.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.1 3.7 -8.3 0 -10.4 C -3.7 -8.3 -5.6 -3.1 0 0 Z" transform="translate(25.2 22.5) rotate(-16.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -2.7 3.7 -7.2 0 -8.944 C -3.7 -7.2 -5.6 -2.7 0 0 Z" transform="translate(25.2 22.5) rotate(-78.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.0 3.7 -8.0 0 -10 C -3.7 -8.0 -5.6 -3.0 0 0 Z" transform="translate(33.8 16.7) rotate(-64.0)" stroke="none"/>
+      <path d="M62.7 84.8 A37 37 0 0 0 68.5 18.0" fill="none" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M0 0 C 5.6 -4.2 3.7 -11.2 0 -14.0 C -3.7 -11.2 -5.6 -4.2 0 0 Z" transform="translate(66.2 83.3) rotate(-96.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.6 3.7 -9.6 0 -12.04 C -3.7 -9.6 -5.6 -3.6 0 0 Z" transform="translate(66.2 83.3) rotate(-34.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -4.1 3.7 -10.8 0 -13.55 C -3.7 -10.8 -5.6 -4.1 0 0 Z" transform="translate(73.8 78.3) rotate(-82.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.5 3.7 -9.3 0 -11.653 C -3.7 -9.3 -5.6 -3.5 0 0 Z" transform="translate(73.8 78.3) rotate(-20.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.9 3.7 -10.5 0 -13.1 C -3.7 -10.5 -5.6 -3.9 0 0 Z" transform="translate(79.9 71.7) rotate(-68.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.4 3.7 -9.0 0 -11.266 C -3.7 -9.0 -5.6 -3.4 0 0 Z" transform="translate(79.9 71.7) rotate(-6.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.8 3.7 -10.1 0 -12.65 C -3.7 -10.1 -5.6 -3.8 0 0 Z" transform="translate(84.3 63.9) rotate(-54.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.3 3.7 -8.7 0 -10.879 C -3.7 -8.7 -5.6 -3.3 0 0 Z" transform="translate(84.3 63.9) rotate(8.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.7 3.7 -9.8 0 -12.2 C -3.7 -9.8 -5.6 -3.7 0 0 Z" transform="translate(86.6 55.1) rotate(-40.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.1 3.7 -8.4 0 -10.491999999999999 C -3.7 -8.4 -5.6 -3.1 0 0 Z" transform="translate(86.6 55.1) rotate(22.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.5 3.7 -9.4 0 -11.75 C -3.7 -9.4 -5.6 -3.5 0 0 Z" transform="translate(86.8 46.1) rotate(-26.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.0 3.7 -8.1 0 -10.105 C -3.7 -8.1 -5.6 -3.0 0 0 Z" transform="translate(86.8 46.1) rotate(36.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.4 3.7 -9.0 0 -11.3 C -3.7 -9.0 -5.6 -3.4 0 0 Z" transform="translate(84.8 37.3) rotate(-12.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -2.9 3.7 -7.8 0 -9.718 C -3.7 -7.8 -5.6 -2.9 0 0 Z" transform="translate(84.8 37.3) rotate(50.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.3 3.7 -8.7 0 -10.85 C -3.7 -8.7 -5.6 -3.3 0 0 Z" transform="translate(80.7 29.3) rotate(2.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -2.8 3.7 -7.5 0 -9.331 C -3.7 -7.5 -5.6 -2.8 0 0 Z" transform="translate(80.7 29.3) rotate(64.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.1 3.7 -8.3 0 -10.4 C -3.7 -8.3 -5.6 -3.1 0 0 Z" transform="translate(74.8 22.5) rotate(16.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -2.7 3.7 -7.2 0 -8.944 C -3.7 -7.2 -5.6 -2.7 0 0 Z" transform="translate(74.8 22.5) rotate(78.0)" stroke="none"/>
+      <path d="M0 0 C 5.6 -3.0 3.7 -8.0 0 -10 C -3.7 -8.0 -5.6 -3.0 0 0 Z" transform="translate(66.2 16.7) rotate(64.0)" stroke="none"/>
+      <path d="M43 93 L50 88 L57 93" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+  </defs>
+</svg>
 <header>
   <a class="brand" href="./">
     <span class="logo" aria-hidden="true"><span>開</span><span>羯</span><span>諦</span><span>経</span></span>
@@ -131,9 +190,9 @@
   <article class="prize win1" aria-labelledby="p173">
     <a class="p-art" href="t/173.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
       <img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000173-4e22387f.jpg" alt="" width="800" height="800" loading="eager">
-      <b class="p-seal" aria-hidden="true">優</b></a>
+      </a>
     <div class="p-body">
-      <p class="p-rank">優勝<small>WINNER</small></p>
+      <p class="p-rank"><span class="p-medal gold"><svg class="laurel" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#laurel"/></svg><b class="p-seal" aria-hidden="true">優</b></span><span class="p-rank-t">優勝<small>WINNER</small></span></p>
       <h3 id="p173">空にほどける</h3>
       <p class="p-artist">djhugu</p>
       <p class="p-tag">身体の境界が溶けていく般若心経</p>
@@ -153,9 +212,9 @@
   <article class="prize" aria-labelledby="p172">
     <a class="p-art" href="t/172.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
       <img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000172-949b24ec.jpg" alt="" width="800" height="800" loading="lazy">
-      <b class="p-seal" aria-hidden="true">二</b></a>
+      </a>
     <div class="p-body">
-      <p class="p-rank">準優勝<small>SECOND</small></p>
+      <p class="p-rank"><span class="p-medal silver"><svg class="laurel" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#laurel"/></svg><b class="p-seal" aria-hidden="true">二</b></span><span class="p-rank-t">準優勝<small>SECOND</small></span></p>
       <h3 id="p172">薄暮の波羅蜜多 - Cozy Ambient Folk</h3>
       <p class="p-artist">MiRin / NoxP3</p>
       <p class="p-tag">身体の力がゆっくり抜ける般若心経</p>
@@ -174,9 +233,9 @@
   <article class="prize" aria-labelledby="p224">
     <a class="p-art" href="t/224.html" data-ogs-event="track_open" data-ogs-placement="contest_result">
       <img src="https://pub-fd64805c412b401b9cd974ca4a9f0cca.r2.dev/art/000224-19dcd1ee.jpg" alt="" width="800" height="800" loading="lazy">
-      <b class="p-seal" aria-hidden="true">三</b></a>
+      </a>
     <div class="p-body">
-      <p class="p-rank">第三位<small>THIRD</small></p>
+      <p class="p-rank"><span class="p-medal bronze"><svg class="laurel" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><use href="#laurel"/></svg><b class="p-seal" aria-hidden="true">三</b></span><span class="p-rank-t">第三位<small>THIRD</small></span></p>
       <h3 id="p224">KU</h3>
       <p class="p-artist">yuka</p>
       <p class="p-tag">香の煙が空に溶ける般若心経</p>

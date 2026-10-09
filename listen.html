@@ -154,6 +154,16 @@
   .np{display:none;max-width:34rem}
   .np.on{display:block}
   .np-shelf{font-family:var(--en);font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--c)}
+  /* コンテストの受賞・入選の判子(2026-10-10 高尾さん)。押すと結果発表の頁へ */
+  .np-award{display:inline-flex;align-items:center;gap:11px;margin:0 0 10px;color:var(--washi-hi);
+    text-decoration:none;text-shadow:0 1px 10px rgba(8,11,20,.9);pointer-events:auto}
+  .np-award[hidden]{display:none}
+  .np-award b{flex:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+    background:#b23a2e;color:#f5ecd8;font-family:var(--ja);font-size:20px;font-weight:500;text-shadow:none;
+    box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  .np-award span{font-family:var(--ja);font-size:15px;letter-spacing:.14em;line-height:1.35}
+  .np-award small{display:block;font-size:11px;letter-spacing:.12em;opacity:.85}
+  .np-award em{font-style:normal;font-family:var(--en);font-size:9.5px;letter-spacing:.3em;opacity:.65;margin-left:8px}
   .np-title{font-family:var(--ja);font-size:clamp(20px,4.4vw,30px);color:var(--washi-hi);
     margin:12px 0 0;line-height:1.45;text-wrap:balance;
     /* 背景の絵は曲ごとに変わる。どんな絵の上でも読めるよう、文字の後ろだけ暗くする */
@@ -314,6 +324,7 @@
              印なしで先に読むと、後から印つきで読む背景側がCORSで弾かれる(実測) -->
         <img id="npArt" alt="" width="76" height="76" crossorigin="anonymous">
       </button>
+      <a class="np-award" id="npAward" href="contest-result.html" hidden><b aria-hidden="true"></b><span><small></small><em></em></span></a>
       <p class="np-shelf" id="npShelf"></p>
       <p class="np-title" id="npTitle"></p>
       <p class="np-tagline" id="npTagline" hidden></p>
@@ -1230,6 +1241,28 @@
     var id = Number(t.id), last = c.last_id ? Number(c.last_id) : Infinity;
     return id >= Number(c.first_id) && id <= last && (c.exclude_ids || []).indexOf(id) < 0;
   }
+  /* 受賞・入選の判子。結果に載った12曲だけ、曲名の上に出す(2026-10-10 高尾さん) */
+  var AWARD_RANK = [['優', '優勝', 'WINNER'], ['二', '準優勝', 'SECOND'], ['三', '第三位', 'THIRD']];
+  function awardFor(t){
+    var a = document.getElementById('npAward');
+    if (!a) return;
+    a.hidden = true;
+    (contestCfg ? Promise.resolve(contestCfg) : loadContest()).then(function(c){
+      if (current !== t || !c || !c.results) return;
+      var id = Number(t.id), w = c.results.winners || [], s = c.results.selected || [], r = null;
+      if (w.indexOf(id) >= 0 && w.indexOf(id) < AWARD_RANK.length) r = AWARD_RANK[w.indexOf(id)];
+      else if (s.indexOf(id) >= 0) r = ['入', '入選', 'SELECTED'];
+      if (!r) return;
+      a.querySelector('b').textContent = r[0];
+      var sp = a.querySelector('span'), sm = document.createElement('small'), em = document.createElement('em');
+      sm.textContent = (c.title_ja || '') + 'コンテスト';
+      em.textContent = r[2];
+      sp.textContent = '';
+      sp.appendChild(sm); sp.appendChild(document.createTextNode(r[1])); sp.appendChild(em);
+      if (c.results.page) a.href = c.results.page;
+      a.hidden = false;
+    }).catch(function(){});
+  }
   function inList(key, t){
     var c = contestCfg, v = c && (key === 'winners' ? (c.results && c.results.winners) : c[key]);
     return !!(t && v && v.indexOf(Number(t.id)) >= 0);
@@ -1572,6 +1605,7 @@
 
   function render(t){
     current = t;
+    awardFor(t);
     rotReset();
     beastVeilFor(t);
     goldFor(t);

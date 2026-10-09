@@ -104,6 +104,12 @@ def page(t, base, tmpl):
     else:
         body.append('<div class="art" id="art"></div>')
     body.append('<div class="head-text">')
+    # コンテストの受賞・入選の判子(2026-10-10 高尾さん)。押すと結果発表の頁へ
+    aw = t.get("_award")
+    if aw:
+        body.append('<a class="award" href="../%s"><b class="award-seal" aria-hidden="true">%s</b>'
+                    '<span class="award-t"><small>%sコンテスト</small>%s<i>%s</i></span></a>'
+                    % (e(aw["page"]), e(aw["seal"]), e(aw["contest"]), e(aw["label"]), e(aw["en"])))
     body.append('<p class="shelf"><span class="ja">%s</span> · %s</p>'
                 % (e(shelf), e(t.get("mode_label_en"))))
     body.append('<h1>%s</h1>' % e(title))
@@ -229,6 +235,24 @@ def load_contest():
         return None
 
 
+AWARD_RANK = [("優", "優勝", "WINNER"), ("二", "準優勝", "SECOND"), ("三", "第三位", "THIRD")]
+
+
+def award_of(t, c):
+    """いまの回の結果(results)に載った曲なら、判子の中身を返す。1〜3位と入選"""
+    r = (c or {}).get("results") or {}
+    tid = int(t.get("id") or 0)
+    wins, sel = r.get("winners") or [], r.get("selected") or []
+    base = {"contest": c.get("title_ja") or "", "page": r.get("page") or "contest-result.html"}
+    if tid in wins and wins.index(tid) < len(AWARD_RANK):
+        seal, label, en = AWARD_RANK[wins.index(tid)]
+    elif tid in sel:
+        seal, label, en = "入", "入選", "SELECTED"
+    else:
+        return None
+    return dict(base, seal=seal, label=label, en=en)
+
+
 def is_entry(t, c):
     """いまの回の応募作か。展示室・門「解」と同じ数え方
     (曲番号が first_id 以上・last_id 以下、close_at までの投稿、exclude_ids に無い)"""
@@ -303,6 +327,7 @@ def main():
     keep = set()
     for t in sorted(items, key=lambda x: x["id"]):
         t["_entry"] = is_entry(t, contest)
+        t["_award"] = award_of(t, contest) if contest else None
         (OUT / ("%d.html" % t["id"])).write_text(page(t, args.base, tmpl), encoding="utf-8")
         keep.add("%d.html" % t["id"])
 

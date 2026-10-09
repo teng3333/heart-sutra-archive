@@ -340,6 +340,15 @@
     .contest-call h3{font-size:20px}
   }
 
+  /* 「結果を見る」は告知欄でいちばん目立たせる(2026-10-10 高尾さん)。朱の大きな釦 */
+  .contest-call .go.go-result{display:flex;align-items:center;gap:18px;max-width:440px;margin:22px 0 6px;
+    padding:18px 24px;background:var(--shu);border-color:var(--shu);color:#f5ecd8;letter-spacing:.06em}
+  .contest-call .go.go-result:hover,.contest-call .go.go-result:focus-visible{background:#c4473a;border-color:#c4473a}
+  .contest-call .go-result .ja{font-family:var(--ja);font-size:20px;font-weight:500;letter-spacing:.14em;white-space:nowrap}
+  .contest-call .go-result .en{font-size:12px;letter-spacing:.2em;opacity:.85}
+  .contest-call .go-result b{margin-left:auto;font-size:20px;font-weight:400}
+  @media (max-width:700px){ .contest-call .go.go-result{max-width:none} }
+
   /* ── コンテストの受賞作の棚(2026-10〜1か月)──────────────────
      AN三選と同じカードの形。受賞作だけは白黒にせず、最初から色で見せる */
   #contest-winners .prize-work .cover img{filter:none}
@@ -487,8 +496,8 @@
     <p>The winner is “空にほどける” by djhugu.</p>
     <p class="ja">優勝は、djhugu さんの「空にほどける」。準優勝「薄暮の波羅蜜多」MiRin / NoxP3、第三位「KU」yuka。</p>
     <p class="terms"><b>55</b> entries ／ 応募55曲　·　<b>12</b> in the final ／ 最終選考12曲</p>
-    <a class="go" href="contest-result.html" data-ogs-event="contest_result_open" data-ogs-placement="home">
-      See the results — 結果を見る</a>
+    <a class="go go-result" href="contest-result.html" data-ogs-event="contest_result_open" data-ogs-placement="home">
+      <span class="ja">結果を見る</span><span class="en">See the results</span><b aria-hidden="true">→</b></a>
     <a class="go" href="listen.html?gate=final" data-ogs-event="listen_open" data-ogs-placement="home_contest">
       <span aria-hidden="true">選</span> Listen — 12曲を聴く</a>
     <!-- 応募作の一覧と、応募作だけの聞き流し(門「解」)へ。2026-09-27 高尾さん指示 -->

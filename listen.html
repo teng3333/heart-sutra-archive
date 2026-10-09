@@ -70,11 +70,12 @@
   #beastVeil{position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;
     align-items:center;justify-content:center}
   /* 朱雀と黄龍は絵が四角の端まで描かれていて、端の切れ目が背景で目立った(2026-10-10 高尾さん)。
-     外へ行くほど薄くして闇に溶かす。四隅は完全に消える。六体すべてに同じぼかしをかける */
+     外へ行くほど薄くして闇に溶かす。中心から7割まではそのまま見せ(2026-10-10 高尾さん)、
+     外周で消す。四隅は完全に消える。六体すべてに同じぼかしをかける */
   #beastVeil img{width:min(92vh,92vw);height:auto;opacity:0;transition:opacity 4s ease;
     mix-blend-mode:screen;
-    -webkit-mask-image:radial-gradient(closest-side,#000 62%,rgba(0,0,0,.55) 80%,transparent 98%);
-            mask-image:radial-gradient(closest-side,#000 62%,rgba(0,0,0,.55) 80%,transparent 98%)}
+    -webkit-mask-image:radial-gradient(closest-side,#000 70%,rgba(0,0,0,.55) 86%,transparent 99%);
+            mask-image:radial-gradient(closest-side,#000 70%,rgba(0,0,0,.55) 86%,transparent 99%)}
   #beastVeil img.show{opacity:.22}
   html.swap #beastVeil img{opacity:0 !important;transition:opacity 1.1s ease}
   @media (max-width:700px){ #beastVeil{display:none} }

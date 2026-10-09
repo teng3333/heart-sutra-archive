@@ -29,7 +29,7 @@
 <script src="src/js/diag.js?v=2"></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
-<script src="src/js/living-bg.js?v=36" defer></script>
+<script src="src/js/living-bg.js?v=37" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -63,6 +63,27 @@
      早送りでは暗転させない(聴いている途中で切れるため)。
      透明度を下げる方式では暗転中も0.08ほど残り、球と波の輪郭が見えていたため、
      背景と波の上に黒い幕を重ねる方式にした(2026-09-17 高尾さん指摘) */
+  /* 受賞作の幻獣(2026-10-10 高尾さん指示)。コンテストの1〜3位の曲が流れているあいだだけ、
+     六体を代わる代わる、うっすら浮かべては消す。PCだけ(携帯は台本の側で止める)。
+     絵は中央が抜けた輪なので、画面の真ん中の球を囲む額になる。
+     背景の上・波と暗転幕の下に置く(DOMの順で重なる) */
+  #beastVeil{position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;
+    align-items:center;justify-content:center}
+  /* 朱雀と黄龍は絵が四角の端まで描かれていて、端の切れ目が背景で目立った(2026-10-10 高尾さん)。
+     外へ行くほど薄くして闇に溶かす。中心から7割まではそのまま見せ(2026-10-10 高尾さん)、
+     外周で消す。四隅は完全に消える。六体すべてに同じぼかしをかける */
+  #beastVeil img{width:min(92vh,92vw);height:auto;opacity:0;transition:opacity 4s ease;
+    mix-blend-mode:screen;
+    -webkit-mask-image:radial-gradient(closest-side,#000 70%,rgba(0,0,0,.55) 86%,transparent 99%);
+            mask-image:radial-gradient(closest-side,#000 70%,rgba(0,0,0,.55) 86%,transparent 99%)}
+  #beastVeil img.show{opacity:.22}
+  html.swap #beastVeil img{opacity:0 !important;transition:opacity 1.1s ease}
+  @media (max-width:700px){ #beastVeil{display:none} }
+  /* 最終選考の12曲の金箔(2026-10-10 高尾さん指示)。曲のあいだずっと、ひらひら舞わせる */
+  #goldLeaf{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;pointer-events:none;
+    opacity:0;transition:opacity 2.5s ease}
+  #goldLeaf.on{opacity:1}
+  html.swap #goldLeaf{opacity:0 !important;transition:opacity 1.1s ease}
   #blackout{position:fixed;inset:0;z-index:0;background:#03050a;opacity:0;
     pointer-events:none;transition:opacity 1.35s ease}
   html.swap #blackout{opacity:1}
@@ -337,7 +358,9 @@
   <p class="art-full-hint">tap to close ／ タップで閉じる</p>
 </div>
 
+<div id="beastVeil" aria-hidden="true"><img alt="" decoding="async"></div>
 <canvas id="waves" aria-hidden="true"></canvas>
+<canvas id="goldLeaf" aria-hidden="true"></canvas>
 <div id="blackout" aria-hidden="true"></div>
 
 <!-- 解析をやめたので crossorigin は不要(2026-09-26)。
@@ -1193,6 +1216,63 @@
     return ACCENT[Math.floor(Math.random() * ACCENT.length) % ACCENT.length];
   }
 
+  /* 応募作は、曲の初めから終わりまで差し色を代わる代わる出す(2026-10-10 高尾さん指示)。
+     応募作の数え方は、いまの回の first_id〜last_id(主催者の曲も含む)。
+     ただし最終選考の12曲は除く(金箔だけ)。巡回の差し色は明るくして目立たせる(setWeatherBoost)。
+     一つの差し色を ROT_ON 秒出し、ROT_GAP 秒あけて、別の差し色に替える。
+     同じものが二度続かないようにする。曲の最初と最後の数%は出さない(暗転と重ならないように) */
+  var ROT_ON = 22, ROT_GAP = 3;
+  var rot = { kind: 'none', until: 0, last: null };
+  function rotReset(){ rot = { kind: 'none', until: 0, last: null }; }
+  function isEntry(t){
+    var c = contestCfg;
+    if (!c || !t || !c.first_id) return false;
+    var id = Number(t.id), last = c.last_id ? Number(c.last_id) : Infinity;
+    return id >= Number(c.first_id) && id <= last && (c.exclude_ids || []).indexOf(id) < 0;
+  }
+  function inList(key, t){
+    var c = contestCfg, v = c && (key === 'winners' ? (c.results && c.results.winners) : c[key]);
+    return !!(t && v && v.indexOf(Number(t.id)) >= 0);
+  }
+  function isFinalist(t){ return inList('finalists', t); }
+  function isWinner(t){ return inList('winners', t); }
+  function weatherBoost(on){
+    try { var lb = window.__livingBG; if (lb && lb.setWeatherBoost) lb.setWeatherBoost(on); } catch (e) {}
+  }
+  function applyAccent(kind){
+    accentOn = kind !== 'none';
+    window.__ogsAccent = kind;   // 調整用。見た目には関係しない
+    try {
+      var lb = window.__livingBG;
+      if (!lb) return;
+      weatherBoost(true);            // 応募作の差し色は明るく目立たせる(2026-10-10 高尾さん)
+      lb.setWeather(kind);
+      if (lb.still){
+        if (kind !== 'none'){ if (lb.burst) lb.burst(10); }
+        else if (lb.restill) lb.restill();
+      }
+    } catch (e) {}
+  }
+  function rotateAccent(u){
+    var now = performance.now() / 1000;
+    if (!(u >= 0.02 && u < 0.97)){
+      if (rot.kind !== 'none'){ rot.kind = 'none'; applyAccent('none'); }
+      return;
+    }
+    if (now < rot.until) return;
+    if (rot.kind === 'none'){
+      var k, n = 0;
+      do { k = accentFor(); } while (k === rot.last && ++n < 8);
+      rot.kind = rot.last = k;
+      applyAccent(k);
+      rot.until = now + ROT_ON;
+    } else {
+      rot.kind = 'none';
+      applyAccent('none');
+      rot.until = now + ROT_GAP;
+    }
+  }
+
   function setAccent(on){
     if (on === accentOn) return;
     accentOn = on;
@@ -1442,7 +1522,12 @@
       drawWaves(waveRGB);
     }
     var u = trackProgress();
-    if (u >= 0) setAccent(u >= ACCENT_IN && u < ACCENT_OUT);
+    if (u >= 0){
+      /* 最終選考の12曲は金箔だけにする。差し色が重なるとごちゃごちゃする(2026-10-10 高尾さん) */
+      if (isFinalist(current)){ if (accentOn) applyAccent('none'); }
+      else if (isEntry(current)) rotateAccent(u);
+      else setAccent(u >= ACCENT_IN && u < ACCENT_OUT);
+    }
 
     var lb = window.__livingBG;
     if (!lb || u < 0) return;
@@ -1487,6 +1572,9 @@
 
   function render(t){
     current = t;
+    rotReset();
+    beastVeilFor(t);
+    goldFor(t);
     /* 波長は曲ごとに決め、曲の中では動かさない(滑らかさを保つため) */
     var m0 = motionFor(t);
     waveShape.lamK = m0.waveLam;
@@ -1498,6 +1586,7 @@
        前の曲の終わりの姿を引きずらせない */
     accentOn = false;
     motion = motionFor(t);
+    weatherBoost(false);
     try {
       if (window.__livingBG){
         window.__livingBG.setWeather('none');
@@ -2099,6 +2188,13 @@
       c.drawImage(wv, r2.x, r2.y, r2.s, r2.s, 0, 0, SHOT, SHOT);
     }
 
+    // ③' 金の紙吹雪(最終選考の12曲)。画面に舞っているその瞬間を写す(2026-10-10 高尾さん)
+    var gl = document.getElementById('goldLeaf');
+    if (gold.on && gl && gl.width){
+      var r3 = shotCrop(gl);
+      c.drawImage(gl, r3.x, r3.y, r3.s, r3.s, 0, 0, SHOT, SHOT);
+    }
+
     /* ④ 周辺減光。四隅をわずかに落として目を中央へ集める。
        前は四隅を82%まで落としていて、波まで沈んでいた(2026-09-18 実測)。
        絵を殺さない程度に留める */
@@ -2259,8 +2355,216 @@
     return ELEMENT_BEAST[FIVE[FIVE.length - 1]];
   }
 
+  /* ── 受賞作の幻獣(2026-10-10 高尾さん指示)──────────────────────
+     いまの回(contests/current.json)の results.winners に載った曲が流れているあいだ、
+     六体を順に、うっすら浮かべては消す。順は五行の相生(木→火→土→金→水)、最後に黄龍。
+     一体につき 浮かぶ4秒・留まる6秒・消える4秒・間2秒(一巡およそ1分半)。
+     PCだけ。携帯は画面が狭く、絵(1枚約500KB)を読ませたくないので出さない。
+     動きを減らす設定の人にも出さない。絵は1枚ずつ、出す直前に読む */
+  var VEIL_ORDER = ['seiryu', 'suzaku', 'kirin', 'byakko', 'genbu', 'koryu'];
+  var VEIL_IN = 4000, VEIL_HOLD = 6000, VEIL_OUT = 4000, VEIL_REST = 2000;
+  var veil = { el: null, on: false, gen: 0, i: 0, timer: null };
+  function veilImg(){
+    if (!veil.el){ var b = document.getElementById('beastVeil'); veil.el = b && b.querySelector('img'); }
+    return veil.el;
+  }
+  function beastVeilFor(t){
+    if (TOUCH || reduceMotion || !veilImg()) return;
+    (contestCfg ? Promise.resolve(contestCfg) : loadContest()).then(function(c){
+      if (current !== t) return;                    // 読み込むあいだに曲が替わった
+      var wins = (c && c.results && c.results.winners) || [];
+      var on = !!(t && wins.indexOf(Number(t.id)) >= 0);
+      if (on && !veil.on) veilStart();
+      else if (!on && veil.on) veilStop();
+    }).catch(function(){});
+  }
+  function veilStart(){
+    veil.on = true; veil.gen++; veil.i = 0;
+    veilStep(veil.gen);
+  }
+  function veilStop(){
+    veil.on = false; veil.gen++;
+    clearTimeout(veil.timer);
+    var im = veilImg(); if (im) im.classList.remove('show');
+  }
+  function veilStep(gen){
+    if (!veil.on || gen !== veil.gen) return;
+    var im = veilImg(), slug = VEIL_ORDER[veil.i % VEIL_ORDER.length];
+    var pre = new Image();
+    pre.onload = pre.onerror = function(){
+      if (gen !== veil.gen) return;
+      im.src = pre.src;
+      void im.offsetWidth;                         // 透明のまま絵を替えてから浮かべる
+      im.classList.add('show');
+      veil.timer = setTimeout(function(){
+        if (gen !== veil.gen) return;
+        im.classList.remove('show');
+        veil.timer = setTimeout(function(){ veil.i++; veilStep(gen); }, VEIL_OUT + VEIL_REST);
+      }, VEIL_IN + VEIL_HOLD);
+    };
+    pre.src = 'assets/beasts/' + slug + '.webp';
+  }
+
+  /* ── 最終選考の12曲の金箔(2026-10-10 高尾さん指示)──────────────────
+     いまの回の finalists に載った曲のあいだ、金箔をひらひら舞わせる。
+     一枚ずつ、ちぎった箔の形・大きさ・落ちる速さ・揺れ・裏返る速さを変える。
+     正面を向いた瞬間だけ明るく光る(裏返りの角度で明るさを変える)。
+     PCは80枚・毎フレーム、触れる画面は36枚・30コマ/秒に抑える。動きを減らす設定の人には出さない。
+     living-bg.js(自動生成)には触れず、別の canvas に描く */
+  var gold = { cv: null, ctx: null, on: false, raf: 0, flakes: [], sparks: [], last: 0, w: 0, h: 0, dpr: 1, stopT: 0 };
+  function goldFor(t){
+    if (reduceMotion) return;
+    (contestCfg ? Promise.resolve(contestCfg) : loadContest()).then(function(c){
+      if (current !== t) return;
+      var fin = (c && c.finalists) || [];
+      if (t && fin.indexOf(Number(t.id)) >= 0) goldStart(); else goldStop();
+    }).catch(function(){});
+  }
+  function goldSize(){
+    gold.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    gold.w = window.innerWidth; gold.h = window.innerHeight;
+    gold.cv.width = Math.round(gold.w * gold.dpr); gold.cv.height = Math.round(gold.h * gold.dpr);
+  }
+  /* 箔の形。ちぎった箔・四角・細長い帯・三角を混ぜる(2026-10-10 高尾さん「ワールドカップで優勝した時のよう」)。
+     大きさは小さめ(一辺3〜7px)。数を増やして、光る瞬間を多くする */
+  var GOLD_SHAPES = ['leaf', 'square', 'square', 'rect', 'rect', 'tri', 'tri'];
+  function goldFlake(fromTop){
+    var kind = GOLD_SHAPES[Math.floor(Math.random() * GOLD_SHAPES.length)];
+    var sz = (3 + Math.random() * 4) * 2 / 3, pts = [], k;   // 一辺2〜4.7px(2026-10-10 高尾さん「2/3程度に」)
+    if (kind === 'square') pts = [[-sz, -sz], [sz, -sz], [sz, sz], [-sz, sz]];
+    else if (kind === 'rect') pts = [[-sz * 0.45, -sz * 1.6], [sz * 0.45, -sz * 1.6], [sz * 0.45, sz * 1.6], [-sz * 0.45, sz * 1.6]];
+    else if (kind === 'tri') pts = [[0, -sz * 1.2], [sz * 1.1, sz * 0.8], [-sz * 1.1, sz * 0.8]];
+    else {
+      var n = 5 + Math.floor(Math.random() * 3);
+      for (k = 0; k < n; k++){              // ちぎった箔のいびつな輪郭
+        var ang = k / n * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+        var r = sz * (0.7 + Math.random() * 0.5);
+        pts.push([Math.cos(ang) * r, Math.sin(ang) * r * (0.6 + Math.random() * 0.3)]);
+      }
+    }
+    return {
+      x0: Math.random() * gold.w, y: fromTop ? -20 - Math.random() * gold.h * 0.5 : Math.random() * gold.h,
+      vy: 22 + Math.random() * 38, sway: 10 + Math.random() * 30, sp: 0.6 + Math.random() * 1.2,
+      ph: Math.random() * 6.283, rot: Math.random() * 6.283, vr: (Math.random() - 0.5) * 3,
+      flip: Math.random() * 6.283, vf: 2.4 + Math.random() * 4.2, pts: pts, sz: sz,
+      tone: Math.random()                    // 箔の色味(淡い金・金・赤金)
+    };
+  }
+  /* 金のきらめき。小さな四つ角の光が、ところどころで瞬いて消える */
+  function goldSpark(){
+    return { x: Math.random() * gold.w, y: Math.random() * gold.h, born: performance.now() / 1000,
+             life: 0.5 + Math.random() * 0.9, size: 3 + Math.random() * 6 };
+  }
+  function goldStart(){
+    if (!gold.cv){
+      gold.cv = document.getElementById('goldLeaf');
+      if (!gold.cv || !gold.cv.getContext) return;
+      gold.ctx = gold.cv.getContext('2d');
+      window.addEventListener('resize', function(){ if (gold.on) goldSize(); });
+    }
+    gold.stopT = 0;
+    if (gold.on) return;
+    gold.on = true;
+    goldSize();
+    gold.flakes = []; gold.sparks = [];
+    for (var i = 0, n = TOUCH ? 36 : 80; i < n; i++) gold.flakes.push(goldFlake(false));
+    /* 曲の始まりに、上から一度にどっと降らせる(2026-10-10 高尾さん「優勝した時のよう」)。
+       この分は降り切ったら補充しない */
+    for (i = 0, n = TOUCH ? 50 : 120; i < n; i++){
+      var bf = goldFlake(true);
+      bf.burst = true; bf.y = -10 - Math.random() * gold.h * 0.9; bf.vy = 70 + Math.random() * 90;
+      gold.flakes.push(bf);
+    }
+    gold.cv.classList.add('on');
+    gold.last = performance.now();
+    if (!gold.raf) gold.raf = requestAnimationFrame(goldTick);
+  }
+  function goldStop(){
+    if (!gold.on || !gold.cv) return;
+    gold.on = false;
+    gold.cv.classList.remove('on');
+    gold.stopT = performance.now() + 2600;   // 薄れ終わるまでは描き続ける
+  }
+  function goldTick(now){
+    gold.raf = 0;
+    if (!gold.on && gold.stopT && now > gold.stopT){
+      gold.ctx.clearRect(0, 0, gold.cv.width, gold.cv.height); return;
+    }
+    if (TOUCH && now - gold.last < 33){ gold.raf = requestAnimationFrame(goldTick); return; }
+    var dt = Math.min(0.1, (now - gold.last) / 1000), t = now / 1000;
+    gold.last = now;
+    var c = gold.ctx, d = gold.dpr;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, gold.cv.width, gold.cv.height);
+    c.setTransform(d, 0, 0, d, 0, 0);
+    for (var i = 0; i < gold.flakes.length; i++){
+      var f = gold.flakes[i];
+      f.y += f.vy * dt; f.rot += f.vr * dt; f.flip += f.vf * dt;
+      if (f.y > gold.h + 30){
+        if (f.burst){ gold.flakes.splice(i, 1); i--; continue; }
+        gold.flakes[i] = f = goldFlake(true);
+      }
+      var x = f.x0 + Math.sin(f.ph + t * f.sp) * f.sway;
+      var face = Math.abs(Math.cos(f.flip));         // 1 で正面、0 で真横
+      var lit = face * face * face;                  // 正面を向いた一瞬だけ強く光る
+      var r, g, b;
+      if (f.tone < 0.25){ r = 250; g = 226; b = 150; }        // 淡い金
+      else if (f.tone < 0.8){ r = 240; g = 184; b = 52; }     // 金
+      else { r = 222; g = 140; b = 40; }                      // 赤金
+      r = Math.round(r * (0.72 + 0.28 * face) + 255 * 0.45 * lit);
+      g = Math.round(g * (0.72 + 0.28 * face) + 240 * 0.45 * lit);
+      b = Math.round(b * (0.72 + 0.28 * face) + 190 * 0.45 * lit);
+      c.save();
+      c.translate(x, f.y); c.rotate(f.rot); c.scale(Math.max(0.08, face), 1);
+      c.globalAlpha = 0.62 + 0.38 * face;
+      c.fillStyle = 'rgb(' + Math.min(255, r) + ',' + Math.min(255, g) + ',' + Math.min(255, b) + ')';
+      c.beginPath();
+      c.moveTo(f.pts[0][0], f.pts[0][1]);
+      for (var k = 1; k < f.pts.length; k++) c.lineTo(f.pts[k][0], f.pts[k][1]);
+      c.closePath(); c.fill();
+      c.restore();
+      /* 正面を向いた瞬間、その場にきらめきを生む */
+      if (lit > 0.93 && Math.random() < 0.08 && gold.sparks.length < (TOUCH ? 16 : 40)){
+        var sp = goldSpark(); sp.x = x; sp.y = f.y; sp.size = 4 + f.sz * 1.3; gold.sparks.push(sp);
+      }
+    }
+    /* 何もないところにも、時々きらめきを置く */
+    if (Math.random() < (TOUCH ? 0.06 : 0.14) && gold.sparks.length < (TOUCH ? 16 : 40)) gold.sparks.push(goldSpark());
+    c.globalCompositeOperation = 'lighter';
+    for (var j = gold.sparks.length - 1; j >= 0; j--){
+      var q = gold.sparks[j], age = (t - q.born) / q.life;
+      if (age >= 1){ gold.sparks.splice(j, 1); continue; }
+      var a = Math.sin(age * Math.PI);               // 現れて、消える
+      var L = q.size * (0.6 + 0.6 * a);
+      c.globalAlpha = 0.9 * a;
+      c.strokeStyle = 'rgb(255,226,140)';
+      c.lineWidth = 1;
+      c.beginPath();                                 // 四つ角の光(縦横の線)
+      c.moveTo(q.x - L, q.y); c.lineTo(q.x + L, q.y);
+      c.moveTo(q.x, q.y - L); c.lineTo(q.x, q.y + L);
+      c.stroke();
+      c.fillStyle = 'rgb(255,214,110)';
+      c.globalAlpha = 0.25 * a;
+      c.beginPath(); c.arc(q.x, q.y, 2.5 + a * 3, 0, 6.283); c.fill();
+      c.globalAlpha = 0.95 * a;
+      c.fillStyle = 'rgb(255,250,225)';
+      c.beginPath(); c.arc(q.x, q.y, 1.1 + a * 0.9, 0, 6.283); c.fill();
+    }
+    c.globalCompositeOperation = 'source-over';
+    c.globalAlpha = 1;
+    gold.raf = requestAnimationFrame(goldTick);
+  }
+
   /* 絵は自分の所に置いてあるので、印(crossOrigin)は要らない。
      読めなければ何も重ねない。当たりを逃すだけで、保存は必ず成る */
+  function shotBeastFor(t){
+    if (t && isWinner(t)){
+      var slug = veil.on ? VEIL_ORDER[veil.i % VEIL_ORDER.length]
+                         : VEIL_ORDER[Math.floor(Math.random() * VEIL_ORDER.length)];
+      return beastBySlug(slug);
+    }
+    return rollBeast(t);
+  }
   function loadBeast(b){
     if (beastCache[b.slug]) return Promise.resolve(beastCache[b.slug]);
     return new Promise(function(res){
@@ -2299,7 +2603,10 @@
        前半で押すと画像に何も舞っていない。
        setWeather は始まりの時刻を6秒前に置く作りなので、撒き直した粒も
        「すでに舞っている」状態で現れる。曲ごとに何が出るかは決まっている。 */
-    var kind = current ? shotAccentFor(current) : null;
+    var kind = null;
+    if (current && !isFinalist(current)){
+      kind = isEntry(current) ? (rot.kind !== 'none' ? rot.kind : (rot.last || accentFor())) : shotAccentFor(current);
+    }
     if (kind){ try { lb.setWeather(kind); } catch (e) {} }
 
     /* 球も差し色も自前の描画の輪で動くので、据えた姿が絵に出るまで待つ。
@@ -2310,8 +2617,12 @@
         if (++k < 14) return requestAnimationFrame(step);
         var r = fn();
         lb.phase = before;            // 元の段階へ戻す
-        // 差し色も元へ。曲の後半なら出したまま、前半なら消す
-        try { lb.setWeather(accentOn && current ? accentFor() : 'none'); } catch (e) {}
+        // 差し色も元へ。応募作は巡回中のものへ、12曲は出さない、それ以外は曲の後半なら出したまま
+        try {
+          if (current && isFinalist(current)) lb.setWeather('none');
+          else if (current && isEntry(current)) lb.setWeather(rot.kind);
+          else lb.setWeather(accentOn && current ? accentFor() : 'none');
+        } catch (e) {}
         shotFreeze = false;
         res(r);
       })();
@@ -2327,7 +2638,7 @@
   function makeShot(){
     var t = current || {};
     var wait = (document.fonts && document.fonts.ready) || Promise.resolve();
-    var rolled = rollBeast(current);
+    var rolled = shotBeastFor(current);
     shotBeast = null;
     return wait.then(function(){
       if (!rolled) return null;
@@ -2460,7 +2771,7 @@
 
     /* 撮る前に一度だけ引く。当たったら、その1枚を読んでから撮る。
        外れた回は何も読まないので、待ち時間も通信も増えない */
-    var rolled = rollBeast(current);
+    var rolled = shotBeastFor(current);
     shotBeast = null;
 
     wait.then(function(){
@@ -2570,6 +2881,10 @@
     document.documentElement.style.setProperty('--glow','1');
     if (wctx) wctx.clearRect(0, 0, ww, wh);
     accentOn = false;
+    rotReset();
+    veilStop();
+    goldStop();
+    weatherBoost(false);
     motion = null;
     try {
       if (window.__livingBG){

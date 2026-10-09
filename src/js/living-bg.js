@@ -350,6 +350,9 @@ function drawRare(t){
 /* ── 天候イベント:雨・桜・雪・落ち葉。球体の円内(nx,ny∈[-1.2,1.2])を
    ゆっくり舞い落ちる。位置は球体基準なので、球のまわりに散る。 ── */
 let weather = 'none', wStart = 0, wEnd = 0, wNext = 5 + Math.random()*8;
+/* 差し色の明るさ(2026-10-10 高尾さん「明るく目立たせて」)。聞き流し画面が応募作のときだけ上げる。
+   wGain は粒の濃さに掛ける倍率。wTop は周辺減光の後に描く(外側で沈まないように) */
+let wGain = 1, wTop = false;
 function respawnP(p){ p.nx = (Math.random()*2-1)*1.15*WFIELD;
                      p.ny = (-1.15 - Math.random()*0.3)*WFIELD; }
 /* 広く撒くぶん、粒の数も増やさないと画面がすかすかになる */
@@ -410,7 +413,7 @@ function drawWeather(t, tint){
   if (t > wNext) pickWeather(t);
   if (weather === 'none') return;
   const life = (t - wStart) / (wEnd - wStart);
-  const intens = Math.min(1, Math.min(life, 1 - life) * 4.5);  // 徐々に降り出し・止む
+  const intens = Math.min(1, Math.min(life, 1 - life) * 4.5) * wGain;  // 徐々に降り出し・止む
   if (intens <= 0) return;
 
   // ── 煌めく星:動かず、その場で点滅する(球体のまわりに散る) ──
@@ -1943,7 +1946,7 @@ function draw(now){
   }
 
   // 天候(雨・桜・雪・落ち葉)を球体まわりに舞わせる
-  drawWeather(t, weather === 'rain' ? glowC : '235,240,255');
+  if (!wTop) drawWeather(t, weather === 'rain' ? glowC : '235,240,255');
 
   drawRare(t);                                  // 隠れキャラ(超レア)
 
@@ -1951,6 +1954,7 @@ function draw(now){
   vg.addColorStop(0, 'rgba(4,6,11,0)'); vg.addColorStop(1, 'rgba(2,3,6,0.94)');
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
   if (dim){ ctx.fillStyle = 'rgba(4,6,11,0.35)'; ctx.fillRect(0, 0, W, H); }
+  if (wTop) drawWeather(t, weather === 'rain' ? glowC : '235,240,255');   // 明るくする時は減光の上に
 
   const pi = Math.floor(p) % 8;
   // 還元フェーズ(pi=6, ほぼ不可視)= 世代交代。
@@ -1983,6 +1987,8 @@ window.__livingBG = {
         p.tw=Math.random()*6.28;p.tws=0.6+Math.random()*2.2;p.spike=Math.random()<0.35;}
       if(w==='digital'){p.glyph=Math.random()<0.5?'0':'1';p.flip=Math.random()*9;p.trail=3+(Math.random()*5|0);} }); },
   setCelestial(k){ celestial.kind = k; celestialPrev = null; celFadeT0 = -1; },
+  /* 差し色を明るく目立たせる(2026-10-10)。濃さを1.8倍にし、周辺減光の上に描く */
+  setWeatherBoost(on){ wGain = on ? 1.8 : 1; wTop = !!on; },
   /* 生態系の動きと見た目。曲ごとに表情を変えるための窓口。
      spin:回る速さ tilt:傾きの揺れ幅 swellAmp:拡大収縮の幅
      swellRate:その速さ scale:アイコンの大きさ hue:色相のずれ(度)

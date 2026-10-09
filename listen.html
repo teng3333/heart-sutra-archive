@@ -2383,9 +2383,9 @@
      いまの回の finalists に載った曲のあいだ、金箔をひらひら舞わせる。
      一枚ずつ、ちぎった箔の形・大きさ・落ちる速さ・揺れ・裏返る速さを変える。
      正面を向いた瞬間だけ明るく光る(裏返りの角度で明るさを変える)。
-     PCは28枚・毎フレーム、触れる画面は14枚・30コマ/秒に抑える。動きを減らす設定の人には出さない。
+     PCは80枚・毎フレーム、触れる画面は36枚・30コマ/秒に抑える。動きを減らす設定の人には出さない。
      living-bg.js(自動生成)には触れず、別の canvas に描く */
-  var gold = { cv: null, ctx: null, on: false, raf: 0, flakes: [], last: 0, w: 0, h: 0, dpr: 1, stopT: 0 };
+  var gold = { cv: null, ctx: null, on: false, raf: 0, flakes: [], sparks: [], last: 0, w: 0, h: 0, dpr: 1, stopT: 0 };
   function goldFor(t){
     if (reduceMotion) return;
     (contestCfg ? Promise.resolve(contestCfg) : loadContest()).then(function(c){
@@ -2399,20 +2399,35 @@
     gold.w = window.innerWidth; gold.h = window.innerHeight;
     gold.cv.width = Math.round(gold.w * gold.dpr); gold.cv.height = Math.round(gold.h * gold.dpr);
   }
+  /* 箔の形。ちぎった箔・四角・細長い帯・三角を混ぜる(2026-10-10 高尾さん「ワールドカップで優勝した時のよう」)。
+     大きさは小さめ(一辺3〜7px)。数を増やして、光る瞬間を多くする */
+  var GOLD_SHAPES = ['leaf', 'square', 'square', 'rect', 'rect', 'tri', 'tri'];
   function goldFlake(fromTop){
-    var sz = 7 + Math.random() * 11;
-    var pts = [], k, n = 5 + Math.floor(Math.random() * 3);
-    for (k = 0; k < n; k++){              // ちぎった箔のいびつな輪郭
-      var a = k / n * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-      var r = sz * (0.62 + Math.random() * 0.45);
-      pts.push([Math.cos(a) * r, Math.sin(a) * r * (0.55 + Math.random() * 0.35)]);
+    var kind = GOLD_SHAPES[Math.floor(Math.random() * GOLD_SHAPES.length)];
+    var sz = 3 + Math.random() * 4, pts = [], k;
+    if (kind === 'square') pts = [[-sz, -sz], [sz, -sz], [sz, sz], [-sz, sz]];
+    else if (kind === 'rect') pts = [[-sz * 0.45, -sz * 1.6], [sz * 0.45, -sz * 1.6], [sz * 0.45, sz * 1.6], [-sz * 0.45, sz * 1.6]];
+    else if (kind === 'tri') pts = [[0, -sz * 1.2], [sz * 1.1, sz * 0.8], [-sz * 1.1, sz * 0.8]];
+    else {
+      var n = 5 + Math.floor(Math.random() * 3);
+      for (k = 0; k < n; k++){              // ちぎった箔のいびつな輪郭
+        var ang = k / n * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+        var r = sz * (0.7 + Math.random() * 0.5);
+        pts.push([Math.cos(ang) * r, Math.sin(ang) * r * (0.6 + Math.random() * 0.3)]);
+      }
     }
     return {
-      x0: Math.random() * gold.w, y: fromTop ? -30 - Math.random() * gold.h * 0.4 : Math.random() * gold.h,
-      vy: 16 + Math.random() * 26, sway: 16 + Math.random() * 34, sp: 0.5 + Math.random() * 0.9,
-      ph: Math.random() * 6.283, rot: Math.random() * 6.283, vr: (Math.random() - 0.5) * 1.4,
-      flip: Math.random() * 6.283, vf: 1.4 + Math.random() * 2.6, pts: pts, tone: Math.random()
+      x0: Math.random() * gold.w, y: fromTop ? -20 - Math.random() * gold.h * 0.5 : Math.random() * gold.h,
+      vy: 22 + Math.random() * 38, sway: 10 + Math.random() * 30, sp: 0.6 + Math.random() * 1.2,
+      ph: Math.random() * 6.283, rot: Math.random() * 6.283, vr: (Math.random() - 0.5) * 3,
+      flip: Math.random() * 6.283, vf: 2.4 + Math.random() * 4.2, pts: pts, sz: sz,
+      tone: Math.random()                    // 箔の色味(淡い金・金・赤金)
     };
+  }
+  /* 金のきらめき。小さな四つ角の光が、ところどころで瞬いて消える */
+  function goldSpark(){
+    return { x: Math.random() * gold.w, y: Math.random() * gold.h, born: performance.now() / 1000,
+             life: 0.5 + Math.random() * 0.9, size: 3 + Math.random() * 6 };
   }
   function goldStart(){
     if (!gold.cv){
@@ -2425,8 +2440,15 @@
     if (gold.on) return;
     gold.on = true;
     goldSize();
-    gold.flakes = [];
-    for (var i = 0, n = TOUCH ? 14 : 28; i < n; i++) gold.flakes.push(goldFlake(false));
+    gold.flakes = []; gold.sparks = [];
+    for (var i = 0, n = TOUCH ? 36 : 80; i < n; i++) gold.flakes.push(goldFlake(false));
+    /* 曲の始まりに、上から一度にどっと降らせる(2026-10-10 高尾さん「優勝した時のよう」)。
+       この分は降り切ったら補充しない */
+    for (i = 0, n = TOUCH ? 50 : 120; i < n; i++){
+      var bf = goldFlake(true);
+      bf.burst = true; bf.y = -10 - Math.random() * gold.h * 0.9; bf.vy = 70 + Math.random() * 90;
+      gold.flakes.push(bf);
+    }
     gold.cv.classList.add('on');
     gold.last = performance.now();
     if (!gold.raf) gold.raf = requestAnimationFrame(goldTick);
@@ -2452,22 +2474,57 @@
     for (var i = 0; i < gold.flakes.length; i++){
       var f = gold.flakes[i];
       f.y += f.vy * dt; f.rot += f.vr * dt; f.flip += f.vf * dt;
-      if (f.y > gold.h + 40){ gold.flakes[i] = f = goldFlake(true); }
+      if (f.y > gold.h + 30){
+        if (f.burst){ gold.flakes.splice(i, 1); i--; continue; }
+        gold.flakes[i] = f = goldFlake(true);
+      }
       var x = f.x0 + Math.sin(f.ph + t * f.sp) * f.sway;
       var face = Math.abs(Math.cos(f.flip));         // 1 で正面、0 で真横
+      var lit = face * face * face;                  // 正面を向いた一瞬だけ強く光る
+      var r, g, b;
+      if (f.tone < 0.25){ r = 250; g = 226; b = 150; }        // 淡い金
+      else if (f.tone < 0.8){ r = 240; g = 184; b = 52; }     // 金
+      else { r = 222; g = 140; b = 40; }                      // 赤金
+      r = Math.round(r * (0.72 + 0.28 * face) + 255 * 0.45 * lit);
+      g = Math.round(g * (0.72 + 0.28 * face) + 240 * 0.45 * lit);
+      b = Math.round(b * (0.72 + 0.28 * face) + 190 * 0.45 * lit);
       c.save();
-      c.translate(x, f.y); c.rotate(f.rot); c.scale(Math.max(0.06, face), 1);
-      var lit = 0.35 + 0.65 * face * face;           // 正面を向くほど光る
-      var r = Math.round(176 + 79 * lit), g = Math.round(132 + 103 * lit), b = Math.round(40 + 100 * lit * lit);
-      if (f.tone < 0.3){ g -= 14; b -= 18; }          // 少し赤みの箔を混ぜる
-      c.globalAlpha = 0.5 + 0.45 * lit;
-      c.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+      c.translate(x, f.y); c.rotate(f.rot); c.scale(Math.max(0.08, face), 1);
+      c.globalAlpha = 0.62 + 0.38 * face;
+      c.fillStyle = 'rgb(' + Math.min(255, r) + ',' + Math.min(255, g) + ',' + Math.min(255, b) + ')';
       c.beginPath();
       c.moveTo(f.pts[0][0], f.pts[0][1]);
       for (var k = 1; k < f.pts.length; k++) c.lineTo(f.pts[k][0], f.pts[k][1]);
       c.closePath(); c.fill();
       c.restore();
+      /* 正面を向いた瞬間、その場にきらめきを生む */
+      if (lit > 0.93 && Math.random() < 0.08 && gold.sparks.length < (TOUCH ? 16 : 40)){
+        var sp = goldSpark(); sp.x = x; sp.y = f.y; sp.size = 4 + f.sz * 1.3; gold.sparks.push(sp);
+      }
     }
+    /* 何もないところにも、時々きらめきを置く */
+    if (Math.random() < (TOUCH ? 0.06 : 0.14) && gold.sparks.length < (TOUCH ? 16 : 40)) gold.sparks.push(goldSpark());
+    c.globalCompositeOperation = 'lighter';
+    for (var j = gold.sparks.length - 1; j >= 0; j--){
+      var q = gold.sparks[j], age = (t - q.born) / q.life;
+      if (age >= 1){ gold.sparks.splice(j, 1); continue; }
+      var a = Math.sin(age * Math.PI);               // 現れて、消える
+      var L = q.size * (0.6 + 0.6 * a);
+      c.globalAlpha = 0.9 * a;
+      c.strokeStyle = 'rgb(255,226,140)';
+      c.lineWidth = 1;
+      c.beginPath();                                 // 四つ角の光(縦横の線)
+      c.moveTo(q.x - L, q.y); c.lineTo(q.x + L, q.y);
+      c.moveTo(q.x, q.y - L); c.lineTo(q.x, q.y + L);
+      c.stroke();
+      c.fillStyle = 'rgb(255,214,110)';
+      c.globalAlpha = 0.25 * a;
+      c.beginPath(); c.arc(q.x, q.y, 2.5 + a * 3, 0, 6.283); c.fill();
+      c.globalAlpha = 0.95 * a;
+      c.fillStyle = 'rgb(255,250,225)';
+      c.beginPath(); c.arc(q.x, q.y, 1.1 + a * 0.9, 0, 6.283); c.fill();
+    }
+    c.globalCompositeOperation = 'source-over';
     c.globalAlpha = 1;
     gold.raf = requestAnimationFrame(goldTick);
   }

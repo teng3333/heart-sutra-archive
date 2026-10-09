@@ -29,7 +29,7 @@
 <script src="src/js/diag.js?v=2"></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
-<script src="src/js/living-bg.js?v=36" defer></script>
+<script src="src/js/living-bg.js?v=37" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -1218,6 +1218,7 @@
 
   /* 応募作は、曲の初めから終わりまで差し色を代わる代わる出す(2026-10-10 高尾さん指示)。
      応募作の数え方は、いまの回の first_id〜last_id(主催者の曲も含む)。
+     ただし最終選考の12曲は除く(金箔だけ)。巡回の差し色は明るくして目立たせる(setWeatherBoost)。
      一つの差し色を ROT_ON 秒出し、ROT_GAP 秒あけて、別の差し色に替える。
      同じものが二度続かないようにする。曲の最初と最後の数%は出さない(暗転と重ならないように) */
   var ROT_ON = 22, ROT_GAP = 3;
@@ -1229,12 +1230,22 @@
     var id = Number(t.id), last = c.last_id ? Number(c.last_id) : Infinity;
     return id >= Number(c.first_id) && id <= last && (c.exclude_ids || []).indexOf(id) < 0;
   }
+  function inList(key, t){
+    var c = contestCfg, v = c && (key === 'winners' ? (c.results && c.results.winners) : c[key]);
+    return !!(t && v && v.indexOf(Number(t.id)) >= 0);
+  }
+  function isFinalist(t){ return inList('finalists', t); }
+  function isWinner(t){ return inList('winners', t); }
+  function weatherBoost(on){
+    try { var lb = window.__livingBG; if (lb && lb.setWeatherBoost) lb.setWeatherBoost(on); } catch (e) {}
+  }
   function applyAccent(kind){
     accentOn = kind !== 'none';
     window.__ogsAccent = kind;   // 調整用。見た目には関係しない
     try {
       var lb = window.__livingBG;
       if (!lb) return;
+      weatherBoost(true);            // 応募作の差し色は明るく目立たせる(2026-10-10 高尾さん)
       lb.setWeather(kind);
       if (lb.still){
         if (kind !== 'none'){ if (lb.burst) lb.burst(10); }
@@ -1512,7 +1523,9 @@
     }
     var u = trackProgress();
     if (u >= 0){
-      if (isEntry(current)) rotateAccent(u);
+      /* 最終選考の12曲は金箔だけにする。差し色が重なるとごちゃごちゃする(2026-10-10 高尾さん) */
+      if (isFinalist(current)){ if (accentOn) applyAccent('none'); }
+      else if (isEntry(current)) rotateAccent(u);
       else setAccent(u >= ACCENT_IN && u < ACCENT_OUT);
     }
 
@@ -1573,6 +1586,7 @@
        前の曲の終わりの姿を引きずらせない */
     accentOn = false;
     motion = motionFor(t);
+    weatherBoost(false);
     try {
       if (window.__livingBG){
         window.__livingBG.setWeather('none');
@@ -2174,6 +2188,13 @@
       c.drawImage(wv, r2.x, r2.y, r2.s, r2.s, 0, 0, SHOT, SHOT);
     }
 
+    // ③' 金の紙吹雪(最終選考の12曲)。画面に舞っているその瞬間を写す(2026-10-10 高尾さん)
+    var gl = document.getElementById('goldLeaf');
+    if (gold.on && gl && gl.width){
+      var r3 = shotCrop(gl);
+      c.drawImage(gl, r3.x, r3.y, r3.s, r3.s, 0, 0, SHOT, SHOT);
+    }
+
     /* ④ 周辺減光。四隅をわずかに落として目を中央へ集める。
        前は四隅を82%まで落としていて、波まで沈んでいた(2026-09-18 実測)。
        絵を殺さない程度に留める */
@@ -2409,7 +2430,7 @@
   var GOLD_SHAPES = ['leaf', 'square', 'square', 'rect', 'rect', 'tri', 'tri'];
   function goldFlake(fromTop){
     var kind = GOLD_SHAPES[Math.floor(Math.random() * GOLD_SHAPES.length)];
-    var sz = 3 + Math.random() * 4, pts = [], k;
+    var sz = (3 + Math.random() * 4) * 2 / 3, pts = [], k;   // 一辺2〜4.7px(2026-10-10 高尾さん「2/3程度に」)
     if (kind === 'square') pts = [[-sz, -sz], [sz, -sz], [sz, sz], [-sz, sz]];
     else if (kind === 'rect') pts = [[-sz * 0.45, -sz * 1.6], [sz * 0.45, -sz * 1.6], [sz * 0.45, sz * 1.6], [-sz * 0.45, sz * 1.6]];
     else if (kind === 'tri') pts = [[0, -sz * 1.2], [sz * 1.1, sz * 0.8], [-sz * 1.1, sz * 0.8]];
@@ -2536,6 +2557,14 @@
 
   /* 絵は自分の所に置いてあるので、印(crossOrigin)は要らない。
      読めなければ何も重ねない。当たりを逃すだけで、保存は必ず成る */
+  function shotBeastFor(t){
+    if (t && isWinner(t)){
+      var slug = veil.on ? VEIL_ORDER[veil.i % VEIL_ORDER.length]
+                         : VEIL_ORDER[Math.floor(Math.random() * VEIL_ORDER.length)];
+      return beastBySlug(slug);
+    }
+    return rollBeast(t);
+  }
   function loadBeast(b){
     if (beastCache[b.slug]) return Promise.resolve(beastCache[b.slug]);
     return new Promise(function(res){
@@ -2574,7 +2603,10 @@
        前半で押すと画像に何も舞っていない。
        setWeather は始まりの時刻を6秒前に置く作りなので、撒き直した粒も
        「すでに舞っている」状態で現れる。曲ごとに何が出るかは決まっている。 */
-    var kind = current ? shotAccentFor(current) : null;
+    var kind = null;
+    if (current && !isFinalist(current)){
+      kind = isEntry(current) ? (rot.kind !== 'none' ? rot.kind : (rot.last || accentFor())) : shotAccentFor(current);
+    }
     if (kind){ try { lb.setWeather(kind); } catch (e) {} }
 
     /* 球も差し色も自前の描画の輪で動くので、据えた姿が絵に出るまで待つ。
@@ -2585,8 +2617,12 @@
         if (++k < 14) return requestAnimationFrame(step);
         var r = fn();
         lb.phase = before;            // 元の段階へ戻す
-        // 差し色も元へ。曲の後半なら出したまま、前半なら消す
-        try { lb.setWeather(accentOn && current ? accentFor() : 'none'); } catch (e) {}
+        // 差し色も元へ。応募作は巡回中のものへ、12曲は出さない、それ以外は曲の後半なら出したまま
+        try {
+          if (current && isFinalist(current)) lb.setWeather('none');
+          else if (current && isEntry(current)) lb.setWeather(rot.kind);
+          else lb.setWeather(accentOn && current ? accentFor() : 'none');
+        } catch (e) {}
         shotFreeze = false;
         res(r);
       })();
@@ -2602,7 +2638,7 @@
   function makeShot(){
     var t = current || {};
     var wait = (document.fonts && document.fonts.ready) || Promise.resolve();
-    var rolled = rollBeast(current);
+    var rolled = shotBeastFor(current);
     shotBeast = null;
     return wait.then(function(){
       if (!rolled) return null;
@@ -2735,7 +2771,7 @@
 
     /* 撮る前に一度だけ引く。当たったら、その1枚を読んでから撮る。
        外れた回は何も読まないので、待ち時間も通信も増えない */
-    var rolled = rollBeast(current);
+    var rolled = shotBeastFor(current);
     shotBeast = null;
 
     wait.then(function(){
@@ -2848,6 +2884,7 @@
     rotReset();
     veilStop();
     goldStop();
+    weatherBoost(false);
     motion = null;
     try {
       if (window.__livingBG){

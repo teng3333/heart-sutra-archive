@@ -321,6 +321,8 @@ window.__livingBG = {
         p.tw=Math.random()*6.28;p.tws=0.6+Math.random()*2.2;p.spike=Math.random()<0.35;}
       if(w==='digital'){p.glyph=Math.random()<0.5?'0':'1';p.flip=Math.random()*9;p.trail=3+(Math.random()*5|0);} }); },
   setCelestial(k){ celestial.kind = k; celestialPrev = null; celFadeT0 = -1; },
+  /* 差し色を明るく目立たせる(2026-10-10)。濃さを1.8倍にし、周辺減光の上に描く */
+  setWeatherBoost(on){ wGain = on ? 1.8 : 1; wTop = !!on; },
   /* 生態系の動きと見た目。曲ごとに表情を変えるための窓口。
      spin:回る速さ tilt:傾きの揺れ幅 swellAmp:拡大収縮の幅
      swellRate:その速さ scale:アイコンの大きさ hue:色相のずれ(度)

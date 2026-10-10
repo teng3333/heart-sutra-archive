@@ -118,6 +118,7 @@
     .overall{flex-direction:column}}
 </style>
 <script src="src/js/consent.js" defer></script>
+<script src="src/js/reaction.js?v=1"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
@@ -313,6 +314,15 @@
     </a>
   </div>
   <p class="order-note">Listed in the order they were submitted — not ranked.<span class="ja"> ／ 並びは投稿順です。順位は付けていません。</span></p>
+
+  <h3>Did it loosen you?<span class="ja">聴いて、心はほどけましたか</span></h3>
+  <p>If one of the twelve loosened something in you, tell us — one tap is enough. A word is welcome too.</p>
+  <p class="ja">12曲のどれかで心がほどけたら、教えてください。一押しで届きます。ひとことも歓迎です。</p>
+  <div id="resultReact"></div>
+  <script>
+  (function(){ var b = document.getElementById('resultReact');
+    if (b && window.OGSReaction) window.OGSReaction.mount(b, { page: 'result', choices: [[173, "空にほどける — djhugu"], [172, "薄暮の波羅蜜多 - Cozy Ambient Folk — MiRin / NoxP3"], [224, "KU — yuka"], [184, "色即是空 — à Giverny:Étude — Sion"], [192, "空へほどける般若心経 — Noir Project"], [203, "般若心経 — 華のみち:Étude — Sion"], [205, "世界は優しい言葉でできている、僕も優しい言葉でできている。 — らくごまる"], [221, "śūnyā — yamato"], [232, "akatsukinosukinaoto8 - 心の空 - Treblo — 暁の好きな音"], [234, "koko — picapicarida"], [235, "海は波、波は海 — Rotten Saint"], [238, "You Don’t Have to Hold It — 2525family"]] }); })();
+  </script>
 
   <h3>AN's words<span class="ja">ANの総評</span></h3>
   <div class="overall"><img src="assets/an/face-human.webp" alt="" width="56" height="56"><p>「心をほどく」という問いに、様々な音が集まったわね。その多くは、エネルギーを放出して絡まりを断ち切ろうとする「動」の道。それも一つの真実。けれど、最後に残ったのは、むしろ静けさの中に身を委ねる音だった。

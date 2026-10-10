@@ -27,6 +27,8 @@
 <!-- 落ちた記録と音の記録(調査用)。?diag=1 で画面下に一覧が出る。
      この画面こそ調べたい相手なのに読み込んでいなかった(2026-09-26) -->
 <script src="src/js/diag.js?v=2"></script>
+<!-- 聴いた人の反応。住所を書き換える前に広告の印(utm)を覚えるため、defer を付けない -->
+<script src="src/js/reaction.js?v=1"></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
 <script src="src/js/living-bg.js?v=37" defer></script>
@@ -330,6 +332,7 @@
       <p class="np-tagline" id="npTagline" hidden></p>
       <p class="np-by" id="npBy"></p>
       <p class="np-meta" id="npMeta"></p>
+      <div id="npReact" hidden></div>
       <div class="lyr" id="lyr" hidden>
         <p class="lyr-head" id="lyrHead">詞 ／ LYRICS</p>
         <div class="lyr-body" id="lyrBody"></div>
@@ -1243,8 +1246,11 @@
   }
   /* 受賞・入選の判子。結果に載った12曲だけ、曲名の上に出す(2026-10-10 高尾さん) */
   var AWARD_RANK = [['優', '優勝', 'WINNER'], ['二', '準優勝', 'SECOND'], ['三', '第三位', 'THIRD']];
+  var reactW = null;   // 聴いた人の反応(src/js/reaction.js)。12曲のときだけ出す
   function awardFor(t){
     var a = document.getElementById('npAward');
+    var rb = document.getElementById('npReact');
+    if (rb) rb.hidden = true;
     if (!a) return;
     a.hidden = true;
     (contestCfg ? Promise.resolve(contestCfg) : loadContest()).then(function(c){
@@ -1261,6 +1267,11 @@
       sp.appendChild(sm); sp.appendChild(document.createTextNode(r[1])); sp.appendChild(em);
       if (c.results.page) a.href = c.results.page;
       a.hidden = false;
+      if (rb && window.OGSReaction){
+        if (!reactW) reactW = window.OGSReaction.mount(rb, { page: 'player' });
+        reactW.setTrack(id);
+        rb.hidden = false;
+      }
     }).catch(function(){});
   }
   function inList(key, t){

@@ -1339,7 +1339,9 @@
   }
   function isFinalist(t){ return inList('finalists', t); }
   function isWinner(t){ return inList('winners', t); }
+  var boostNow = false;   // いまの差し色の濃さ(表紙を撮るあいだ上げて、あとで元へ戻すために覚えておく)
   function weatherBoost(on){
+    boostNow = !!on;
     try { var lb = window.__livingBG; if (lb && lb.setWeatherBoost) lb.setWeatherBoost(on); } catch (e) {}
   }
   function applyAccent(kind){
@@ -2265,7 +2267,8 @@
   var FONT_JA = '"Shippori Mincho","Hiragino Mincho ProN",serif';
   var FONT_EN = '"Cormorant Garamond",Georgia,serif';
 
-  function buildShot(){
+  function buildShot(opt){
+    var bright = !!(opt && opt.bright);   // 動画の表紙用。背景と差し色を明るくする
     var out = document.createElement('canvas');
     out.width = out.height = SHOT;
     var c = out.getContext('2d');
@@ -2280,7 +2283,9 @@
     if (bg && bg.width){
       var r = shotCrop(bg);
       c.save();
-      c.globalAlpha = 0.80;
+      /* 表紙は、画面より濃く明るくする(画面は 0.80 で薄めて重ねている。差し色も背景も暗く沈むため) */
+      c.globalAlpha = bright ? 1 : 0.80;
+      if (bright) c.filter = BRIGHT_BG;
       c.drawImage(bg, r.x, r.y, r.s, r.s, 0, 0, SHOT, SHOT);
       c.restore();
     }
@@ -2289,7 +2294,10 @@
     var wv = document.getElementById('waves');
     if (wv && wv.width){
       var r2 = shotCrop(wv);
+      c.save();
+      if (bright) c.filter = BRIGHT_WAVE;
       c.drawImage(wv, r2.x, r2.y, r2.s, r2.s, 0, 0, SHOT, SHOT);
+      c.restore();
     }
 
     // ③' 金の紙吹雪(最終選考の12曲)。画面に舞っているその瞬間を写す(2026-10-10 高尾さん)
@@ -2305,7 +2313,7 @@
     var vg = c.createRadialGradient(SHOT / 2, SHOT / 2, SHOT * 0.34,
                                     SHOT / 2, SHOT / 2, SHOT * 0.80);
     vg.addColorStop(0, 'rgba(3,5,10,0)');
-    vg.addColorStop(1, 'rgba(3,5,10,.46)');
+    vg.addColorStop(1, bright ? 'rgba(3,5,10,.22)' : 'rgba(3,5,10,.46)');
     c.fillStyle = vg;
     c.fillRect(0, 0, SHOT, SHOT);
 
@@ -2334,6 +2342,13 @@
       c.fillStyle = 'rgba(217,196,154,.60)';
       c.fillText('   ' + shotBeast.en.split('').join(' '), bp + bw, by);
       c.restore();
+    }
+
+    /* 動画の表紙は、帯を動画と同じ(曲名 ／ 作者 と OPEN GATE SUTRA)にする(2026-10-12 高尾さん指示)。
+       ANの一言は入れない。動画の本編と表紙で、帯の見た目をそろえるため */
+    if (opt && opt.videoBand){
+      vidBand(c, SHOT, t);
+      return out;
     }
 
     /* ⑥ 文字の下地。
@@ -2695,12 +2710,15 @@
   var shotFreeze = false;
   var SATURATION = 12.0;              // 12 % 8 = 4 = 飽和
 
-  function withFullSphere(fn){
+  function withFullSphere(fn, minMs, boost){
     var lb = window.__livingBG;
     if (!lb){ return Promise.resolve(fn()); }
     var before = lb.phase;
     shotFreeze = true;
     lb.phase = SATURATION;
+    /* boost: 動画の表紙用。差し色を濃くして、いちばん出ている姿にする。終わったら元の濃さへ */
+    var boostBefore = boostNow;
+    if (boost) weatherBoost(true);
 
     /* 差し色(蝶・小魚・桜・泡・波紋・雪・星・雨・落葉・電子)も一緒に出す
        (2026-09-18 高尾さん指示)。普段は曲の後半にだけ現れるので、
@@ -2715,10 +2733,12 @@
 
     /* 球も差し色も自前の描画の輪で動くので、据えた姿が絵に出るまで待つ。
        待たずに撮ると、前の段階のままの球と、撒いたばかりの粒が写る */
+    /* minMs: 動画の表紙用。差し色の粒が育つまで、最低でもこの時間は待つ(省くと従来どおり) */
+    var tStart = performance.now();
     return new Promise(function(res){
       var k = 0;
       (function step(){
-        if (++k < 14) return requestAnimationFrame(step);
+        if (++k < 14 || (minMs && performance.now() - tStart < minMs)) return requestAnimationFrame(step);
         var r = fn();
         lb.phase = before;            // 元の段階へ戻す
         // 差し色も元へ。応募作は巡回中のものへ、12曲は出さない、それ以外は曲の後半なら出したまま
@@ -2727,6 +2747,7 @@
           else if (current && isEntry(current)) lb.setWeather(rot.kind);
           else lb.setWeather(accentOn && current ? accentFor() : 'none');
         } catch (e) {}
+        if (boost) weatherBoost(boostBefore);
         shotFreeze = false;
         res(r);
       })();
@@ -2947,6 +2968,11 @@
   }
   var VQ = { high: { px: 1080, bps: 12e6 }, std: { px: 1080, bps: 6e6 }, low: { px: 720, bps: 3e6 } };
   var VFPS = 30;
+  /* 動画の明るさ補正(表紙と本編で同じ値)。画面は 0.80 で薄めて重ねていて、差し色も背景も暗く沈むため */
+  var BRIGHT_BG = 'brightness(1.45) saturate(1.2)';
+  var BRIGHT_WAVE = 'brightness(1.3)';
+  var COVER_MS = 1000;        // 動画の先頭に置く表紙の長さ(無音の静止)
+  var COVER_WAIT_MS = 1500;   // 表紙を撮る前に、差し色(蝶・魚など)の粒が育つのを待つ最低の時間
   var CAN_CAPTURE = !!(audio.captureStream || audio.mozCaptureStream) && typeof MediaRecorder !== 'undefined';
 
   var vrec = null;                     // 録画中だけ入る
@@ -2957,14 +2983,16 @@
 
   /* 背景の球だけは画面で左へずらして見せている(--art-x)ので 0.63、
      波と紙吹雪はずらしていないので画面の中心 0.50 で切る。画面の重なりと一致する */
-  function vidLayer(oc, size, id, alpha, shifted){
+  function vidLayer(oc, size, id, alpha, shifted, filter){
     var cv = document.getElementById(id);
     if (!cv || !cv.width) return;
     var mobile = window.innerWidth < 760, w = cv.width, h = cv.height;
     var cx = w * ((mobile || !shifted) ? 0.50 : 0.63), cy = h * (mobile ? 0.50 : 0.56);
     var half = Math.min(w, h) * 0.56;
     oc.globalAlpha = alpha;
+    if (filter) oc.filter = filter;
     oc.drawImage(cv, cx - half, cy - half, half * 2, half * 2, 0, 0, size, size);
+    oc.filter = 'none';
     oc.globalAlpha = 1;
   }
 
@@ -3013,7 +3041,7 @@
       var q = VQ[menuVal('smQ')] || VQ.high;
       document.getElementById('smEst').textContent =
         '録画は曲の長さと同じ時間がかかります' + (dur ? '(この曲は ' + fmtTime(dur) + '・保存サイズの目安 約' + Math.round(q.bps * dur / 8 / 1e6) + 'MB)' : '') +
-        '。録画中は、このタブを開いたままにしてください。裏に回ると一時停止します。曲は頭から流し直します。';
+        '。録画中は、このタブを開いたままにしてください。裏に回ると一時停止します。曲は頭から流し直します。動画の先頭に、球が完成した姿の表紙を約1秒入れ、同じ画像(PNG)も一緒に保存します。';
       note.hidden = true;
     }
   }
@@ -3065,12 +3093,13 @@
     var lb = window.__livingBG;
     var r = vrec = {
       t: current, q: q, size: size, chunks: [], recorder: null, tick: 0, pillTick: 0,
-      prevCenter: lb ? lb.centerImage : null, cors: false, hiddenPause: false,
+      prevCenter: lb ? lb.centerImage : null, boostBefore: boostNow, cors: false, hiddenPause: false,
       wake: null, out: document.createElement('canvas'), started: false
     };
     r.out.width = r.out.height = size;
     r.oc = r.out.getContext('2d');
     pillShow('準備中…', true);
+    audio.pause();      // 表紙を作る間、聴いていた曲を止める(録画は頭から流し直す)
 
     /* 中心の絵。ジャケットは下ごしらえに少しかかるので、できるまで録り始めない */
     var wantJacket = opt.center === 'jacket' && !!current.artwork_url;
@@ -3091,8 +3120,19 @@
     ready.then(function(){
       return new Promise(function(res){ setTimeout(res, wantJacket ? 1500 : 0); });
     }).then(function(){
+      if (vrec !== r) return null;                              // 待つ間に止められた
+      /* 表紙。球を完成した姿にして、差し色も出して撮る(画像保存と同じ作り方)。
+         動画の最初のコマにするので、OSやアプリが出すサムネが派手になる。
+         幻獣の当たりは重ねない。撮れなかったら、表紙なしで録る */
+      shotBeast = null;
+      var fontsReady = (document.fonts && document.fonts.ready) || Promise.resolve();
+      return fontsReady.then(function(){ return withFullSphere(function(){ return buildShot({ bright: true, videoBand: true }); }, COVER_WAIT_MS, true); })
+        .catch(function(){ return null; });
+    }).then(function(cover){
       if (vrec !== r) return;                                   // 待つ間に止められた
+      r.cover = cover || null;
       if (current !== r.t){ stopVideo('曲が変わったので中止しました'); return; }
+      if (r.cover) vidFrame(r, true);                           // 最初のコマを表紙にしておく
       var aStream;
       try { aStream = (audio.captureStream || audio.mozCaptureStream).call(audio); }
       catch (e) { stopVideo('音を取り込めませんでした', true); return; }
@@ -3105,7 +3145,9 @@
       r.recorder.onstop = function(){ vidSave(r); };
 
       r.tick = setInterval(function(){ vidFrame(r); }, 1000 / VFPS);
+      weatherBoost(true);
       r.pillTick = setInterval(function(){
+        if (!boostNow) weatherBoost(true);     // 曲の途中でプレイヤーが元へ戻したら、また上げる
         if (!r.hold) pillShow('録画中 ' + fmtTime(audio.currentTime) + ' / ' + fmtTime(audio.duration), false);
       }, 500);
       audio.addEventListener('ended', vidEnded);
@@ -3114,19 +3156,28 @@
       document.addEventListener('visibilitychange', vidVisibility);
       try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function(w){ r.wake = w; }, function(){}); } catch (e) {}
 
-      audio.currentTime = 0;
-      audio.play().catch(function(){});
+      /* 先頭は表紙の静止(無音)。そのあと曲を頭から流す */
+      r.coverUntil = r.cover ? performance.now() + COVER_MS : 0;
       r.recorder.start(1000);
       r.started = true;
+      setTimeout(function(){
+        if (vrec !== r || r.stopping) return;
+        audio.currentTime = 0;
+        audio.play().catch(function(){});
+      }, r.cover ? COVER_MS : 0);
     });
   }
 
-  function vidFrame(r){
+  function vidFrame(r, coverOnly){
     if (vrec !== r) return;
     var oc = r.oc, size = r.size;
+    if (r.cover && (coverOnly || (r.coverUntil && performance.now() < r.coverUntil))){
+      oc.drawImage(r.cover, 0, 0, size, size);
+      return;
+    }
     oc.fillStyle = '#04060b'; oc.fillRect(0, 0, size, size);
-    vidLayer(oc, size, 'living-bg', 0.80, true);
-    vidLayer(oc, size, 'waves', 1, false);
+    vidLayer(oc, size, 'living-bg', 1, true, BRIGHT_BG);
+    vidLayer(oc, size, 'waves', 1, false, BRIGHT_WAVE);
     if (gold.on) vidLayer(oc, size, 'goldLeaf', 1, false);
     vidBand(oc, size, r.t);
     /* 録画中に別の曲へ替わったら、そこで止める(別の曲を混ぜない) */
@@ -3160,6 +3211,7 @@
 
   function stopVideo(msg, failed){
     var r = vrec; if (!r) return;
+    r.stopping = true;
     clearInterval(r.tick); clearInterval(r.pillTick);
     audio.removeEventListener('ended', vidEnded);
     audio.removeEventListener('pause', vidPaused);
@@ -3174,6 +3226,8 @@
       var lb = window.__livingBG;
       if (lb && lb.setCenterImage && current === r.t) lb.setCenterImage(r.prevCenter);
     } catch (e) {}
+    /* 差し色の濃さも元へ。次の曲へ進んだときは、プレイヤーがもう決めているので触らない */
+    if (current === r.t) weatherBoost(r.boostBefore);
     r.msg = msg;
     if (r.recorder && r.recorder.state !== 'inactive' && !failed){
       r.recorder.stop();                  // onstop で保存する
@@ -3198,7 +3252,13 @@
     var name = ('ogs-' + (t.id || '') + '-' + (t.title || 'track'))
       .replace(/[^\w぀-ヿ一-鿿-]+/g, '_').slice(0, 60) + '.' + ext;
     download(blob, name);
-    pillShow(r.msg || '保存しました', true);
+    /* 表紙の画像も、動画と並べて保存する(X や YouTube の表紙に使える) */
+    if (r.cover && r.cover.toBlob){
+      r.cover.toBlob(function(pb){
+        if (pb) setTimeout(function(){ download(pb, name.replace(/\.\w+$/, '') + '-cover.png'); }, 700);
+      }, 'image/png');
+    }
+    pillShow((r.msg || '保存しました') + (r.cover ? '(動画と表紙の画像)' : ''), true);
     setTimeout(function(){ document.getElementById('recPill').hidden = true; }, 3200);
   }
 

@@ -2455,6 +2455,10 @@
 
   function rollBeast(track){
     if (Math.random() >= BEAST_CHANCE) return null;
+    return pickBeast(track);
+  }
+  /* 当たりが決まったあとの、どの幻獣かの選び方(動画の最後に現れる幻獣も、これで選ぶ) */
+  function pickBeast(track){
     if (Math.random() < KORYU_SHARE) return KORYU;
 
     /* 曲の五行で引く。五行が無い曲(APIが古い・まだ点いていない)は、
@@ -2971,6 +2975,15 @@
   /* 動画の明るさ補正(表紙と本編で同じ値)。画面は 0.80 で薄めて重ねていて、差し色も背景も暗く沈むため */
   var BRIGHT_BG = 'brightness(1.45) saturate(1.2)';
   var BRIGHT_WAVE = 'brightness(1.3)';
+  /* 動画の最後に、ときどき五行の幻獣が現れる(2026-10-12 高尾さん指示)。
+     現れない回もある。受賞作(1〜3位)の曲で背景に浮かべている幻獣と同じ見せ方
+     (絵の外側ほど薄くして闇に溶かし、画面の中心に、うっすら重ねる)。
+     曲の最後の VBEAST_TAIL 秒のうち、はじめの VBEAST_IN 秒かけて浮かび、そのまま終わりまで留まる */
+  var VBEAST_CHANCE = 0.30;   // 動画1本あたり、現れる確率
+  var VBEAST_TAIL = 10;       // 曲の終わりの何秒前から現れるか
+  var VBEAST_IN = 4;          // 浮かび上がる秒数
+  var VBEAST_ALPHA = 0.30;    // 浮かんだときの濃さ(画面の背景では 0.22。動画は小さく映るので少し濃く)
+  var VBEAST_SIZE = 0.82;     // 動画の一辺に対する絵の大きさ(画面では短い辺の 92%、動画の切り取りは短い辺の 1.12 倍)
   var COVER_MS = 1000;        // 動画の先頭に置く表紙の長さ(無音の静止)
   var COVER_WAIT_MS = 1500;   // 表紙を撮る前に、差し色(蝶・魚など)の粒が育つのを待つ最低の時間
   var CAN_CAPTURE = !!(audio.captureStream || audio.mozCaptureStream) && typeof MediaRecorder !== 'undefined';
@@ -3129,8 +3142,18 @@
       return fontsReady.then(function(){ return withFullSphere(function(){ return buildShot({ bright: true, videoBand: true }); }, COVER_WAIT_MS, true); })
         .catch(function(){ return null; });
     }).then(function(cover){
-      if (vrec !== r) return;                                   // 待つ間に止められた
+      if (vrec !== r) return null;                              // 待つ間に止められた
       r.cover = cover || null;
+      /* 最後に現れる幻獣。現れるかどうかは、録画の始めに決める(ときどき・現れない回もある) */
+      var forced = IS_LOCAL && window.__ogsVideoForceBeast;     // 確かめる用。手元だけ
+      var pick = forced ? (forced === true ? pickBeast(current) : beastBySlug(forced))
+                        : (Math.random() < VBEAST_CHANCE ? pickBeast(current) : null);
+      if (!pick) return null;
+      r.beastInfo = pick;
+      return loadBeast(pick);
+    }).then(function(im){
+      if (vrec !== r) return;
+      if (im) r.beastCanvas = vidBeastMask(im, r.size);
       if (current !== r.t){ stopVideo('曲が変わったので中止しました'); return; }
       if (r.cover) vidFrame(r, true);                           // 最初のコマを表紙にしておく
       var aStream;
@@ -3168,6 +3191,29 @@
     });
   }
 
+  /* 受賞作の幻獣と同じぼかし: 中心から7割まではそのまま、外周で消す(四隅は完全に消える)。
+     先に1枚に作っておき、毎コマはそれを重ねるだけにする */
+  function vidBeastMask(im, size){
+    var cv = document.createElement('canvas'); cv.width = cv.height = size;
+    var c = cv.getContext('2d');
+    var dw = Math.round(size * VBEAST_SIZE), dh = Math.round(dw * (im.naturalHeight || im.height) / (im.naturalWidth || im.width));
+    c.drawImage(im, (size - dw) / 2, (size - dh) / 2, dw, dh);
+    var g = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, dw / 2);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(0.70, 'rgba(0,0,0,1)');
+    g.addColorStop(0.86, 'rgba(0,0,0,.55)');
+    g.addColorStop(0.99, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.globalCompositeOperation = 'destination-in';
+    c.fillStyle = g; c.fillRect(0, 0, size, size);
+    return cv;
+  }
+  function vidBeastAlpha(){
+    var left = audio.duration - audio.currentTime;
+    if (!isFinite(left) || left > VBEAST_TAIL) return 0;
+    return VBEAST_ALPHA * Math.min(1, (VBEAST_TAIL - Math.max(0, left)) / VBEAST_IN);
+  }
+
   function vidFrame(r, coverOnly){
     if (vrec !== r) return;
     var oc = r.oc, size = r.size;
@@ -3177,6 +3223,16 @@
     }
     oc.fillStyle = '#04060b'; oc.fillRect(0, 0, size, size);
     vidLayer(oc, size, 'living-bg', 1, true, BRIGHT_BG);
+    if (r.beastCanvas){
+      var ba = vidBeastAlpha();
+      if (ba > 0){
+        oc.save();
+        oc.globalCompositeOperation = 'screen';
+        oc.globalAlpha = ba;
+        oc.drawImage(r.beastCanvas, 0, 0);
+        oc.restore();
+      }
+    }
     vidLayer(oc, size, 'waves', 1, false, BRIGHT_WAVE);
     if (gold.on) vidLayer(oc, size, 'goldLeaf', 1, false);
     vidBand(oc, size, r.t);

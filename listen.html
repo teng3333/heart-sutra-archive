@@ -212,6 +212,34 @@
   .art-full-hint{font-family:var(--en);font-size:9.5px;letter-spacing:.2em;
     text-transform:uppercase;color:var(--nibi);margin:0}
 
+  /* 保存の選択(画像/動画)と録画中の表示。?video=1 のときだけ使われる(2026-10-12) */
+  .shot-menu[hidden],.rec-pill[hidden]{display:none}
+  .shot-menu{position:fixed;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;
+    background:rgba(4,6,11,.80);backdrop-filter:blur(5px)}
+  .shot-panel{width:min(92vw,420px);box-sizing:border-box;padding:22px 22px 18px;
+    background:rgba(13,18,32,.96);border:1px solid var(--hair2);color:var(--washi)}
+  .shot-panel h2{font-family:var(--ja);font-weight:400;font-size:15px;letter-spacing:.2em;
+    color:var(--washi-hi);margin:0 0 14px}
+  .shot-panel fieldset{border:0;margin:0 0 14px;padding:0}
+  .shot-panel legend{font-family:var(--en);font-size:10.5px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--nibi);padding:0;margin-bottom:6px}
+  .shot-panel label{display:block;font-family:var(--ja);font-size:13.5px;line-height:2;cursor:pointer}
+  .shot-panel input[disabled]+span{opacity:.4}
+  .shot-panel .shot-note{font-family:var(--ja);font-size:12px;line-height:1.8;color:var(--nibi);margin:0 0 14px}
+  .shot-actions{display:flex;gap:8px;justify-content:flex-end}
+  .shot-actions button{background:rgba(13,18,32,.55);border:1px solid var(--hair2);color:var(--washi);
+    font-family:var(--en);font-size:12px;letter-spacing:.16em;padding:8px 14px;cursor:pointer}
+  .shot-actions button:hover{border-color:var(--washi)}
+  .shot-actions button.go{border-color:var(--shu);color:var(--washi-hi)}
+  .rec-pill{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:8;display:flex;
+    gap:12px;align-items:center;padding:7px 14px;background:rgba(13,18,32,.92);
+    border:1px solid var(--shu);color:var(--washi-hi);font-family:var(--ja);font-size:13px}
+  .rec-pill i{width:9px;height:9px;border-radius:50%;background:var(--shu);animation:recblink 1.2s infinite}
+  .rec-pill.hold i{animation:none;opacity:.4}
+  .rec-pill button{background:none;border:1px solid var(--hair2);color:var(--washi);
+    font-family:var(--en);font-size:11px;letter-spacing:.14em;padding:3px 10px;cursor:pointer}
+  @keyframes recblink{50%{opacity:.25}}
+
   /* 歌詞。押した時だけ左の柱に開く。聞き流しの邪魔をしない */
   .lyr{margin-top:18px;max-height:min(42vh,340px);overflow-y:auto;
     border-left:1px solid var(--hair2);padding:2px 0 2px 14px}
@@ -371,6 +399,37 @@
   <img id="artFullImg" alt="" crossorigin="anonymous">
   <p class="art-full-hint">tap to close ／ タップで閉じる</p>
 </div>
+
+<div class="shot-menu" id="shotMenu" hidden role="dialog" aria-modal="true" aria-label="保存">
+  <div class="shot-panel">
+    <h2>保存</h2>
+    <fieldset>
+      <legend>形式</legend>
+      <label><input type="radio" name="smKind" value="image" checked> <span>画像として保存</span></label>
+      <label><input type="radio" name="smKind" value="video" id="smVideo"> <span>動画として保存</span></label>
+    </fieldset>
+    <div id="smVideoOpts" hidden>
+      <fieldset>
+        <legend>中心の画像</legend>
+        <label><input type="radio" name="smCenter" value="jacket" id="smJacket" checked> <span>ジャケット</span></label>
+        <label><input type="radio" name="smCenter" value="an"> <span>AN</span></label>
+      </fieldset>
+      <fieldset>
+        <legend>画質</legend>
+        <label><input type="radio" name="smQ" value="high" checked> <span>高画質(1080px・12Mbps)</span></label>
+        <label><input type="radio" name="smQ" value="std"> <span>標準(1080px・6Mbps)</span></label>
+        <label><input type="radio" name="smQ" value="low"> <span>低画質(720px・3Mbps)</span></label>
+      </fieldset>
+      <p class="shot-note" id="smEst"></p>
+    </div>
+    <p class="shot-note" id="smNote" hidden></p>
+    <div class="shot-actions">
+      <button type="button" id="smCancel">閉じる</button>
+      <button type="button" class="go" id="smGo">保存する</button>
+    </div>
+  </div>
+</div>
+<div class="rec-pill" id="recPill" hidden role="status"><i aria-hidden="true"></i><span id="recText"></span><button type="button" id="recStop">途中で止める</button></div>
 
 <div id="beastVeil" aria-hidden="true"><img alt="" decoding="async"></div>
 <canvas id="waves" aria-hidden="true"></canvas>
@@ -2856,7 +2915,310 @@
       }, hold || 1800);
     }
   }
-  btnShot.addEventListener('click', saveShot);
+
+  /* ══════════════════════════════════════════════════════════════
+     動画として保存する(2026-10-12 高尾さん指示)。
+
+     出る条件は二つ。
+       ・TENG3 名義の曲 … 誰でも保存できる(高尾さん決定。認証は要らない)
+       ・手元(localhost)で ?video=1 を付けたとき … 開発・確認用。どの曲でも出る
+     本番の URL に ?video=1 を付けても、TENG3 以外の曲では出ない。
+     投稿者だけに許す仕組み(Discord の申請と番号。docs/video-save-design.md)ができるまで、
+     他の人の曲の動画は出さない。
+
+     画面に出ている二枚(背景の球・波)と金の紙吹雪を、1曲ぶん、実時間で録る。
+     中心の絵はジャケットかANを選べる。画質は低・標準・高。
+     試作(_proto_record.html)で確かめたことを、そのままここに移してある:
+       ・タブが裏に回ると、ブラウザが背景の絵を止める → 録画も再生も一緒に止め、戻れば続ける
+       ・音は audio.captureStream で取る。Safari には無いので、動画は選べない
+       ・別ドメインの曲は crossorigin が無いと音が取れない。PC の普段の再生は付けて読んでいる
+         (付いていないときだけ、録画の間付けて読み直す)
+     ══════════════════════════════════════════════════════════════ */
+  var IS_LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  var VIDEO_FLAG = IS_LOCAL && /(?:^|[?&])video=1(?:&|$)/.test(location.search);
+
+  /* 認証なしで動画を保存してよい曲。TENG3 の曲(SUNO のプロフィールが TENG3、
+     または作曲者名が TENG3)。他人がこの名前やリンクを使っても、開くのはその人自身の曲だけ */
+  function isOpenVideo(t){
+    if (!t) return false;
+    var name = String(t.artist_name || '').trim().toLowerCase();
+    var link = String(t.artist_link || '').toLowerCase();
+    return name === 'teng3' || link.indexOf('suno.com/@rockingtreble058') >= 0;
+  }
+  var VQ = { high: { px: 1080, bps: 12e6 }, std: { px: 1080, bps: 6e6 }, low: { px: 720, bps: 3e6 } };
+  var VFPS = 30;
+  var CAN_CAPTURE = !!(audio.captureStream || audio.mozCaptureStream) && typeof MediaRecorder !== 'undefined';
+
+  var vrec = null;                     // 録画中だけ入る
+
+  function isCrossOrigin(url){
+    try { return new URL(url, location.href).origin !== location.origin; } catch (e) { return false; }
+  }
+
+  /* 背景の球だけは画面で左へずらして見せている(--art-x)ので 0.63、
+     波と紙吹雪はずらしていないので画面の中心 0.50 で切る。画面の重なりと一致する */
+  function vidLayer(oc, size, id, alpha, shifted){
+    var cv = document.getElementById(id);
+    if (!cv || !cv.width) return;
+    var mobile = window.innerWidth < 760, w = cv.width, h = cv.height;
+    var cx = w * ((mobile || !shifted) ? 0.50 : 0.63), cy = h * (mobile ? 0.50 : 0.56);
+    var half = Math.min(w, h) * 0.56;
+    oc.globalAlpha = alpha;
+    oc.drawImage(cv, cx - half, cy - half, half * 2, half * 2, 0, 0, size, size);
+    oc.globalAlpha = 1;
+  }
+
+  /* 下端の帯。持ち帰り画像と同じ体裁(暗い下地 → 曲名 ／ 作者 → OPEN GATE SUTRA) */
+  function vidBand(oc, size, t){
+    var top = size * 0.78, g = oc.createLinearGradient(0, top, 0, size);
+    g.addColorStop(0, 'rgba(3,5,10,0)');
+    g.addColorStop(0.45, 'rgba(3,5,10,.55)');
+    g.addColorStop(1, 'rgba(3,5,10,.90)');
+    oc.fillStyle = g; oc.fillRect(0, top, size, size - top);
+    var pad = Math.round(size * 0.068), y = size - pad;
+    oc.textAlign = 'left'; oc.textBaseline = 'alphabetic';
+    oc.shadowColor = 'rgba(3,5,10,.85)'; oc.shadowBlur = Math.round(size * 0.018);
+    oc.font = '300 ' + Math.round(size * 0.022) + 'px ' + FONT_EN;
+    oc.fillStyle = 'rgba(141,130,109,.92)';
+    oc.fillText('OPEN GATE SUTRA'.split('').join(' '), pad, y);
+    y -= Math.round(size * 0.048);
+    var head = (t.title || '') + (t.artist_name ? '　／　' + t.artist_name : '');
+    if (head){
+      var sz = fitText(oc, head, Math.round(size * 0.040), size - pad * 2, 16);
+      oc.font = sz + 'px ' + FONT_JA;
+      oc.fillStyle = 'rgba(217,196,154,.92)';
+      oc.fillText(head, pad, y);
+    }
+    oc.shadowBlur = 0;
+  }
+
+  function fmtTime(sec){
+    sec = Math.max(0, Math.round(sec));
+    return Math.floor(sec / 60) + ':' + ('0' + (sec % 60)).slice(-2);
+  }
+
+  /* ── 選択パネル ── */
+  var shotMenu = document.getElementById('shotMenu');
+  function menuVal(name){
+    var el = shotMenu.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : null;
+  }
+  function menuRefresh(){
+    var isVideo = menuVal('smKind') === 'video';
+    document.getElementById('smVideoOpts').hidden = !isVideo;
+    document.getElementById('smGo').textContent = isVideo ? '録画を始める' : '保存する';
+    var note = document.getElementById('smNote');
+    if (isVideo){
+      var dur = isFinite(audio.duration) ? audio.duration : 0;
+      var q = VQ[menuVal('smQ')] || VQ.high;
+      document.getElementById('smEst').textContent =
+        '録画は曲の長さと同じ時間がかかります' + (dur ? '(この曲は ' + fmtTime(dur) + '・保存サイズの目安 約' + Math.round(q.bps * dur / 8 / 1e6) + 'MB)' : '') +
+        '。録画中は、このタブを開いたままにしてください。裏に回ると一時停止します。曲は頭から流し直します。';
+      note.hidden = true;
+    }
+  }
+  function menuOpen(){
+    var canVideo = !TOUCH && CAN_CAPTURE && !!current;
+    var vid = document.getElementById('smVideo');
+    vid.disabled = !canVideo;
+    var note = document.getElementById('smNote');
+    note.hidden = canVideo;
+    if (!canVideo){
+      note.textContent = TOUCH
+        ? '動画はパソコンでのみ保存できます(スマホは背景が静止画のため)。'
+        : '動画は Chrome / Edge / Firefox で保存できます(このブラウザは録画の音を取り込めません)。';
+    }
+    var jk = document.getElementById('smJacket');
+    var hasArt = !!(current && current.artwork_url);
+    jk.disabled = !hasArt;
+    shotMenu.querySelector('input[name="smCenter"][value="' + (hasArt ? 'jacket' : 'an') + '"]').checked = true;
+    shotMenu.querySelector('input[name="smKind"][value="image"]').checked = true;
+    menuRefresh();
+    shotMenu.hidden = false;
+    document.getElementById('smGo').focus();
+  }
+  function menuClose(){ shotMenu.hidden = true; }
+
+  shotMenu.addEventListener('change', menuRefresh);
+  shotMenu.addEventListener('click', function(e){ if (e.target === shotMenu) menuClose(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !shotMenu.hidden) menuClose(); });
+  document.getElementById('smCancel').addEventListener('click', menuClose);
+  document.getElementById('smGo').addEventListener('click', function(){
+    var kind = menuVal('smKind');
+    menuClose();
+    if (kind === 'video') startVideo({ center: menuVal('smCenter'), q: menuVal('smQ') });
+    else saveShot();
+  });
+  document.getElementById('recStop').addEventListener('click', function(){ stopVideo('途中で止めました'); });
+
+  /* ── 録画 ── */
+  function pillShow(text, hold){
+    var pill = document.getElementById('recPill');
+    document.getElementById('recText').textContent = text;
+    pill.classList.toggle('hold', !!hold);
+    pill.hidden = false;
+  }
+
+  function startVideo(opt){
+    if (vrec || !current || !CAN_CAPTURE) return;
+    var q = VQ[opt.q] || VQ.high, size = q.px;
+    var lb = window.__livingBG;
+    var r = vrec = {
+      t: current, q: q, size: size, chunks: [], recorder: null, tick: 0, pillTick: 0,
+      prevCenter: lb ? lb.centerImage : null, cors: false, hiddenPause: false,
+      wake: null, out: document.createElement('canvas'), started: false
+    };
+    r.out.width = r.out.height = size;
+    r.oc = r.out.getContext('2d');
+    pillShow('準備中…', true);
+
+    /* 中心の絵。ジャケットは下ごしらえに少しかかるので、できるまで録り始めない */
+    var wantJacket = opt.center === 'jacket' && !!current.artwork_url;
+    if (lb && lb.setCenterImage) lb.setCenterImage(wantJacket ? current.artwork_url : null);
+
+    /* 別ドメインの曲は、crossorigin を付けて読んだ音でないと取り込めない。
+       PC の普段の再生は、すでに付けて読んでいる(曲を読む前に audio.crossOrigin を決めている)ので、
+       そのときは読み直さない。付いていないとき(CORSを諦めた後など)だけ、録画の間付けて読み直す */
+    var needReload = window.__ogsVideoForceCors === true ||
+      (isCrossOrigin(audio.currentSrc) && audio.crossOrigin !== 'anonymous');
+    var ready = needReload ? new Promise(function(res){
+      r.cors = true;
+      audio.addEventListener('canplay', function ok(){ audio.removeEventListener('canplay', ok); res(); });
+      audio.crossOrigin = 'anonymous';
+      audio.load();
+    }) : Promise.resolve();
+
+    ready.then(function(){
+      return new Promise(function(res){ setTimeout(res, wantJacket ? 1500 : 0); });
+    }).then(function(){
+      if (vrec !== r) return;                                   // 待つ間に止められた
+      if (current !== r.t){ stopVideo('曲が変わったので中止しました'); return; }
+      var aStream;
+      try { aStream = (audio.captureStream || audio.mozCaptureStream).call(audio); }
+      catch (e) { stopVideo('音を取り込めませんでした', true); return; }
+      var vStream = r.out.captureStream(VFPS);
+      aStream.getAudioTracks().forEach(function(tr){ vStream.addTrack(tr); });
+      var mime = ['video/mp4;codecs=avc1,mp4a.40.2', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
+        .filter(function(m){ return MediaRecorder.isTypeSupported(m); })[0] || '';
+      r.recorder = new MediaRecorder(vStream, mime ? { mimeType: mime, videoBitsPerSecond: q.bps } : {});
+      r.recorder.ondataavailable = function(e){ if (e.data && e.data.size) r.chunks.push(e.data); };
+      r.recorder.onstop = function(){ vidSave(r); };
+
+      r.tick = setInterval(function(){ vidFrame(r); }, 1000 / VFPS);
+      r.pillTick = setInterval(function(){
+        if (!r.hold) pillShow('録画中 ' + fmtTime(audio.currentTime) + ' / ' + fmtTime(audio.duration), false);
+      }, 500);
+      audio.addEventListener('ended', vidEnded);
+      audio.addEventListener('pause', vidPaused);
+      audio.addEventListener('play', vidPlayed);
+      document.addEventListener('visibilitychange', vidVisibility);
+      try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function(w){ r.wake = w; }, function(){}); } catch (e) {}
+
+      audio.currentTime = 0;
+      audio.play().catch(function(){});
+      r.recorder.start(1000);
+      r.started = true;
+    });
+  }
+
+  function vidFrame(r){
+    if (vrec !== r) return;
+    var oc = r.oc, size = r.size;
+    oc.fillStyle = '#04060b'; oc.fillRect(0, 0, size, size);
+    vidLayer(oc, size, 'living-bg', 0.80, true);
+    vidLayer(oc, size, 'waves', 1, false);
+    if (gold.on) vidLayer(oc, size, 'goldLeaf', 1, false);
+    vidBand(oc, size, r.t);
+    /* 録画中に別の曲へ替わったら、そこで止める(別の曲を混ぜない) */
+    if (current !== r.t) stopVideo('曲が変わったので、そこまでを保存しました');
+  }
+
+  /* 再生と録画は、いつもいっしょに止まり、いっしょに動く。
+     プレイヤーの一時停止も、タブが裏に回ったときも、同じ道を通る */
+  function vidPaused(){
+    var r = vrec; if (!r || !r.recorder || r.recorder.state !== 'recording') return;
+    if (audio.ended || (isFinite(audio.duration) && audio.duration - audio.currentTime < 0.15)) return;   // 曲の終わり
+    r.recorder.pause();
+    r.hold = true;
+    pillShow(document.hidden ? '裏に回ったので一時停止中(戻ると再開します)' : '一時停止中', true);
+  }
+  function vidPlayed(){
+    var r = vrec; if (!r || !r.recorder || r.recorder.state !== 'paused') return;
+    r.recorder.resume();
+    r.hold = false;
+  }
+  function vidVisibility(){
+    var r = vrec; if (!r || !r.started) return;
+    if (document.hidden){
+      if (!audio.paused){ r.hiddenPause = true; audio.pause(); }
+    } else if (r.hiddenPause){
+      r.hiddenPause = false;
+      audio.play().catch(function(){});
+    }
+  }
+  function vidEnded(){ stopVideo('保存しました'); }
+
+  function stopVideo(msg, failed){
+    var r = vrec; if (!r) return;
+    clearInterval(r.tick); clearInterval(r.pillTick);
+    audio.removeEventListener('ended', vidEnded);
+    audio.removeEventListener('pause', vidPaused);
+    audio.removeEventListener('play', vidPlayed);
+    document.removeEventListener('visibilitychange', vidVisibility);
+    try { if (r.wake) r.wake.release(); } catch (e) {}
+    // 録画のために付けた crossorigin を外す。普段の再生は元のまま
+    if (r.cors) audio.removeAttribute('crossorigin');
+    /* 中心の絵を元へ。曲が終わって次へ進んだときは、プレイヤーが次の曲の絵を
+       もう決めているので、触らない(前の曲の絵で上書きしてしまう) */
+    try {
+      var lb = window.__livingBG;
+      if (lb && lb.setCenterImage && current === r.t) lb.setCenterImage(r.prevCenter);
+    } catch (e) {}
+    r.msg = msg;
+    if (r.recorder && r.recorder.state !== 'inactive' && !failed){
+      r.recorder.stop();                  // onstop で保存する
+    } else {
+      vrec = null;
+      pillShow(msg, true);
+      setTimeout(function(){ document.getElementById('recPill').hidden = true; }, 3200);
+    }
+  }
+
+  function vidSave(r){
+    vrec = null;
+    var type = (r.recorder && r.recorder.mimeType) || 'video/webm';
+    if (!r.chunks.length){
+      pillShow('録画が空でした', true);
+      setTimeout(function(){ document.getElementById('recPill').hidden = true; }, 3200);
+      return;
+    }
+    var blob = new Blob(r.chunks, { type: type });
+    var ext = /mp4/.test(type) ? 'mp4' : 'webm';
+    var t = r.t || {};
+    var name = ('ogs-' + (t.id || '') + '-' + (t.title || 'track'))
+      .replace(/[^\w぀-ヿ一-鿿-]+/g, '_').slice(0, 60) + '.' + ext;
+    download(blob, name);
+    pillShow(r.msg || '保存しました', true);
+    setTimeout(function(){ document.getElementById('recPill').hidden = true; }, 3200);
+  }
+
+  /* 調べる・確かめる用。見た目には関係しない */
+  if (IS_LOCAL) window.__ogsVideo = {   // 本番には出さない(動画を呼び出す入口を増やさない)
+    get on(){ return VIDEO_FLAG; },
+    isOpen: isOpenVideo,
+    get recording(){ return !!vrec; },
+    get analysisPath(){ return !!actx; },   // 波の解析の経路(createMediaElementSource)があるか。あると音が取れない恐れ
+    get state(){ return vrec && vrec.recorder ? vrec.recorder.state : null; },
+    start: startVideo,
+    stop: function(){ stopVideo('途中で止めました'); }
+  };
+
+  /* 釦の動き。動画を選べるとき(TENG3 の曲、または手元の確認用)だけ選択パネルを開く。
+     それ以外、とくにスマホ・Safari は、これまでどおり画像をすぐ保存する(釦の手応えを変えない) */
+  btnShot.addEventListener('click', function(){
+    var videoOk = !TOUCH && CAN_CAPTURE && isOpenVideo(current);
+    if (VIDEO_FLAG || videoOk) menuOpen(); else saveShot();
+  });
   /* 調整・検証用。見た目には関係しない。
      保存と同じ道(球を完成させてから撮る)を通すので、
      ここで確かめた絵と、実際に落ちる画像が食い違わない */

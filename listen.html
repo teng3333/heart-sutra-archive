@@ -2946,6 +2946,7 @@
 
      出る条件は二つ。
        ・TENG3 名義の曲 … 誰でも保存できる(高尾さん決定。認証は要らない)
+       ・作曲者の許可を得て、曲の ID で開放した曲(OPEN_VIDEO_IDS)… 同じく誰でも保存できる
        ・手元(localhost)で ?video=1 を付けたとき … 開発・確認用。どの曲でも出る
      本番の URL に ?video=1 を付けても、TENG3 以外の曲では出ない。
      投稿者だけに許す仕組み(Discord の申請と番号。docs/video-save-design.md)ができるまで、
@@ -2964,8 +2965,12 @@
 
   /* 認証なしで動画を保存してよい曲。TENG3 の曲(SUNO のプロフィールが TENG3、
      または作曲者名が TENG3)。他人がこの名前やリンクを使っても、開くのはその人自身の曲だけ */
+  /* 作曲者の許可を得て、曲ごとに開放した曲(曲の ID で指定する。新しく投稿された曲は自動では開かない)。
+     暁の好きな音さん: 210「何も持たない手」・232「心の空」(2026-10-13 高尾さん指示) */
+  var OPEN_VIDEO_IDS = [210, 232];
   function isOpenVideo(t){
     if (!t) return false;
+    if (OPEN_VIDEO_IDS.indexOf(Number(t.id)) >= 0) return true;
     var name = String(t.artist_name || '').trim().toLowerCase();
     var link = String(t.artist_link || '').toLowerCase();
     return name === 'teng3' || link.indexOf('suno.com/@rockingtreble058') >= 0;

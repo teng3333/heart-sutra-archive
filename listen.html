@@ -2961,13 +2961,14 @@
   /* ══════════════════════════════════════════════════════════════
      動画として保存する(2026-10-12 高尾さん指示)。
 
-     出る条件は二つ。
-       ・TENG3 名義の曲 … 誰でも保存できる(高尾さん決定。認証は要らない)
-       ・作曲者の許可を得て、曲の ID で開放した曲(OPEN_VIDEO_IDS)… 同じく誰でも保存できる
+     出る条件(2026-10-13 から、曲ごとの設定 video_policy に従う)。
+       ・video_policy が open の曲 … 誰でも保存できる(投稿者が選んだ設定)
+       ・video_policy が owner / none の曲 … 動画の選択肢を出さない
+         (owner は「投稿のときのキーを入れた人だけ」。キーの入力は、このあとの段階で足す。それまでは出さない)
+       ・サーバーが video_policy を返していない古い応答のときだけ、これまでの判定に戻す
+         (TENG3 名義の曲と、許可を得て ID で開放した曲 OPEN_VIDEO_IDS)
        ・手元(localhost)で ?video=1 を付けたとき … 開発・確認用。どの曲でも出る
-     本番の URL に ?video=1 を付けても、TENG3 以外の曲では出ない。
-     投稿者だけに許す仕組み(Discord の申請と番号。docs/video-save-design.md)ができるまで、
-     他の人の曲の動画は出さない。
+     本番の URL に ?video=1 を付けても、open の曲以外では出ない。
 
      画面に出ている二枚(背景の球・波)と金の紙吹雪を、1曲ぶん、実時間で録る。
      中心の絵はジャケットかANを選べる。画質は低・標準・高。
@@ -2983,10 +2984,16 @@
   /* 認証なしで動画を保存してよい曲。TENG3 の曲(SUNO のプロフィールが TENG3、
      または作曲者名が TENG3)。他人がこの名前やリンクを使っても、開くのはその人自身の曲だけ */
   /* 作曲者の許可を得て、曲ごとに開放した曲(曲の ID で指定する。新しく投稿された曲は自動では開かない)。
-     暁の好きな音さん: 210「何も持たない手」・232「心の空」(2026-10-13 高尾さん指示) */
+     暁の好きな音さん: 210「何も持たない手」・232「心の空」(2026-10-13 高尾さん指示)。
+     サーバーが video_policy を返すようになったので、これらは、サーバー側の設定(移行で open にした)に移った。
+     ここは、video_policy を返していない古い応答のときのための、予備 */
   var OPEN_VIDEO_IDS = [210, 232];
   function isOpenVideo(t){
     if (!t) return false;
+    /* サーバーが video_policy(open / owner / none)を返しているときは、それに従う。
+       投稿者が選んだ設定なので、TENG3 の曲でも、none や owner に変えられていれば、出さない */
+    if (t.video_policy) return t.video_policy === 'open';
+    // ここから下は、video_policy を返していない古い応答のときだけ
     if (OPEN_VIDEO_IDS.indexOf(Number(t.id)) >= 0) return true;
     var name = String(t.artist_name || '').trim().toLowerCase();
     var link = String(t.artist_link || '').toLowerCase();

@@ -313,8 +313,11 @@ window.__livingBG = {
   setTheme(i){ themeIdx = i; },
   get gen(){ return genome.gen; },
   get maturity(){ return maturity(); },
-  setWeather(w){ const tn=(performance.now()-t0)/1000;
-    weather=w; wStart=tn-6; wEnd=tn+120; wNext=1e9;
+  /* life: 差し色が続く秒数(省くと120秒)。出始め・止みぎわは強さの山(drawWeather)で、
+     続く長さの前後22%ずつがゆるやかになる。曲の決まった所で止めたいときは、そこまでの秒数を渡すと、
+     止む手前から自然に薄れて、ちょうどそこで消える(いきなり切れない)(2026-10-13) */
+  setWeather(w, life){ const tn=(performance.now()-t0)/1000;
+    weather=w; wStart=tn-6; wEnd=tn+(life>0 ? Math.max(12, life) : 120); wNext=1e9;
     WP.forEach(p=>{ respawnP(p);
       if(w==='bubbles') p.ny=(1.15+Math.random()*0.3)*WFIELD;
       if(w==='stars'){p.nx=(Math.random()*2-1)*1.15*WFIELD;p.ny=(Math.random()*2-1)*1.15*WFIELD;
@@ -323,6 +326,12 @@ window.__livingBG = {
   setCelestial(k){ celestial.kind = k; celestialPrev = null; celFadeT0 = -1; },
   /* 差し色を明るく目立たせる(2026-10-10)。濃さを1.8倍にし、周辺減光の上に描く */
   setWeatherBoost(on){ wGain = on ? 1.8 : 1; wTop = !!on; },
+  /* いまの差し色の強さ(0〜濃さの倍率)。調べる用。見た目には関係しない */
+  get weatherLevel(){
+    if (weather === 'none') return 0;
+    const t = (performance.now()-t0)/1000, life = (t - wStart) / (wEnd - wStart);
+    return Math.max(0, Math.min(1, Math.min(life, 1 - life) * 4.5)) * wGain;
+  },
   /* 生態系の動きと見た目。曲ごとに表情を変えるための窓口。
      spin:回る速さ tilt:傾きの揺れ幅 swellAmp:拡大収縮の幅
      swellRate:その速さ scale:アイコンの大きさ hue:色相のずれ(度)

@@ -31,7 +31,7 @@
 <script src="src/js/reaction.js?v=1"></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
-<script src="src/js/living-bg.js?v=37" defer></script>
+<script src="src/js/living-bg.js?v=38" defer></script>
 <style>
   :root{
     --ai:#131a26; --ai-deep:#0d1220; --washi:#d9c49a; --washi-hi:#e9dcba;
@@ -1289,7 +1289,11 @@
     return ACCENT[Math.floor(Math.random() * ACCENT.length) % ACCENT.length];
   }
 
-  /* 応募作は、曲の初めから終わりまで差し色を代わる代わる出す(2026-10-10 高尾さん指示)。
+  /* 【2026-10-13 から使っていない】応募作の巡回は、種類を替えるたびに空白ができて、差し色が
+     途中で消えて見えたため、通常の曲と同じ「55%〜86%に1種類」に戻した(setAccent の bold)。
+     関数と値は、戻したくなったときのために残してある。
+     ──以下は、巡回を使っていたときの説明──
+     応募作は、曲の初めから終わりまで差し色を代わる代わる出す(2026-10-10 高尾さん指示)。
      応募作の数え方は、いまの回の first_id〜last_id(主催者の曲も含む)。
      ただし最終選考の12曲は除く(金箔だけ)。巡回の差し色は明るくして目立たせる(setWeatherBoost)。
      一つの差し色を ROT_ON 秒出し、ROT_GAP 秒あけて、別の差し色に替える。
@@ -1378,7 +1382,15 @@
     }
   }
 
-  function setAccent(on){
+  /* 差し色を、曲の ACCENT_OUT(86%)でちょうど止むように出すための秒数。
+     この秒数を渡すと、止む手前から自然に薄れて、いきなり切れない(2026-10-13 高尾さん指示)。
+     長さが分からないときは 0(背景の既定の長さ) */
+  function accentLifeSec(){
+    var d = audio.duration;
+    if (!d || !isFinite(d)) return 0;
+    return Math.max(12, d * ACCENT_OUT - audio.currentTime);
+  }
+  function setAccent(on, bold){
     if (on === accentOn) return;
     accentOn = on;
     var kind = on && current ? accentFor() : 'none';
@@ -1386,7 +1398,8 @@
     try {
       var lb = window.__livingBG;
       if (!lb) return;
-      lb.setWeather(kind);
+      if (bold && on) weatherBoost(true);   // 応募作の差し色は明るく目立たせる(2026-10-10 高尾さん)。濃さは変えない
+      lb.setWeather(kind, on ? accentLifeSec() : 0);
       /* スマホの絵は止まっているので、差し色は描かれないままだった(2026-09-26)。
          出す瞬間だけ数秒動かし、引くときは差し色の無い絵に描き直す(高尾さん判断「B」) */
       if (lb.still){
@@ -1630,8 +1643,10 @@
     if (u >= 0){
       /* 最終選考の12曲は金箔だけにする。差し色が重なるとごちゃごちゃする(2026-10-10 高尾さん) */
       if (isFinalist(current)){ if (accentOn) applyAccent('none'); }
-      else if (isEntry(current)) rotateAccent(u);
-      else setAccent(u >= ACCENT_IN && u < ACCENT_OUT);
+      /* 応募作も、通常の曲と同じ出し方に戻した(2026-10-13 高尾さん指示)。
+         巡回(rotateAccent)は、種類を替えるたびに空白ができ、差し色が途中で消えて見えた。
+         曲の 55%〜86% に、無作為に1種類を出す。濃さ(明度)は、応募作はこれまでどおり濃いまま */
+      else setAccent(u >= ACCENT_IN && u < ACCENT_OUT, isEntry(current));
     }
 
     var lb = window.__livingBG;
@@ -2733,6 +2748,8 @@
     if (current && !isFinalist(current)){
       kind = isEntry(current) ? (rot.kind !== 'none' ? rot.kind : (rot.last || accentFor())) : shotAccentFor(current);
     }
+    /* boost(動画の表紙)のときは、静・動や応募作かどうかに関係なく、10種すべてから無作為に選ぶ */
+    if (kind && boost) kind = accentFor();
     if (kind){ try { lb.setWeather(kind); } catch (e) {} }
 
     /* 球も差し色も自前の描画の輪で動くので、据えた姿が絵に出るまで待つ。
@@ -2748,8 +2765,8 @@
         // 差し色も元へ。応募作は巡回中のものへ、12曲は出さない、それ以外は曲の後半なら出したまま
         try {
           if (current && isFinalist(current)) lb.setWeather('none');
-          else if (current && isEntry(current)) lb.setWeather(rot.kind);
-          else lb.setWeather(accentOn && current ? accentFor() : 'none');
+          else if (accentOn && current) lb.setWeather(accentFor(), accentLifeSec());
+          else lb.setWeather('none');
         } catch (e) {}
         if (boost) weatherBoost(boostBefore);
         shotFreeze = false;

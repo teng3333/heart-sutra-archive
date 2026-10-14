@@ -141,6 +141,44 @@
   .submit-note{font-family:var(--ui);font-size:10px;letter-spacing:.16em;
     text-transform:uppercase;color:var(--nibi);line-height:2}
 
+  /* ── 動画保存の設定(2026-10-13 高尾さん指示)── */
+  .vpolicy{border:1px solid var(--hair);background:rgba(13,18,32,.6);padding:24px 22px;margin:0 0 28px;min-width:0}
+  .vpolicy legend{font-family:var(--ui);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--nibi);padding:0 8px}
+  .vpolicy .vq{font-family:var(--ja);font-size:15px;line-height:1.9;color:var(--washi-hi);margin:0 0 14px}
+  .vopt{display:flex;flex-direction:row;gap:12px;align-items:flex-start;padding:10px 0;cursor:pointer}   /* label の共通指定は縦並び。横並びに戻す */
+  /* 共通の入力欄の指定(width:100% / appearance:none / padding)が、ラジオにも効いて、
+     横に広い空の箱になっていた。「約束します」のチェック(.agree input)と同じ直し方で、元に戻す */
+  .vopt input{-webkit-appearance:radio;appearance:auto;padding:0;border:0;border-radius:0;
+    width:20px;height:20px;min-width:20px;background:none;margin-top:3px;
+    accent-color:var(--shu);flex:none;cursor:pointer}
+  .vopt input:focus-visible,.vkey label.vkey-auto input:focus-visible{outline:1px solid var(--washi);outline-offset:3px}
+  .vopt .vt{font-family:var(--ui);font-size:12px;letter-spacing:.14em;color:var(--washi-hi)}
+  .vopt .vt .ja{letter-spacing:.06em}
+  .vopt .vd{display:block;font-family:var(--ja);font-size:13px;line-height:1.9;color:var(--nibi);margin-top:2px}
+  .vnotes{list-style:none;margin:14px 0 0;padding:14px 0 0;border-top:1px solid var(--hair);
+    display:flex;flex-direction:column;gap:8px}
+  .vnotes li{font-family:var(--ja);font-size:12px;line-height:1.9;color:var(--nibi);padding-left:14px;position:relative}
+  .vnotes li::before{content:"·";position:absolute;left:0;color:var(--washi)}
+  .vnotes li b{color:var(--washi);font-weight:400}
+  .vnotes .vopen-note{color:var(--washi)}
+
+  /* ── 投稿のあとに一度だけ見せるキー ── */
+  .vkey{margin-top:26px;border-top:1px solid var(--hair);padding-top:22px}
+  .result .vkey-head{font-family:var(--ui);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--nibi);margin:0}   /* .result p(14px)に負けないよう、.result 付きにする */
+  .result .vkey-val{font-family:var(--ui);font-size:26px;line-height:1.5;letter-spacing:.16em;color:var(--washi-hi);
+    margin:12px 0 0;word-break:break-all;user-select:all}
+  .vkey-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .vkey-acts .status-btn{margin-top:12px}
+  .result .vkey .vkey-warn{font-family:var(--ja);font-size:13px;line-height:2;color:var(--washi);margin-top:16px}
+  .result .vkey .vkey-warn b{color:var(--shu);font-weight:400}
+  .result .vkey .vkey-sub{font-family:var(--ja);font-size:12.5px;line-height:2;color:var(--nibi);margin-top:8px}
+  .vkey label.vkey-auto{display:flex;flex-direction:row;gap:10px;align-items:flex-start;margin-top:16px;
+    font-family:var(--ja);font-size:12.5px;line-height:1.9;color:var(--nibi);cursor:pointer}
+  .vkey label.vkey-auto input{-webkit-appearance:checkbox;appearance:auto;padding:0;border:0;border-radius:0;
+    width:20px;height:20px;min-width:20px;background:none;margin-top:3px;
+    accent-color:var(--shu);flex:none;cursor:pointer}
+
   .terms{border:1px solid var(--hair);background:rgba(13,18,32,.6);padding:24px 22px}
   .terms-head{font-family:var(--ui);font-size:10px;letter-spacing:.26em;
     text-transform:uppercase;color:var(--washi)}
@@ -375,6 +413,34 @@
       </label>
     </details>
 
+    <fieldset class="vpolicy" id="vpolicy">
+      <legend>Video <span class="ja">動画として保存</span></legend>
+      <p class="vq">この曲の再生画面を、動画として保存できる人 <span class="ja" style="font-size:12px;color:var(--nibi)">Who can save this track's playback screen as a video</span></p>
+
+      <label class="vopt">
+        <input type="radio" name="video_policy" value="open">
+        <span><span class="vt">Anyone <span class="ja">誰でも</span></span>
+          <span class="vd">OGS の動画保存機能を、誰でも使えます。</span></span>
+      </label>
+      <label class="vopt">
+        <input type="radio" name="video_policy" value="owner" checked>
+        <span><span class="vt">Only me <span class="ja">自分だけ</span></span>
+          <span class="vd">投稿が終わったときに出る「キー」を入れた人だけが、OGS の動画保存機能を使えます。</span></span>
+      </label>
+      <label class="vopt">
+        <input type="radio" name="video_policy" value="none">
+        <span><span class="vt">Not available <span class="ja">使えないようにする</span></span>
+          <span class="vd">この曲では、OGS の動画保存機能を出しません。</span></span>
+      </label>
+
+      <ul class="vnotes">
+        <li class="vopen-note" id="vOpenNote" hidden>「誰でも」を選ぶと、保存された動画は、<b>個人の鑑賞と、SNS・動画サイトへの投稿</b>(<b>収益化の仕組みのあるサービスへの投稿を含みます</b>)に使えます。動画そのものの販売、広告・宣伝への使用、映画・ゲームなどの商用作品への組み込み、AI の学習への利用はできません。曲名・作者名・OPEN GATE SUTRA の表示は、消せません。<b>また、あなたは、その動画に対して、Content ID などによる権利の主張をしないことに同意したものとします。</b></li>
+        <li>これは、OGS の<b>動画保存機能</b>の設定です。画面を録画するソフトなど、OGS の外での録画や、曲の公開 URL からの保存までは、止められません。</li>
+        <li><b>「誰でも」は、あとから変えても、すでに保存された動画を取り消せません。</b></li>
+        <li>この設定は、投稿が終わったときに出るキーで、あとから変えられます。</li>
+      </ul>
+    </fieldset>
+
     <div class="terms">
       <p class="terms-head">Before you cross — 渡る前の約束</p>
       <ul>
@@ -419,6 +485,87 @@
   var SAVED_ID = 'ogs_submission_id';   // 受付IDをこの端末に覚えておく鍵
 
   var form = document.getElementById('submit-form');
+
+  /* ── 動画保存の設定と、キー(2026-10-13)──────────────────────────
+     キーは、サーバーが、投稿のときに一度だけ返す。サーバーには、平文を保存していないので、
+     このあとは、もう見せられない。だから、この画面で、控えてもらう。 */
+  var VIDEO_POLICY_LINE = {
+    owner: 'この曲の動画保存は、再生画面で、このキーを入れた人だけが使えます。',
+    open: 'この曲は「誰でも」に設定しました。あとから設定を変えるときに、このキーを使います。',
+    none: 'この曲では、動画保存機能を出さない設定です。あとから設定を変えるときに、このキーを使います。'
+  };
+
+  function keyPanelHTML(j) {
+    if (!j || (j.video_policy == null && j.video_key == null)) return '';   // サーバーが、まだ、この機能を持っていない
+    if (!j.video_key) {
+      return '<div class="vkey"><p class="vkey-head">Video key — 動画保存のキー</p>' +
+        '<p class="vkey-warn">動画保存の設定は受け付けましたが、<b>キーを発行できませんでした</b>。' +
+        'お手数ですが、運営者にお知らせください(利用規約の末尾に、連絡先があります)。</p></div>';
+    }
+    return '<div class="vkey" id="vkey">' +
+      '<p class="vkey-head">Your key — 動画保存のキー</p>' +
+      '<p class="vkey-val" id="vkeyVal">' + esc(j.video_key) + '</p>' +
+      '<div class="vkey-acts">' +
+        '<button type="button" class="status-btn" id="vkeyCopy">コピー</button>' +
+        '<button type="button" class="status-btn" id="vkeySave">テキストで保存</button>' +
+      '</div>' +
+      '<p class="vkey-warn">このキーは、<b>この画面でしか表示できません</b>(再表示できません)。' +
+      'コピーするか、ファイルに保存して、安全な場所に控えてください。</p>' +
+      '<p class="vkey-sub">' + esc(VIDEO_POLICY_LINE[j.video_policy] || VIDEO_POLICY_LINE.owner) + '</p>' +
+      '<p class="vkey-sub">キーを知っている人は、誰でも、この曲の設定を変えたり、「自分だけ」の動画保存を使ったりできます。他の人に教えないでください。' +
+      'なくしたときは、運営者が、手作業で、本人かどうかを確かめたうえで、再発行します。</p>' +
+      '<label class="vkey-auto"><input type="checkbox" id="vkeyAuto">' +
+        '<span>この端末のブラウザに、キーを覚えさせる(再生画面で、自動で入ります)。<b>共用のパソコンでは、チェックしないでください。</b></span></label>' +
+      '</div>';
+  }
+
+  /* キーを控える前に、このページを離れようとしたら、確かめる(再表示できないため) */
+  function guardKey(on) {
+    window.onbeforeunload = on ? function (e) { e.preventDefault(); e.returnValue = ''; return ''; } : null;
+  }
+
+  function wireKeyPanel(j) {
+    var box = document.getElementById('vkey');
+    if (!box || !j || !j.video_key) return;
+    guardKey(true);
+    var keyName = 'ogs_video_key_' + j.id;       // 再生画面が、あとで、この名前で見に来る
+    var copyBtn = document.getElementById('vkeyCopy');
+    copyBtn.addEventListener('click', function () {
+      var done = function () { copyBtn.textContent = 'コピーしました'; guardKey(false); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(j.video_key).then(done, function () { copyBtn.textContent = 'コピーできませんでした。文字を選んで、コピーしてください'; });
+      } else {
+        copyBtn.textContent = 'コピーできませんでした。文字を選んで、コピーしてください';
+      }
+    });
+    document.getElementById('vkeySave').addEventListener('click', function () {
+      var text = 'OPEN GATE SUTRA 動画保存のキー\n\n' +
+        'キー: ' + j.video_key + '\n曲の受付番号: #' + j.id + '\n設定: ' + j.video_policy + '\n\n' +
+        'このキーを知っている人は、この曲の設定を変えたり、「自分だけ」の動画保存を使ったりできます。\n' +
+        '他の人に教えないでください。\n';
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+      a.download = 'ogs-video-key-' + j.id + '.txt';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 20000);
+      guardKey(false);
+    });
+    document.getElementById('vkeyAuto').addEventListener('change', function (e) {
+      try {
+        if (e.target.checked) { localStorage.setItem(keyName, j.video_key); guardKey(false); }
+        else { localStorage.removeItem(keyName); }
+      } catch (err) { /* 覚えられない端末では、何もしない */ }
+    });
+  }
+
+  /* 「誰でも」を選んだときだけ、使い道の要点を出す */
+  function syncOpenNote() {
+    var vp = form.elements.video_policy && form.elements.video_policy.value;
+    document.getElementById('vOpenNote').hidden = vp !== 'open';
+  }
+  form.addEventListener('change', function (e) {
+    if (e.target && e.target.name === 'video_policy') syncOpenNote();
+  });
   var result = document.getElementById('result');
   var seal = document.getElementById('seal');
 
@@ -434,6 +581,9 @@
       var v = el.value.trim();
       if (v) data[k] = v;
     });
+    // 動画保存の設定(2026-10-13)。選ばれていなければ、サーバー側が安全側の owner にする
+    var vp = form.elements.video_policy && form.elements.video_policy.value;
+    if (vp) data.video_policy = vp;
     // 規約同意はサーバー側でも必須。チェック状態を明示的に送る
     data.agreed = document.getElementById('agree').checked ? 'true' : 'false';
     var turnstileToken = (
@@ -486,9 +636,12 @@
             '<p>AN is listening now. Your page appears here in a few minutes.<br>' +
             'いま ANが聴いています。数分で、この画面にあなたの曲のページが出ます。</p>' +
             '<button class="status-btn" data-id="' + r.j.id + '">Check status — 結果を見る</button>' +
-            '<p class="status-out" id="status-out">……</p>';
+            '<p class="status-out" id="status-out">……</p>' +
+            keyPanelHTML(r.j);
           form.reset();
+          syncOpenNote();
           window.turnstile.reset(window.ogsTurnstileWidgetId);
+          wireKeyPanel(r.j);
           watchStatus(r.j.id);       // 押させない。自動で見に行く
         } else {
           result.className = 'result on';

@@ -226,6 +226,12 @@
   .shot-panel label{display:block;font-family:var(--ja);font-size:13.5px;line-height:2;cursor:pointer}
   .shot-panel input[disabled]+span{opacity:.4}
   .shot-panel .shot-note{font-family:var(--ja);font-size:12px;line-height:1.8;color:var(--nibi);margin:0 0 14px}
+  .shot-panel input.sm-key{display:block;width:100%;box-sizing:border-box;padding:8px 10px;margin:0 0 6px;
+    background:rgba(4,6,11,.6);border:1px solid var(--hair2);border-radius:0;color:var(--washi-hi);
+    font-family:var(--en);font-size:15px;letter-spacing:.14em;text-transform:uppercase}
+  .shot-panel input.sm-key:focus{outline:none;border-color:var(--washi)}
+  .shot-panel .shot-note.err{color:var(--shu)}
+  .shot-actions button[disabled]{opacity:.5;cursor:default}
   .shot-actions{display:flex;gap:8px;justify-content:flex-end}
   .shot-actions button{background:rgba(13,18,32,.55);border:1px solid var(--hair2);color:var(--washi);
     font-family:var(--en);font-size:12px;letter-spacing:.16em;padding:8px 14px;cursor:pointer}
@@ -409,6 +415,11 @@
       <label><input type="radio" name="smKind" value="video" id="smVideo"> <span>動画として保存</span></label>
     </fieldset>
     <div id="smVideoOpts" hidden>
+      <fieldset id="smKeyBox" hidden>
+        <legend>動画保存のキー(投稿者の方)</legend>
+        <input type="text" id="smKey" class="sm-key" placeholder="OGS-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" aria-label="動画保存のキー">
+        <p class="shot-note" id="smKeyMsg">この曲は、投稿のときに発行されたキーを入れた人だけが、動画を保存できます。</p>
+      </fieldset>
       <fieldset>
         <legend>中心の画像</legend>
         <label><input type="radio" name="smCenter" value="jacket" id="smJacket" checked> <span>ジャケット</span></label>
@@ -2999,6 +3010,15 @@
     var link = String(t.artist_link || '').toLowerCase();
     return name === 'teng3' || link.indexOf('suno.com/@rockingtreble058') >= 0;
   }
+  /* 「自分だけ」の曲(owner)は、投稿のときに発行されたキーを入れた人だけが動画を保存できる。
+     保存の釦を押したあとの選択パネルに、キーの入力欄を出す。合っていれば、30分は入れ直さなくてよい。
+     録画そのものはこのブラウザの中で行うので、これは「OGSの入口を絞る」もの(曲の音を守る仕組みではない) */
+  function needsKey(t){ return !!t && t.video_policy === 'owner'; }
+  var KEY_PERMIT = {};   // 曲の id → いつまで有効か(ミリ秒)
+  function hasPermit(t){ return !!t && (KEY_PERMIT[t.id] || 0) > Date.now(); }
+  function savedKey(t){
+    try { return (t && localStorage.getItem('ogs_video_key_' + t.id)) || ''; } catch (e) { return ''; }
+  }
   var VQ = { high: { px: 1080, bps: 12e6 }, std: { px: 1080, bps: 6e6 }, low: { px: 720, bps: 3e6 } };
   var VFPS = 30;
   /* 動画の明るさ補正(表紙と本編で同じ値)。画面は 0.80 で薄めて重ねていて、差し色も背景も暗く沈むため */
@@ -3076,6 +3096,7 @@
   function menuRefresh(){
     var isVideo = menuVal('smKind') === 'video';
     document.getElementById('smVideoOpts').hidden = !isVideo;
+    document.getElementById('smKeyBox').hidden = !(isVideo && needsKey(current) && !hasPermit(current));
     document.getElementById('smGo').textContent = isVideo ? '録画を始める' : '保存する';
     var note = document.getElementById('smNote');
     if (isVideo){
@@ -3103,6 +3124,11 @@
     jk.disabled = !hasArt;
     shotMenu.querySelector('input[name="smCenter"][value="' + (hasArt ? 'jacket' : 'an') + '"]').checked = true;
     shotMenu.querySelector('input[name="smKind"][value="image"]').checked = true;
+    var keyEl = document.getElementById('smKey'), keyMsg = document.getElementById('smKeyMsg');
+    keyEl.value = needsKey(current) ? savedKey(current) : '';
+    keyMsg.textContent = 'この曲は、投稿のときに発行されたキーを入れた人だけが、動画を保存できます。';
+    keyMsg.classList.remove('err');
+    document.getElementById('smGo').disabled = false;
     menuRefresh();
     shotMenu.hidden = false;
     document.getElementById('smGo').focus();
@@ -3113,11 +3139,38 @@
   shotMenu.addEventListener('click', function(e){ if (e.target === shotMenu) menuClose(); });
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !shotMenu.hidden) menuClose(); });
   document.getElementById('smCancel').addEventListener('click', menuClose);
+  function keyFail(msg){
+    var m = document.getElementById('smKeyMsg');
+    m.textContent = msg; m.classList.add('err');
+    document.getElementById('smGo').disabled = false;
+    document.getElementById('smKey').focus();
+  }
   document.getElementById('smGo').addEventListener('click', function(){
     var kind = menuVal('smKind');
-    menuClose();
-    if (kind === 'video') startVideo({ center: menuVal('smCenter'), q: menuVal('smQ') });
-    else saveShot();
+    if (kind !== 'video'){ menuClose(); saveShot(); return; }
+    var opt = { center: menuVal('smCenter'), q: menuVal('smQ') };
+    if (!needsKey(current) || hasPermit(current)){ menuClose(); startVideo(opt); return; }
+    var key = document.getElementById('smKey').value.trim(), t = current, go = document.getElementById('smGo');
+    if (!key){ keyFail('キーを入れてください。'); return; }
+    go.disabled = true;
+    fetch(API_BASE + '/api/video/redeem', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ track_id: t.id, key: key })
+    }).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(j){ return { status: r.status, j: j }; });
+    }).then(function(res){
+      if (current !== t){ go.disabled = false; return; }
+      if (res.status === 200 && res.j.ok){
+        KEY_PERMIT[t.id] = Date.now() + (res.j.expires_in || 1800) * 1000;
+        menuClose(); startVideo(opt);
+      } else if (res.status === 429){
+        keyFail('まちがいが続いたので、' + (res.j.retry_after_min || 15) + '分ほどあけてからお試しください。');
+      } else if (res.status === 403){
+        keyFail('キーが合いません。投稿のときに表示されたキーを、もう一度ご確認ください。');
+      } else {
+        keyFail('いまはキーを確認できません。しばらくしてからお試しください。');
+      }
+    }).catch(function(){ keyFail('通信できませんでした。もう一度お試しください。'); });
   });
   document.getElementById('recStop').addEventListener('click', function(){ stopVideo('途中で止めました'); });
 
@@ -3361,7 +3414,7 @@
   /* 釦の動き。動画を選べるとき(TENG3 の曲、または手元の確認用)だけ選択パネルを開く。
      それ以外、とくにスマホ・Safari は、これまでどおり画像をすぐ保存する(釦の手応えを変えない) */
   btnShot.addEventListener('click', function(){
-    var videoOk = !TOUCH && CAN_CAPTURE && isOpenVideo(current);
+    var videoOk = !TOUCH && CAN_CAPTURE && (isOpenVideo(current) || needsKey(current));
     if (VIDEO_FLAG || videoOk) menuOpen(); else saveShot();
   });
   /* 調整・検証用。見た目には関係しない。

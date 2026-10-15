@@ -49,6 +49,19 @@
     if (params && typeof params.placement === 'string') {
       safe.placement = params.placement.slice(0, 40);
     }
+    // Controlled player dimensions only; never forward comments, names or URLs.
+    var rules = {
+      ogs_source: /^(x_ads|reddit_ads|unattributed)$/,
+      ogs_campaign: /^(ogs_[a-z0-9_-]+|final12_[a-z0-9_-]+|unattributed)$/,
+      ogs_content: /^(copy_[ab]_art_[ab]|unspecified)$/,
+      metric_version: /^v1$/, start_mode: /^(manual|automatic)$/, gate: /^(final|other)$/,
+      error_code: /^[0-4]$/
+    };
+    Object.keys(rules).forEach(function (key) {
+      var value = params && params[key];
+      if (typeof value === 'string' && value.length <= 80 && rules[key].test(value)) safe[key] = value;
+    });
+    if (params && Number.isSafeInteger(params.track_id) && params.track_id > 0) safe.track_id = params.track_id;
     window.gtag('event', name, safe);
     return true;
   }
@@ -72,6 +85,7 @@
     window.gtag('config', GA_ID, {
       anonymize_ip: true,
       transport_type: 'beacon',
+      page_location: window.OGSListening ? window.OGSListening.pageLocation() : location.href,
       allow_google_signals: false,
       allow_ad_personalization_signals: false
     });

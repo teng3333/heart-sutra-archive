@@ -23,12 +23,14 @@
 <meta name="twitter:image" content="https://teng3333.github.io/heart-sutra-archive/assets/og-card.jpg">
 
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="src/js/consent.js" defer></script>
+<!-- Capture approved campaign labels before stampURL rewrites the address. -->
+<script src="src/js/listen-metrics.js?v=1"></script>
+<script src="src/js/consent.js?v=2" defer></script>
 <!-- 落ちた記録と音の記録(調査用)。?diag=1 で画面下に一覧が出る。
      この画面こそ調べたい相手なのに読み込んでいなかった(2026-09-26) -->
 <script src="src/js/diag.js?v=2"></script>
 <!-- 聴いた人の反応。住所を書き換える前に広告の印(utm)を覚えるため、defer を付けない -->
-<script src="src/js/reaction.js?v=1"></script>
+<script src="src/js/reaction.js?v=2"></script>
 <!-- 聞き流しの画面。生きた背景アートを全画面で使い、音のエネルギーで呼吸させる -->
 <script>window.OGS_ART_FULLSCREEN = true;</script>
 <script src="src/js/living-bg.js?v=38" defer></script>
@@ -489,6 +491,12 @@
   var btnLyr = document.getElementById('btnLyr');
 
   var queue = [], pos = -1, current = null, curAxis = null;
+  var listeningMetrics = window.OGSListening && window.OGSListening.create(audio, {
+    suspended: function(){ return unlocking || !!vrec || (audio.src || '').indexOf('data:') === 0; },
+    gate: function(){ return curAxis === 'final' ? 'final' : 'other'; }
+  });
+  if (window.OGSListening) window.OGSListening.player = listeningMetrics;
+  document.addEventListener('DOMContentLoaded', function(){ if (listeningMetrics) listeningMetrics.ready(); });
   var waveRGB = [217, 196, 154];
   var baseHex = '';                 // この曲の色の元。波の呼吸に合わせてここから回す
 
@@ -514,6 +522,7 @@
      波を音から切り離したので、曲は素の <audio> がそのまま鳴らす。
      起こす相手がいなくなったので、その仕掛けは取り払った。 */
   function togglePlay(){
+    if (listeningMetrics && audio.paused) listeningMetrics.intent();
     wakeAudioFromTap();
     if (audio.paused){ audio.play().catch(function(){ syncPlayBtn(); }); }
     else { audio.pause(); }
@@ -1917,6 +1926,7 @@
       var t = e && e.target;
       if (t && t.closest && t.closest('button, a, .gate')) return;
       wakeAudioFromTap();
+      if (listeningMetrics) listeningMetrics.intent();
       audio.play().then(function(){ say(''); }, function(){});
     };
     document.addEventListener('pointerdown', go, true);
@@ -1934,9 +1944,11 @@
          src より先に決めること(後から変えても効かない) */
       if (!TOUCH && !corsOff && audio.crossOrigin !== 'anonymous') audio.crossOrigin = 'anonymous';
       loadingUrl = url;
+      if (listeningMetrics) listeningMetrics.select(queue[i].id);
       audio.src = url;
       return audio.play();
     }).then(function(){ noteAudio({ play: 'ok' }); }, function(e){
+      if (listeningMetrics) listeningMetrics.blocked(e && e.name);
       /* 自動再生が拒まれた。札を Play へ戻さないと、押す前から止める釦に見える */
       noteAudio({ play: 'ng ' + (e && e.name), unlocked: unlocked });
       syncPlayBtn();
@@ -1948,8 +1960,9 @@
     stampURL(queue[i].id);
   }
 
-  function next(){
+  function next(manualStart){
     if (!queue.length) return;
+    if (manualStart === true && listeningMetrics) listeningMetrics.queueManual();
     pos += 1;
     if (pos >= queue.length){
       /* 一周したら並べ替える。ただし戻れる履歴は保つ。
@@ -1962,8 +1975,9 @@
   /* 前へ戻る。曲の途中なら、まず頭出しにする。
      音楽を聴く道具はどれもこう振る舞うので、説明が要らない */
   var HEAD_SEC = 3;
-  function prev(){
+  function prev(manualStart){
     if (!queue.length) return;
+    if (manualStart === true && listeningMetrics) listeningMetrics.intent();
     if (audio.currentTime > HEAD_SEC && !audio.paused){
       audio.currentTime = 0;
       return;
@@ -1973,6 +1987,7 @@
       return;
     }
     pos -= 1;
+    if (manualStart === true && listeningMetrics) listeningMetrics.queueManual();
     go(pos);
   }
 
@@ -2189,7 +2204,7 @@
   }
 
   [].forEach.call(gates.querySelectorAll('.gate'), function(g){
-    g.addEventListener('click', function(){ unlockAudio(); wakeAudioFromTap(); start(g.dataset.axis); });
+    g.addEventListener('click', function(){ if (listeningMetrics) listeningMetrics.queueManual(); unlockAudio(); wakeAudioFromTap(); start(g.dataset.axis); });
   });
 
   /* コンテストの門は、回の設定が読めたときだけ出す。
@@ -3191,6 +3206,7 @@
       prevCenter: lb ? lb.centerImage : null, boostBefore: boostNow, cors: false, hiddenPause: false,
       wake: null, out: document.createElement('canvas'), started: false
     };
+    if (listeningMetrics) listeningMetrics.exportMode(true);
     r.out.width = r.out.height = size;
     r.oc = r.out.getContext('2d');
     pillShow('準備中…', true);
@@ -3371,6 +3387,7 @@
       r.recorder.stop();                  // onstop で保存する
     } else {
       vrec = null;
+      if (listeningMetrics) listeningMetrics.exportMode(false);
       pillShow(msg, true);
       setTimeout(function(){ document.getElementById('recPill').hidden = true; }, 3200);
     }
@@ -3378,6 +3395,7 @@
 
   function vidSave(r){
     vrec = null;
+    if (listeningMetrics) listeningMetrics.exportMode(false);
     var type = (r.recorder && r.recorder.mimeType) || 'video/webm';
     if (!r.chunks.length){
       pillShow('録画が空でした', true);
@@ -3462,8 +3480,8 @@
     if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleOpen(); }
   });
 
-  document.getElementById('btnNext').addEventListener('click', function(){ wakeAudioFromTap(); next(); });
-  document.getElementById('btnPrev').addEventListener('click', prev);
+  document.getElementById('btnNext').addEventListener('click', function(){ wakeAudioFromTap(); next(true); });
+  document.getElementById('btnPrev').addEventListener('click', function(){ prev(true); });
 
   /* 手を離して聴いている画面なので、鍵盤でも送れるようにする。
      入力欄にいるときは邪魔しない */
@@ -3471,8 +3489,8 @@
     if (!np.classList.contains('on')) return;
     var t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-    if (e.key === 'ArrowRight'){ e.preventDefault(); next(); }
-    else if (e.key === 'ArrowLeft'){ e.preventDefault(); prev(); }
+    if (e.key === 'ArrowRight'){ e.preventDefault(); next(true); }
+    else if (e.key === 'ArrowLeft'){ e.preventDefault(); prev(true); }
     else if (e.key === ' '){ e.preventDefault(); togglePlay(); }
   });
   document.getElementById('btnPlay').addEventListener('click', togglePlay);

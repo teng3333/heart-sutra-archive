@@ -44,7 +44,7 @@
   }
 
   function track(name, params) {
-    if (getChoice() !== 'granted' || typeof window.gtag !== 'function') return false;
+    if (getChoice() !== 'granted' || window.__gaReady === false || typeof window.gtag !== 'function') return false;
     var safe = {};
     if (params && typeof params.placement === 'string') {
       safe.placement = params.placement.slice(0, 40);
@@ -77,6 +77,7 @@
   }
 
   function loadGA() {
+    if (!window.__gaLoaded) window.__gaReady = false;
     window['ga-disable-' + GA_ID] = false;
     window.dataLayer = window.dataLayer || [];
     window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
@@ -95,6 +96,10 @@
       var script = document.createElement('script');
       script.async = true;
       script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+      script.onload = function () {
+        window.__gaReady = true;
+        window.dispatchEvent(new CustomEvent('ogs:analyticsready'));
+      };
       document.head.appendChild(script);
     }
     trackInitialPage();

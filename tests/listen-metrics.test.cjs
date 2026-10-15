@@ -113,6 +113,21 @@ test('failed enqueue is not marked delivered or deduped', () => {
   const stored = JSON.parse(f.storage.getItem('ogs_listening_v1'));
   assert.deepEqual(stored.events, {});
 });
+test('landing and starts retry after analytics library becomes ready', () => {
+  const options = {accept:false}; const f = fixture(options); f.play(); f.advance(2);
+  assert.deepEqual(JSON.parse(f.storage.getItem('ogs_listening_v1')).events,{});
+  options.accept = true; f.tracker.ready(); f.advance(1);
+  const events = JSON.parse(f.storage.getItem('ogs_listening_v1')).events;
+  assert.equal(events['ogs_listen_landing:session'],true);
+  assert.equal(events['ogs_listen_start:session'],true);
+});
+test('QA diagnostics are limited to QA campaign and cleared on withdrawal', () => {
+  const f = fixture({ref:attribution('?utm_source=x_ads&utm_campaign=ogs_qa_listen_v2')});
+  const attrs = new Map();f.audio.setAttribute=(k,v)=>attrs.set(k,v);f.audio.removeAttribute=k=>attrs.delete(k);
+  f.play();f.advance(30);assert.equal(attrs.get('data-ogs-qa-seconds'),'30');
+  f.consent(false);assert.equal(attrs.size,0);
+  const g=fixture();g.audio.setAttribute=(k,v)=>attrs.set(k,v);g.play();g.advance(30);assert.equal(attrs.size,0);
+});
 test('UTM filters reject free text, addresses and unsupported sources', () => {
   const p = attribution('?utm_source=alice@example.com&utm_campaign=alice@example.com&utm_content=secret');
   assert.deepEqual(p, {ogs_source:'unattributed',ogs_campaign:'unattributed',ogs_content:'unspecified'});
@@ -125,6 +140,10 @@ test('consent gate forwards only whitelisted non-personal dimensions', () => {
   sandbox.window.ogsTrack('ogs_feedback_sent', { track_id:173, ogs_source:'x_ads', ogs_campaign:'ogs_final12_x_b_invite', comment:'private', name:'private', url:'private', error_code:'arbitrary' });
   assert.deepEqual(Object.keys(calls[0][2]).sort(), ['ogs_campaign','ogs_source','track_id']);
   granted = false; assert.equal(sandbox.window.ogsTrack('ogs_feedback_sent',{}),false); assert.equal(calls.length,1);
+  granted = true; sandbox.window.__gaReady = false;
+  assert.equal(sandbox.window.ogsTrack('ogs_listen_landing',{}),false); assert.equal(calls.length,1);
+  sandbox.window.__gaReady = true;
+  assert.equal(sandbox.window.ogsTrack('ogs_listen_landing',{}),true); assert.equal(calls.length,2);
 });
 test('initial UTM survives URL rewriting without copying unrelated query fields', () => {
   const root = { location: { origin:'https://example.com',pathname:'/listen.html',search:'?utm_source=x_ads&utm_campaign=ogs_final12_x_b_invite&email=private' } };

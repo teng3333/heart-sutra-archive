@@ -16,6 +16,7 @@
   function create(audio, options) {
     var o = options || {}, state = null, track = null, active = false;
     var lastTime = 0, lastWall = 0, manual = false, queuedManual = false, exportMode = false;
+    var qaMaxGap = 0, qaDiscarded = 0;
     var now = o.now || function () { return Date.now(); };
     var clock = o.clock || function () { return performance.now() / 1000; };
     var consent = o.consent || function () {
@@ -54,6 +55,10 @@
       var current = Number(audio.currentTime) || 0, wall = clock();
       var delta = current - lastTime, elapsed = wall - lastWall;
       var rate = Number(audio.playbackRate) || 1;
+      if (active && allowed()) {
+        qaMaxGap = Math.max(qaMaxGap, elapsed);
+        if (elapsed > 10) qaDiscarded += Math.min(elapsed, Math.max(0, delta / rate));
+      }
       if (track && active && allowed() && !audio.seeking && !audio.muted && audio.volume > 0 &&
           audio.readyState >= 2 && elapsed > 0 && elapsed <= 10 && delta > 0 &&
           delta <= elapsed * rate + 0.25) {
@@ -74,6 +79,13 @@
         });
         save();
       }
+      // Read-only QA diagnostics on the media element, never on normal ad traffic.
+      if (/^ogs_qa_/.test(ref.ogs_campaign) && consent() && audio.setAttribute) {
+        var qt = state && state.tracks && state.tracks[track];
+        audio.setAttribute('data-ogs-qa-seconds', String(qt ? Math.floor(qt.seconds) : 0));
+        audio.setAttribute('data-ogs-qa-max-gap', String(Math.floor(qaMaxGap)));
+        audio.setAttribute('data-ogs-qa-discarded', String(Math.floor(qaDiscarded)));
+      }
       lastTime = current; lastWall = wall;
     }
     function halt() { record(); active = false; baseline(); }
@@ -93,10 +105,12 @@
       if (!consent()) {
         state = null;
         try { storage().removeItem(KEY); } catch (e) {}
+        if (audio.removeAttribute) ['seconds', 'max-gap', 'discarded'].forEach(function (key) { audio.removeAttribute('data-ogs-qa-' + key); });
       } else { landing(); active = !audio.paused && audio.readyState >= 2; }
     }
     if (root.addEventListener) {
       root.addEventListener('ogs:consentchange', choiceChanged);
+      root.addEventListener('ogs:analyticsready', choiceChanged);
       root.addEventListener('pagehide', halt);
     }
     landing();

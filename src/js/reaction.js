@@ -113,7 +113,10 @@
     panel.appendChild(el('p', 'note', 'No account needed. We don’t collect your IP address — only your time zone and language, to see roughly where listeners are. ／ アカウント不要。IPアドレスは集めません。どの辺りで聴かれているかを知るため、時間帯と言語の設定だけを送ります。'));
     root.appendChild(open); root.appendChild(panel);
     box.appendChild(root);
-    open.addEventListener('click', function () { panel.hidden = !panel.hidden; });
+    open.addEventListener('click', function () {
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden && window.OGSListening && window.OGSListening.player) window.OGSListening.player.feedback('open', track);
+    });
 
     function refresh() {
       var done = track && sent(track);
@@ -145,8 +148,9 @@
                                      body: JSON.stringify(body) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (x) {
-          if (!x.ok) throw x.j || {};
-          markSent(track); ta.value = ''; nm.value = ''; cb.checked = false;
+          if (!x.ok || !x.j || x.j.ok !== true) throw x.j || {};
+          markSent(body.submission_id); ta.value = ''; nm.value = ''; cb.checked = false;
+          if (!body.website && window.OGSListening && window.OGSListening.player) window.OGSListening.player.feedback('sent', body.submission_id);
           refresh();
           // プレイヤーでは、送り終えたら閉じる(携帯で下の操作ボタンに重ならないように)
           if (!opts.choices) setTimeout(function () { panel.hidden = true; }, 1600);

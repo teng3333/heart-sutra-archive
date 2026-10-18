@@ -1918,13 +1918,19 @@
       armed = false;
       document.removeEventListener('pointerdown', go, true);
       document.removeEventListener('keydown', go, true);
-      /* 釦の上で起きた触りは、その釦に任せる。
+      /* 再生そのものを担う釦の上の触りだけは、その釦に任せる。
          ここは画面全体を捕まえる番人なので、何もしないと Play/Pause や
          次へ/前へ の上でも先に鳴らしてしまう。押した釦と押し合いになり、
          止めたいのに鳴り出す(2026-09-25 高尾さん報告: pauseを押すと
-         はじめの音がループする)。触りの行き先が釦なら、ここは退く */
+         はじめの音がループする)。
+         ただし「釦ならすべて退く」にしたのは行き過ぎだった(2026-10-18)。
+         退くと、この番人は自分を外したまま二度と戻らない。広告から来た人が
+         最初に触る同意バナーの釦で退いてしまい、「どこかを触ると鳴ります」と
+         出ているのに鳴らなくなった(広告の遷移先は ?gate=final で、スマホは必ず
+         自動再生を拒まれる)。退くのは、再生を自分で担う釦だけにする。
+         同意バナーの釦、曲評・共有などの釦は、その操作に加えて鳴らしてよい */
       var t = e && e.target;
-      if (t && t.closest && t.closest('button, a, .gate')) return;
+      if (t && t.closest && t.closest('#btnPlay, #btnPrev, #btnNext, #btnGate, .gate')) return;
       wakeAudioFromTap();
       if (listeningMetrics) listeningMetrics.intent();
       audio.play().then(function(){ say(''); }, function(){});

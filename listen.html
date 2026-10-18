@@ -268,6 +268,23 @@
     letter-spacing:.12em;padding:8px 15px;cursor:pointer;backdrop-filter:blur(3px)}
   .state .retry:hover{border-color:var(--washi)}
   .state .retry:focus-visible{outline:2px solid var(--ruri);outline-offset:2px}
+  /* 広告から来た人向けの、大きな再生釦(2026-10-18)。自動再生が拒まれたときだけ出る */
+  .state .adline{display:block;color:var(--washi);font-size:14px;line-height:1.7}
+  .state .adline-ja{display:block;color:var(--nibi);font-size:11.5px;line-height:1.7;margin-top:2px}
+  .state .adplay{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+    max-width:19rem;min-height:52px;margin-top:14px;background:rgba(13,18,32,.72);
+    border:1px solid var(--washi);color:var(--washi);font:inherit;font-size:15px;
+    letter-spacing:.2em;cursor:pointer;backdrop-filter:blur(4px)}
+  .state .adplay:hover{background:rgba(24,32,54,.85)}
+  /* 大きな釦を出すあいだは、案内を操作列の上へ逃がす。操作列(Play/Prev/Next/Gate)は
+     スマホで2段になり、通常の案内位置では大きな釦が重なる(2026-10-18 実測) */
+  .stage.playing.has-adplay .state{bottom:132px}
+  .stage.playing.has-adplay.an-on .state{bottom:182px}
+  @media (max-width:640px){
+    .stage.playing.has-adplay .state{bottom:148px}
+    .stage.playing.has-adplay.an-on .state{bottom:198px}
+  }
+  .state .adplay:focus-visible{outline:2px solid var(--ruri);outline-offset:3px}
   .state a{color:var(--washi-hi);text-decoration:none;border-bottom:1px solid var(--hair2)}
   .state a:hover{border-color:var(--washi)}
 
@@ -459,6 +476,9 @@
   'use strict';
 
   /* 手元(localhost)で開いたときは手元のAPIを見る。本番では本番のAPI(投稿ページと同じ書き方) */
+  /* 広告から来た人か。住所の utm_source を、書き換えられる前(stampURL が消す前)に覚える。
+     計測と同じ許可の範囲(x_ads / reddit_ads)だけを広告として扱う(2026-10-18) */
+  var AD_VISIT = /[?&]utm_source=(x_ads|reddit_ads)(&|$)/.test(location.search);
   var API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
     ? 'http://127.0.0.1:5001'
     : 'https://open-gate-sutra-production.up.railway.app';
@@ -500,7 +520,10 @@
   var waveRGB = [217, 196, 154];
   var baseHex = '';                 // この曲の色の元。波の呼吸に合わせてここから回す
 
-  function say(html){ stateEl.innerHTML = html; stateEl.style.display = html ? '' : 'none'; }
+  function say(html){
+    stateEl.innerHTML = html; stateEl.style.display = html ? '' : 'none';
+    if (html.indexOf('adplay') < 0){ var st = document.querySelector('.stage'); if (st) st.classList.remove('has-adplay'); }
+  }
 
   /* ── 再生釦の札は、実際の音の状態だけから決める(2026-09-20) ──
      以前は初期値が Pause で、書き換えは play / pause の出来事に任せていた。
@@ -536,7 +559,25 @@
     retryFn = fn;
     say(html + '<br><button type="button" class="retry">再試行 / Retry</button>');
   }
+  /* 広告から来た人に、何の画面か(英語1行+日本語)と、大きな再生釦を見せる(2026-10-18)。
+     広告は米国・カナダ向けの英語で、到着画面は日本語が多い。到着直後に「何を聴くのか」と
+     「どこを押すのか」を示す。「どこかを触ると鳴ります」(armAnyTap)はそのまま生きている */
+  function stageEl(){ return document.querySelector('.stage'); }
+  function sayAdPlay(){
+    var st = stageEl(); if (st) st.classList.add('has-adplay');
+    say('<span class="adline">12 finalists from a Heart Sutra music contest in Japan.</span>' +
+        '<span class="adline-ja">般若心経の音楽コンテスト、最終選考の12曲。</span>' +
+        '<button type="button" class="adplay">▶ Play</button>');
+  }
   stateEl.addEventListener('click', function(e){
+    var ap = (e.target && e.target.closest) ? e.target.closest('.adplay') : null;
+    if (ap){
+      if (!audio.paused) return;             // もう鳴っているなら、何もしない(二重に始めない)
+      wakeAudioFromTap();
+      if (listeningMetrics) listeningMetrics.intent();
+      audio.play().then(function(){ say(''); }, function(){});
+      return;
+    }
     var b = (e.target && e.target.closest) ? e.target.closest('.retry') : null;
     if (!b || !retryFn) return;
     var f = retryFn; retryFn = null;
@@ -1958,7 +1999,7 @@
       /* 自動再生が拒まれた。札を Play へ戻さないと、押す前から止める釦に見える */
       noteAudio({ play: 'ng ' + (e && e.name), unlocked: unlocked });
       syncPlayBtn();
-      say('Tap anywhere to play.<br>画面のどこかを触ると鳴ります。');
+      if (AD_VISIT) sayAdPlay(); else say('Tap anywhere to play.<br>画面のどこかを触ると鳴ります。');
       armAnyTap();
     });
     preloadNext();

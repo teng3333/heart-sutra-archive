@@ -3,10 +3,11 @@
   'use strict';
   function attribution(search) {
     var q = new URLSearchParams(search || '');
-    var source = q.get('utm_source') || '', campaign = q.get('utm_campaign') || '';
+    var source = q.get('utm_source') || '', medium = q.get('utm_medium') || '', campaign = q.get('utm_campaign') || '';
     var content = q.get('utm_content') || '';
     return {
       ogs_source: /^(x_ads|reddit_ads)$/.test(source) ? source : 'unattributed',
+      ogs_medium: /^(paid_social|paid)$/.test(medium) ? medium : 'unspecified',
       ogs_campaign: /^(ogs_[a-z0-9_-]+|final12_[a-z0-9_-]+)$/.test(campaign) && campaign.length <= 80 ? campaign : 'unattributed',
       ogs_content: /^copy_[ab]_art_[ab]$/.test(content) ? content : 'unspecified'
     };
@@ -139,7 +140,7 @@
     var u = new URL(root.location.origin + root.location.pathname);
     if (initial.ogs_source !== 'unattributed') {
       u.searchParams.set('utm_source', initial.ogs_source);
-      u.searchParams.set('utm_medium', initial.ogs_source === 'x_ads' ? 'paid_social' : 'paid');
+      u.searchParams.set('utm_medium', initial.ogs_medium !== 'unspecified' ? initial.ogs_medium : (initial.ogs_source === 'x_ads' ? 'paid_social' : 'paid'));
       if (initial.ogs_campaign !== 'unattributed') u.searchParams.set('utm_campaign', initial.ogs_campaign);
       if (initial.ogs_content !== 'unspecified') u.searchParams.set('utm_content', initial.ogs_content);
     }

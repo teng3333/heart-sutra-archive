@@ -52,6 +52,7 @@
     // Controlled player dimensions only; never forward comments, names or URLs.
     var rules = {
       ogs_source: /^(x_ads|reddit_ads|unattributed)$/,
+      ogs_medium: /^(paid_social|paid|unspecified)$/,
       ogs_campaign: /^(ogs_[a-z0-9_-]+|final12_[a-z0-9_-]+|unattributed)$/,
       ogs_content: /^(copy_[ab]_art_[ab]|unspecified)$/,
       metric_version: /^v1$/, start_mode: /^(manual|automatic)$/, gate: /^(final|other)$/,

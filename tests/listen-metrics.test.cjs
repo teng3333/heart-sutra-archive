@@ -130,7 +130,12 @@ test('QA diagnostics are limited to QA campaign and cleared on withdrawal', () =
 });
 test('UTM filters reject free text, addresses and unsupported sources', () => {
   const p = attribution('?utm_source=alice@example.com&utm_campaign=alice@example.com&utm_content=secret');
-  assert.deepEqual(p, {ogs_source:'unattributed',ogs_campaign:'unattributed',ogs_content:'unspecified'});
+  assert.deepEqual(p, {ogs_source:'unattributed',ogs_medium:'unspecified',ogs_campaign:'unattributed',ogs_content:'unspecified'});
+});
+test('paid medium is preserved for X and Reddit attribution', () => {
+  assert.equal(attribution('?utm_source=x_ads&utm_medium=paid_social&utm_campaign=ogs_final12_x_b_invite').ogs_medium, 'paid_social');
+  assert.equal(attribution('?utm_source=reddit_ads&utm_medium=paid&utm_campaign=final12_d2_traffic').ogs_medium, 'paid');
+  assert.equal(attribution('?utm_source=reddit_ads&utm_campaign=final12_d2_traffic').ogs_medium, 'unspecified');
 });
 test('consent gate forwards only whitelisted non-personal dimensions', () => {
   const calls = []; let granted = true;

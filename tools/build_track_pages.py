@@ -74,6 +74,28 @@ def share_text(t, url):
         head, t.get("title") or "", t.get("artist_name") or "unknown", url)
 
 
+def jsonld(t, who, title, desc, url, img):
+    """検索エンジンとAIが読む、曲の機械可読な説明(MusicRecording)。
+    </script> で途切れないよう、'</' は '<\\/' にして埋める"""
+    d = {
+        "@context": "https://schema.org",
+        "@type": "MusicRecording",
+        "name": title,
+        "url": url,
+        "byArtist": {"@type": "MusicGroup", "name": who},
+        "description": desc,
+        "image": img,
+        "genre": [x for x in (t.get("genre"), t.get("subgenre")) if x],
+        "isPartOf": {"@type": "WebSite", "name": "Open Gate Sutra", "url": SITE + "/"},
+    }
+    if t.get("audio_url"):
+        d["audio"] = {"@type": "AudioObject", "contentUrl": t["audio_url"]}
+    if t.get("submitted_at"):
+        d["datePublished"] = t["submitted_at"][:10]
+    d = {k: v for k, v in d.items() if v}
+    return json.dumps(d, ensure_ascii=False, indent=2).replace("</", "<\\/")
+
+
 def page(t, base, tmpl):
     """雛形の track.html を骨にして、中身を埋めた1枚を作る。
        見た目の定義を二重に持たないよう、CSSは雛形からそのまま使う。"""
@@ -197,6 +219,9 @@ def page(t, base, tmpl):
 <meta name="twitter:title" content="{title} — {who}">
 <meta name="twitter:description" content="{desc}">
 <meta name="twitter:image" content="{img}">
+<script type="application/ld+json">
+{jsonld}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="../src/js/consent.js" defer></script>
 <style>
@@ -220,7 +245,8 @@ def page(t, base, tmpl):
 </body>
 </html>
 """.format(title=e(title), who=e(who), desc=e(desc), url=e(url), img=e(img),
-           card=card, css=css, script=SCRIPT, body="\n      ".join(body))
+           card=card, css=css, script=SCRIPT, jsonld=jsonld(t, who, title, desc, url, img),
+           body="\n      ".join(body))
 
 
 def load_contest():
@@ -268,6 +294,27 @@ def is_entry(t, c):
         return False
     from datetime import datetime
     return datetime.fromisoformat(at.replace("Z", "+00:00")) <= datetime.fromisoformat(c["close_at"])
+
+
+def write_sitemap(items, base):
+    """sitemap.xml を作り直す。曲ページ以外の行(手で管理)は今のファイルから引き継ぎ、
+    曲ページは公開中の全曲を投稿日(lastmod)付きで並べる。
+    lastmod は投稿日なので、曲が増えない限り中身は変わらず、無駄なコミットも出ない"""
+    path = ROOT / "sitemap.xml"
+    cur = path.read_text(encoding="utf-8")
+    pages = [b for b in re.findall(r"  <url>.*?</url>\n", cur, re.S)
+             if "/t/" not in b]
+    rows = []
+    for t in sorted(items, key=lambda x: x["id"]):
+        lm = (t.get("submitted_at") or "")[:10]
+        rows.append("  <url>\n    <loc>%s/t/%d.html</loc>\n%s    <priority>0.5</priority>\n  </url>\n"
+                    % (base, t["id"], ("    <lastmod>%s</lastmod>\n" % lm) if lm else ""))
+    out = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+           + "".join(pages) + "".join(rows) + "</urlset>\n")
+    if out != cur:
+        path.write_text(out, encoding="utf-8")
+    return len(pages), len(rows)
 
 
 def main():
@@ -337,6 +384,8 @@ def main():
         if f.name not in keep:
             f.unlink(); removed += 1
     print("書き出し: %d枚 / 削除: %d枚 → %s" % (len(keep), removed, OUT))
+    np_, nt = write_sitemap(items, args.base)
+    print("sitemap.xml: 主要ページ %d + 曲ページ %d" % (np_, nt))
     return 0
 
 

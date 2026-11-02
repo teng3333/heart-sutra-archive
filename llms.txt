@@ -1,0 +1,18 @@
+# Open Gate Sutra
+
+> Open Gate Sutra is a worldwide remix platform for the Heart Sutra (般若心経). Anyone can recompose the 262-character sutra in any genre, submit an mp3, and be heard. Every published track has its own page with the artist, genre and a short listening note. Rights to each track remain with its creator.
+
+Open Gate Sutra(開羯諦経)は、般若心経を世界中の人が自由にリミックス・作曲して投稿できるプラットフォームです。あらゆるジャンルのmp3を投稿でき、公開された曲には曲ごとのページ(作者・ジャンル・曲評)が付きます。曲の権利は作り手に帰属します。
+
+## Main pages
+- [Home](https://teng3333.github.io/heart-sutra-archive/): overview and entry point
+- [About](https://teng3333.github.io/heart-sutra-archive/about.html): what Open Gate Sutra is
+- [Archive](https://teng3333.github.io/heart-sutra-archive/archive.html): all published tracks, browsable by genre and artist
+- [Listen](https://teng3333.github.io/heart-sutra-archive/listen.html): continuous listening mode
+- [Submit](https://teng3333.github.io/heart-sutra-archive/submit.html): how to submit your own Heart Sutra track / 投稿方法
+- [Kit](https://teng3333.github.io/heart-sutra-archive/kit.html): materials for making a track
+- [Rights](https://teng3333.github.io/heart-sutra-archive/rights.html): rights and credit
+- [Terms](https://teng3333.github.io/heart-sutra-archive/terms.html) / [Privacy](https://teng3333.github.io/heart-sutra-archive/privacy.html)
+
+## Track pages
+Each track lives at https://teng3333.github.io/heart-sutra-archive/t/<id>.html and carries schema.org MusicRecording data. The full list is in the [sitemap](https://teng3333.github.io/heart-sutra-archive/sitemap.xml).

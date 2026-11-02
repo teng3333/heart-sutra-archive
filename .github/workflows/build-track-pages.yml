@@ -56,12 +56,12 @@ jobs:
       # 書き出した分も一緒に捨てられるが、次の回に全曲取れればまとめて載る。
       - name: Commit and push if changed
         run: |
-          if [ -z "$(git status --porcelain t/)" ]; then
+          if [ -z "$(git status --porcelain t/ sitemap.xml)" ]; then
             echo "変更なし"
             exit 0
           fi
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add t/
+          git add t/ sitemap.xml
           git commit -m "chore: rebuild track pages [$(date -u '+%Y-%m-%d %H:%M')]"
           git push

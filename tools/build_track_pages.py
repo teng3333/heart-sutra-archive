@@ -96,6 +96,15 @@ def jsonld(t, who, title, desc, url, img):
     return json.dumps(d, ensure_ascii=False, indent=2).replace("</", "<\\/")
 
 
+def en_summary(t):
+    """曲の事実を英語の定型1文にまとめる。ジャンル名はAPIの値(日本語)のまま出す"""
+    who = t.get("artist_name") or "unknown"
+    s = "A Heart Sutra remix by %s." % who
+    if t.get("genre"):
+        s += " Genre: %s." % t["genre"]
+    return s + " From Open Gate Sutra, a worldwide remix platform for the Heart Sutra."
+
+
 def page(t, base, tmpl):
     """雛形の track.html を骨にして、中身を埋めた1枚を作る。
        見た目の定義を二重に持たないよう、CSSは雛形からそのまま使う。"""
@@ -109,6 +118,9 @@ def page(t, base, tmpl):
     if t.get("tagline"):
         # SNSのカードでは、説明の先頭に曲の一言を出す
         desc = "%s — %s" % (t["tagline"], (t.get("an_comment") or desc)[:90])
+    # 検索・AI向けに、事実だけの英語1文を説明の先頭に置く。感想は後ろに残す
+    fact = en_summary(t)
+    desc = "%s %s" % (fact, desc)
     img = t.get("artwork_url") or (base + "/assets/og-card.jpg")
     card = "summary" if t.get("artwork_url") else "summary_large_image"
     url = "%s/t/%s.html" % (base, t["id"])
@@ -147,6 +159,7 @@ def page(t, base, tmpl):
         by += '  ·  <a href="https://x.com/%s" target="_blank" rel="noopener noreferrer">@%s</a>' % (xh, xh)
     body.append('<p class="by">%s</p>' % by)
     body.append('<p class="meta">%s</p>' % e(meta))
+    body.append('<p class="meta" lang="en">%s</p>' % e(en_summary(t)))
     body.append('</div></div>')
 
     body.append('<div class="play">')

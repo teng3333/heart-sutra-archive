@@ -330,6 +330,32 @@ def write_sitemap(items, base):
     return len(pages), len(rows)
 
 
+def write_archive_index(items):
+    """archive.html の一覧の枠に、公開中の全曲へのリンクを書き込む(2026-11-03)。
+    画面の一覧はJavaScriptがAPIから作り直すので、ここに書くのは検索エンジンと、
+    JavaScriptが動かない環境のための下書きである。印のあいだだけを置き換える。
+    並びは画面の既定(新しい順)に合わせる"""
+    path = ROOT / "archive.html"
+    cur = path.read_text(encoding="utf-8")
+    start, end = "<!-- STATIC_INDEX_START -->", "<!-- STATIC_INDEX_END -->"
+    if start not in cur or end not in cur:
+        print("archive.html に一覧の印がありません。一覧は書きません")
+        return 0
+    cards = []
+    for t in sorted(items, key=lambda x: x.get("submitted_at") or "", reverse=True):
+        art = t.get("artwork_url")
+        cards.append(
+            '<a class="card" href="t/%d.html"><div class="sq"><img src="%s" alt="" loading="lazy"%s>'
+            '<span class="mode">%s %s</span></div><h3>%s</h3><p class="who">%s</p></a>'
+            % (t["id"], e(art or "assets/an/face-human.webp"), "" if art else ' class="an-fallback"',
+               e(t.get("axis_label_ja")), e(t.get("mode_label_ja")), e(t.get("title")), e(t.get("artist_name"))))
+    head, rest = cur.split(start, 1)
+    out = head + start + "\n" + "\n".join(cards) + "\n" + end + rest.split(end, 1)[1]
+    if out != cur:
+        path.write_text(out, encoding="utf-8")
+    return len(cards)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base", default=SITE, help="公開時の住所")
@@ -399,6 +425,7 @@ def main():
     print("書き出し: %d枚 / 削除: %d枚 → %s" % (len(keep), removed, OUT))
     np_, nt = write_sitemap(items, args.base)
     print("sitemap.xml: 主要ページ %d + 曲ページ %d" % (np_, nt))
+    print("archive.html の一覧: %d曲" % write_archive_index(items))
     return 0
 
 

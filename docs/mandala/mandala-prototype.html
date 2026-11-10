@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OGS 曼荼羅プレイヤー 参考実装（試作）</title>
+<!--
+  OGS 曼荼羅プレイヤー 参考実装
+  ・この1ファイルで動く。ブラウザで開くだけ。画像・外部ライブラリは不使用。
+  ・見た目と動きの「正解」として扱うこと。本番実装はこれを移植し、擬似の拍（bpm固定）を実際の音の解析値に置き換える。
+  ・二層構造：
+      背景層  = WebGLのフラグメントシェーダ（#gl）。最大9つの曼荼羅を重み付きで合成。
+      魔法陣層 = 2Dキャンバス（#tx）。曲番号を種にした線画を、曲の進行に合わせて描く。
+  ・背景層の乱数は Math.random()（毎回違ってよい）。魔法陣層は種つき乱数 mul()（同じ曲は必ず同じ形）。
+-->
+<style>
+  body{margin:0;background:#0b0c12;color:#d8d6cf;font-family:system-ui,sans-serif;padding:16px}
+  .wrap{max-width:420px;margin:0 auto}
+  .stage{position:relative;width:100%;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:#07080d}
+  .stage canvas{position:absolute;inset:0;width:100%;height:100%}
+  .row{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .row label{font-size:14px;color:#9a988f;min-width:72px}
+  .row input{flex:1}
+  .row span{font-size:14px;min-width:40px;text-align:right}
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  button{min-height:44px;background:transparent;color:inherit;border:1px solid #3a3a44;border-radius:8px;font-size:15px}
+  #msg{font-size:13px;color:#9a988f;margin:10px 0 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage">
+    <canvas id="gl"></canvas>
+    <canvas id="tx"></canvas>
+  </div>
+  <div class="row"><label for="pg">曲の進行</label><input type="range" id="pg" min="0" max="100" step="1" value="0"><span id="po">0%</span></div>
+  <div class="row"><label for="gw">光の強さ</label><input type="range" id="gw" min="0" max="100" step="1" value="70"><span id="go">70</span></div>
+  <div class="row"><label for="bp">テンポ</label><input type="range" id="bp" min="50" max="140" step="1" value="76"><span id="bo">76</span></div>
+  <div class="btns">
+    <button id="nx">別の曲にする</button>
+    <button id="pp">一時停止</button>
+  </div>
+  <p id="msg"></p>
+</div>
+<script>
+(function(){
+var gc=document.getElementById('gl'),tc=document.getElementById('tx'),c2=tc.getContext('2d');
+var gl=gc.getContext('webgl');var msg=document.getElementById('msg');
+function fail(){msg.textContent='この端末では表示できませんでした';}
+if(!gl){fail();return;}
+var dpr=Math.min(window.devicePixelRatio||1,2),NM=9,S=0; // NM = 曼荼羅の上限数。解像度は2倍まで
+function rs(){S=gc.clientWidth;gc.width=tc.width=S*dpr;gc.height=tc.height=S*dpr;gl.viewport(0,0,gc.width,gc.height);}
+
+/* ===== 背景層：シェーダ =====
+   uniform の意味
+   Z: 輪の流れの累積（増える=外へ湧き出る／減る=中心へ吸い込む）
+   T: 経過秒   B: 鼓動の強さ(0..1強)   P: 拍の位相(0..1)   K: 各曼荼羅の広がりの鋭さ（数が多いほど小さく）
+   W: 吸い込み(-1)〜発散(+1)の向きと強さ
+   C[i]: 各曼荼羅の中心   A[i]: 存在の濃さ(0..1)   G[i]: 多角形の角数   H[i]: 円(0)〜多角形(1)の混ぜ具合 */
+var vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+var fs='precision mediump float;uniform vec2 R;uniform float Z;uniform float T;uniform float B;uniform float P;uniform float K;uniform float W;uniform vec2 C[9];uniform float A[9];uniform float G[9];uniform float H[9];'+
+'float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}'+
+'float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}'+
+'vec3 pal(float t){return .5+.5*cos(6.2832*(t+vec3(0.,.33,.67)));}'+
+'void main(){vec2 p=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);float r0=length(p);'+
+// 渦のねじれ（向きで反転）
+'float tw=W*1.6*exp(-r0*2.2);float cs=cos(tw),sn=sin(tw);p=vec2(p.x*cs-p.y*sn,p.x*sn+p.y*cs);'+
+'vec3 acc=vec3(0.);float ws=0.;float ln=0.;float wr=P*.75;float w0=exp(-P*2.5);'+
+'for(int i=0;i<9;i++){float al=A[i];if(al<.003)continue;float fi=float(i);vec2 q=p-C[i];float rc=length(q)+1e-4;float a=atan(q.y,q.x);'+
+'float sg=mod(fi,2.)*2.-1.;float N=floor(5.+fi*1.5);'+
+// 円⇔多角形の変形
+'float s=6.2832/G[i];float d=rc*cos(mod(a+T*.12*sg+fi,s)-.5*s)*1.14;float r=mix(rc,d,H[i]);'+
+// 鼓動：外へ伝わる波 wv、全体の拍動、円周のうねり
+'float wv=w0*exp(-pow((r-wr)*8.,2.));'+
+'float rr=r*(1.-.08*B)-.04*wv-.012*B*sin(a*N+T*3.)*smoothstep(0.,.12,r)*(1.-H[i]*.7);rr=max(rr,1e-4);'+
+// 対数らせん状の輪（トンネル）と花弁
+'float u=log(rr)*1.5-Z*(.8+.07*fi)-fi*.37;float ring=floor(u);float f=fract(u);'+
+'float v=(a+T*.1*(mod(ring,2.)*2.-1.)*sg+W*.5*log(rr))/6.2832*N;'+
+'float e=1.-abs(fract(v)-.5)*2.;float pet=smoothstep(0.,.08,e*.85-f+.12);float inn=smoothstep(0.,.08,e*.5-f+.02);'+
+'vec3 c=pal(fi*.137+ring*.11+pet*.2+T*.015);c=mix(c*.4,c,pet);c=mix(c,pal(fi*.137+ring*.11+.5),inn*.7);'+
+// 重み付き合成。重なった所で輪の線 ln が足し合わされ、干渉模様になる
+'float w=(exp(-r*r*K)+.015)*al;acc+=c*w;ws+=w;'+
+'ln+=w*(smoothstep(.05,0.,f)+smoothstep(.95,1.,f)+wv*.9);}'+
+'vec3 col=acc/max(ws,1e-4);col+=vec3(1.,.82,.45)*min(ln,1.3)*.3;'+
+'col*=.8+.35*n(p*38.+T*.05);col=pow(col,vec3(.9));'+
+// 吸い込み時は中心が暗い穴、発散時は光源
+'float hole=max(0.,-W);col*=mix(1.,smoothstep(.0,.22,r0),hole*.85);'+
+'col+=vec3(1.,.9,.7)*(max(0.,W)*.3+B*.08)*exp(-r0*r0*26.);col*=(1.-.35*r0*r0*2.)*.6;'+ // 末尾の .6 は魔法陣を引き立てるための減光
+'gl_FragColor=vec4(col,1.);}';
+function sh(t,s){var x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x;}
+var pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);
+if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){fail();return;}
+gl.useProgram(pr);
+var bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+var lp=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(lp);gl.vertexAttribPointer(lp,2,gl.FLOAT,false,0,0);
+var U={};['R','Z','T','B','P','K','W','C','A','G','H'].forEach(function(k){U[k]=gl.getUniformLocation(pr,k);});
+rs();window.addEventListener('resize',rs);
+
+/* ===== 魔法陣層：曲番号から形を作る ===== */
+var TAU=Math.PI*2;
+function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};} // 種つき乱数
+function gcd(a,b){return b?gcd(b,a%b):a;}
+function circ(x,y,r,n){var o=[];for(var i=0;i<=n;i++){var a=i*TAU/n;o.push([x+Math.cos(a)*r,y+Math.sin(a)*r]);}return o;}
+function star(n,k,r,rot){var g=gcd(n,k),out=[];for(var j=0;j<g;j++){var o=[];for(var i=0;i<=n/g;i++){var a=rot+(j+i*k)*TAU/n;o.push([Math.cos(a)*r,Math.sin(a)*r]);}out.push(o);}return out;}
+// 部品は現在9種。本番では30種以上に増やす。各部品 = 折れ線の配列 pl と、回転速度 rot
+function build(seed){var r=mul(seed*7919+13),E=[];
+var sym=[5,6,7,8,9,10,12][Math.floor(r()*7)];
+function add(pl,rot){E.push({pl:pl,rot:rot});}
+add([circ(0,0,0.06,24)],0);
+var fr=0.13+0.07*r(),pl=[],i,a;
+for(i=0;i<sym;i++){a=i*TAU/sym;pl.push(circ(Math.cos(a)*fr,Math.sin(a)*fr,fr,28));}add(pl,0.05);
+pl=[];for(i=0;i<sym;i++){a=i*TAU/sym+Math.PI/sym;pl.push([[Math.cos(a)*0.1,Math.sin(a)*0.1],[Math.cos(a)*0.5,Math.sin(a)*0.5]]);}add(pl,-0.03);
+var n2=[3,4,5,6][Math.floor(r()*4)];
+add(star(n2,1,0.5,0).concat(star(n2,1,0.5,Math.PI/n2)),0.04);
+add([circ(0,0,0.52,72)],0);
+var sr=0.05+0.035*r();pl=[];for(i=0;i<sym;i++){a=i*TAU/sym;pl.push(circ(Math.cos(a)*0.66,Math.sin(a)*0.66,sr,20));}add(pl,-0.02);
+var k=sym>=7?2+Math.floor(r()*2):2;
+add(star(sym,k,0.82,-Math.PI/2),0.025);
+if(r()<0.6){add(star(sym,1,0.82,-Math.PI/2+Math.PI/sym),-0.025);}
+add([circ(0,0,0.86,90),circ(0,0,0.93,90)],0);
+var tn=sym*(3+Math.floor(r()*3));pl=[];for(i=0;i<tn;i++){a=i*TAU/tn;pl.push([[Math.cos(a)*0.86,Math.sin(a)*0.86],[Math.cos(a)*0.93,Math.sin(a)*0.93]]);}add(pl,-0.015);
+if(r()<0.4)E.reverse(); // 外から内へ描く曲もある
+return {E:E,sym:sym,hue:Math.floor(r()*360)};}
+
+/* ===== 状態 ===== */
+var T=0,Z=0,ph=0,th0=0,last=0,run=true,bpm=76,D=0.3,vel=0,spread=1,prog=0,DUR=40,glow=0.7; // DUR=試作上の曲の長さ(秒)。本番は audio.duration
+var cnt=3,nextC=2,dirT=1,nextD=5,track=147,sig=build(track);
+var SIDES=[3,4,5,6,8];
+var cs=new Float32Array(NM*2),al=new Float32Array(NM),ro=new Float32Array(NM),gn=new Float32Array(NM),hm=new Float32Array(NM);
+var on=[],ht=[],pend=[],nextS=[];
+function rnd(a,b){return a+Math.random()*(b-a);}
+for(var i=0;i<NM;i++){on.push(false);ht.push(0);pend.push(0);nextS.push(rnd(1,6));gn[i]=4;}
+var pg=document.getElementById('pg'),po=document.getElementById('po'),gw=document.getElementById('gw'),go=document.getElementById('go'),bp=document.getElementById('bp'),bo=document.getElementById('bo');
+pg.addEventListener('input',function(){prog=Math.round(+pg.value)/100;});
+gw.addEventListener('input',function(){glow=Math.round(+gw.value)/100;go.textContent=Math.round(glow*100);});
+bp.addEventListener('input',function(){bpm=Math.round(+bp.value);bo.textContent=bpm;});
+// 形の切り替え：角数を変える時は一度円に戻してから張り直す
+function want(i,nn){if(nn===0){ht[i]=0;pend[i]=0;}else if(nn===gn[i]){ht[i]=1;pend[i]=0;}else if(hm[i]<0.03){gn[i]=nn;ht[i]=1;pend[i]=0;}else{pend[i]=nn;ht[i]=0;}}
+function cl(x){return Math.max(0,Math.min(1,x));}
+
+/* ===== 魔法陣の描画：光る線 =====
+   進行 0〜80% 形成 / 80〜94% 完成（光の波と鼓動）/ 94〜100% 外へ広がって消える
+   発光は加算合成で4層重ね描き（外側3層が色のにじみ、最内が白い芯）。shadowBlur は重いので使わない */
+var PW=[11,6,2.8,1.1],PA=[0.05,0.11,0.3,0.95];
+function sigil(B){
+var R=S/2*0.94;c2.setTransform(dpr,0,0,dpr,0,0);c2.globalCompositeOperation='source-over';c2.clearRect(0,0,S,S);c2.translate(S/2,S/2);
+c2.globalCompositeOperation='lighter';
+var end=prog>0.94?(prog-0.94)/0.06:0,done=cl((prog-0.8)/0.1);
+var fade=1-end,sc=(1+0.02*B*(0.4+done))*(1+end*0.6),hue=sig.hue;
+c2.lineJoin='round';c2.lineCap='round';
+var E=sig.E,ne=E.length,tips=[];
+for(var i=0;i<ne;i++){var f=cl((prog-i/ne*0.78)/0.2);if(f<=0)continue;
+var el=E[i],rot=el.rot*T,cr=Math.cos(rot),sn=Math.sin(rot);
+c2.save();c2.rotate(rot);c2.scale(R*sc,R*sc);
+var np=el.pl.length;c2.beginPath();
+for(var j=0;j<np;j++){var fl=cl(f*np-j);if(fl<=0)break;var pts=el.pl[j],m=(pts.length-1)*fl,mi=Math.floor(m);
+c2.moveTo(pts[0][0],pts[0][1]);for(var q=1;q<=mi;q++)c2.lineTo(pts[q][0],pts[q][1]);
+var tx=pts[mi][0],ty=pts[mi][1];
+if(mi<pts.length-1){var t=m-mi;tx=pts[mi][0]+(pts[mi+1][0]-pts[mi][0])*t;ty=pts[mi][1]+(pts[mi+1][1]-pts[mi][1])*t;c2.lineTo(tx,ty);}
+if(fl<1&&tips.length<14){tips.push([(tx*cr-ty*sn)*R*sc,(tx*sn+ty*cr)*R*sc]);}}
+var wave=0.72+0.28*Math.sin(T*2.2-i*0.9);
+var gi=glow*fade*(0.75+0.25*done)*(done>0?wave:1)*(1+0.35*B*(0.3+done));
+var u=1/(R*sc);
+for(var k=0;k<4;k++){c2.lineWidth=PW[k]*(k<3?(0.6+glow*0.7+0.3*B*done):1)*u;
+c2.strokeStyle=k<3?'hsla('+hue+',95%,62%,'+(PA[k]*gi)+')':'hsla('+hue+',100%,93%,'+(PA[k]*fade*(0.55+0.45*glow))+')';c2.stroke();}
+c2.restore();}
+// 輝く筆先
+for(var i=0;i<tips.length;i++){var x=tips[i][0],y=tips[i][1];
+c2.beginPath();c2.arc(x,y,7,0,TAU);c2.fillStyle='hsla('+hue+',95%,65%,'+(0.16*glow)+')';c2.fill();
+c2.beginPath();c2.arc(x,y,3.2,0,TAU);c2.fillStyle='hsla('+hue+',100%,80%,'+(0.4*glow)+')';c2.fill();
+c2.beginPath();c2.arc(x,y,1.4,0,TAU);c2.fillStyle='rgba(255,255,255,0.95)';c2.fill();}}
+
+/* ===== 毎コマの更新 ===== */
+function frame(ts){
+var dt=Math.min(0.05,(ts-last)/1000);last=ts;
+if(run){T+=dt;ph+=dt*bpm/60;var P=ph-Math.floor(ph);
+prog+=dt/DUR;if(prog>=1){prog=0;} // 本番: prog = audio.currentTime / audio.duration
+pg.value=Math.round(prog*100);po.textContent=Math.round(prog*100)+'%';
+// 鼓動：二段打ち（ドクン・ドクッ）。本番: 拍の検出と低音の強さに置き換える
+var B=Math.exp(-7*P)+(P>0.26?0.6*Math.exp(-9*(P-0.26)):0);
+// 向きの変化：3〜11秒ごと。8割で反転、強さ0.5〜1
+if(T>nextD){dirT=(Math.random()<0.8?-Math.sign(dirT):Math.sign(dirT))*rnd(0.5,1);nextD=T+rnd(3,11);}
+// 数の変化：1.2〜5.5秒ごと。55%で±1〜2、30%で別の数へ、15%で1か最大へ。向きとは無関係
+if(T>nextC){var q=Math.random();
+if(q<0.55){cnt+=(Math.random()<0.5?-1:1)*(Math.random()<0.7?1:2);}
+else if(q<0.85){cnt=1+Math.floor(Math.random()*NM);}
+else{cnt=Math.random()<0.5?1:NM;}
+cnt=Math.max(1,Math.min(NM,cnt));nextC=T+rnd(1.2,5.5);}
+vel+=(dirT-vel)*Math.min(1,dt*1.1);
+D+=((dirT<0?0.08:0.34)-D)*Math.min(1,dt*0.5); // 曼荼羅どうしの距離
+var sum=0;
+for(var i=0;i<NM;i++){var w=i<cnt;
+// 生まれ方・消え方：吸い込み中に生まれる→外から来る／発散中に生まれる→中心から湧く／発散中に消える→外へ飛び去る／吸い込み中に消える→その場で溶ける
+if(w&&!on[i]){on[i]=true;ro[i]=vel<0?0.85:0;}
+if(!w&&on[i]){on[i]=false;}
+if(on[i]){ro[i]+=(0-ro[i])*Math.min(1,dt*1.3);al[i]+=(1-al[i])*Math.min(1,dt*1.4);}
+else{if(vel>0)ro[i]+=dt*0.5;al[i]+=(0-al[i])*Math.min(1,dt*1.8);}
+sum+=al[i];
+// 形の変化：各曼荼羅が2.5〜9秒ごとに独立して。3割が円、7割が多角形
+if(T>nextS[i]){want(i,Math.random()<0.3?0:SIDES[Math.floor(Math.random()*SIDES.length)]);nextS[i]=T+rnd(2.5,9);}
+if(pend[i]>0&&hm[i]<0.03){gn[i]=pend[i];pend[i]=0;ht[i]=1;}
+hm[i]+=(ht[i]-hm[i])*Math.min(1,dt*1.6);}
+var sp2=Math.min(1,Math.max(0,sum-1));spread+=(sp2-spread)*Math.min(1,dt*2); // 1つだけの時は中心に置く
+Z+=dt*vel*(0.55+0.45*B);
+th0+=dt*(0.2+0.55*Math.max(0,-vel)*(1-D/0.36));
+for(var i=0;i<NM;i++){var th=i*2.39996+th0*(i%2?1:0.7)+0.4*Math.sin(T*0.31+i*2.1); // 黄金角で配置
+var of=0.55+0.6*((i*0.618)%1);
+var rad=(D*of*spread*(on[i]?al[i]:1)+ro[i])*(1+0.25*Math.sin(T*0.53+i*1.7))*(1+0.05*B);
+cs[i*2]=Math.cos(th)*rad;cs[i*2+1]=Math.sin(th)*rad;}
+gl.uniform2f(U.R,gc.width,gc.height);gl.uniform1f(U.Z,Z);gl.uniform1f(U.T,T);gl.uniform1f(U.B,B);gl.uniform1f(U.P,P);gl.uniform1f(U.K,2+1.5*sum);gl.uniform1f(U.W,vel);gl.uniform2fv(U.C,cs);gl.uniform1fv(U.A,al);gl.uniform1fv(U.G,gn);gl.uniform1fv(U.H,hm);
+gl.drawArrays(gl.TRIANGLES,0,3);
+sigil(B);
+msg.textContent='曲 '+track+'（'+sig.sym+'回対称） ・ 曼荼羅 '+Math.max(1,Math.round(sum))+'つ ・ '+(prog>0.94?'散る':prog>0.8?'完成':'形成中');}
+requestAnimationFrame(frame);}
+document.getElementById('nx').addEventListener('click',function(){track=1+Math.floor(Math.random()*999);sig=build(track);prog=0;});
+document.getElementById('pp').addEventListener('click',function(){run=!run;this.textContent=run?'一時停止':'再生';});
+requestAnimationFrame(function(ts){last=ts;frame(ts);});
+})();
+</script>
+</body>
+</html>

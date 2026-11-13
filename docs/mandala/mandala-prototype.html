@@ -2,90 +2,223 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OGS 曼荼羅プレイヤー 参考実装（試作）</title>
-<!--
-  OGS 曼荼羅プレイヤー 参考実装
-  ・この1ファイルで動く。ブラウザで開くだけ。画像・外部ライブラリは不使用。
-  ・見た目と動きの「正解」として扱うこと。本番実装はこれを移植し、擬似の拍（bpm固定）を実際の音の解析値に置き換える。
-  ・二層構造：
-      背景層  = WebGLのフラグメントシェーダ（#gl）。最大9つの曼荼羅を重み付きで合成。
-      魔法陣層 = 2Dキャンバス（#tx）。曲番号を種にした線画を、曲の進行に合わせて描く。
-  ・背景層の乱数は Math.random()（毎回違ってよい）。魔法陣層は種つき乱数 mul()（同じ曲は必ず同じ形）。
--->
-<style>
-  body{margin:0;background:#0b0c12;color:#d8d6cf;font-family:system-ui,sans-serif;padding:16px}
-  .wrap{max-width:420px;margin:0 auto}
-  .stage{position:relative;width:100%;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:#07080d}
-  .stage canvas{position:absolute;inset:0;width:100%;height:100%}
-  .row{display:flex;align-items:center;gap:12px;margin-top:12px}
-  .row label{font-size:14px;color:#9a988f;min-width:72px}
-  .row input{flex:1}
-  .row span{font-size:14px;min-width:40px;text-align:right}
-  .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-  button{min-height:44px;background:transparent;color:inherit;border:1px solid #3a3a44;border-radius:8px;font-size:15px}
-  #msg{font-size:13px;color:#9a988f;margin:10px 0 0;text-align:center}
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html{color-scheme:dark}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
-<div class="wrap">
-  <div class="stage">
-    <canvas id="gl"></canvas>
-    <canvas id="tx"></canvas>
+<title>OGS 曼荼羅 v2.1 試作</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* レイアウト: 正方形の舞台を主役に置き、操作は脇(狭い画面では下)に静かに並べる。暗い一色の世界に固定 */
+:root{
+  color-scheme:dark;
+  --bg:#090a10; --panel:#11121b; --fg:#e8e0cc; --muted:#9a927f; --line:#2c2d3a; --gold:#d8b46a; --warn:#d9634a;
+  --serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+  --sans:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.7;
+  padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.page{max-width:940px;margin:0 auto;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));align-items:start}
+header{grid-column:1/-1}
+h1{font-family:var(--serif);font-weight:500;font-size:22px;letter-spacing:.06em;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.stage{position:relative;width:100%;max-width:100%;border-radius:10px;overflow:hidden;background:#020205;display:flex;align-items:center;justify-content:center}
+.view{position:relative;width:100%;max-width:100%;aspect-ratio:1/1}
+.stage.sbs .view{aspect-ratio:2/1}
+.stage:fullscreen{width:100vw;height:100vh;border-radius:0;background:#000}
+.stage:fullscreen .view{width:min(100vw,100vh)}
+.stage.sbs:fullscreen .view{width:min(100vw,200vh)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+#credit{position:absolute;inset:0;display:flex;pointer-events:none;font-family:var(--serif);color:#efe6d0}
+#credit .eye{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 14%}
+#credit .eye[hidden]{display:none}
+#credit .g{position:static;inset:auto;flex:none;width:30px;height:30px;opacity:0;margin-bottom:16px}
+#credit .t{font-size:clamp(12px,3.3vw,15px);letter-spacing:.42em;margin-right:-.42em;line-height:1.9;opacity:0;text-wrap:balance}
+#credit .r{width:0;height:1px;background:var(--gold);opacity:.6;margin:14px 0 13px}
+#credit .a{font-size:11px;letter-spacing:.36em;margin-right:-.36em;color:#b9b09a;opacity:0}
+#credit .o{font-size:10px;letter-spacing:.44em;margin-right:-.44em;color:var(--gold);opacity:0;margin-top:28px;white-space:nowrap}
+#credit.on .g{opacity:.85;transition:opacity 1.6s ease}
+#credit.on .r{width:34px;transition:width 1.6s ease .5s}
+#credit.on .t{opacity:.95;transition:opacity 1.8s ease .8s}
+#credit.on .a{opacity:.9;transition:opacity 1.8s ease 1.5s}
+#credit.on .o{opacity:.6;transition:opacity 1.8s ease 2.3s}
+.stage.sbs #credit .t{font-size:clamp(11px,1.7vw,13px)}.stage.sbs #credit .g{width:22px;height:22px}
+.row input[type=text]{flex:1;min-width:0;min-height:38px;background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit;font-size:14px}
+#msg{font-size:13px;color:var(--muted);margin:10px 0 0;font-variant-numeric:tabular-nums}
+.story{display:flex;gap:4px;margin:10px 0 0;padding:0;list-style:none;font-family:var(--serif);font-size:12.5px;color:var(--muted)}
+.story li{flex:1;text-align:center;border-top:2px solid var(--line);padding-top:4px}
+.story li.now{color:var(--gold);border-color:var(--gold)}
+.panel{display:flex;flex-direction:column;gap:18px;min-width:0}
+.group{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.group h2{font-family:var(--serif);font-weight:500;font-size:15px;letter-spacing:.08em;margin:0}
+.group p{margin:0;font-size:12.5px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px}
+.row label,.row .lab{font-size:14px;min-width:5.2em}
+.row input[type=range]{flex:1;min-width:0;accent-color:var(--gold)}
+.row output{font-size:13px;min-width:2.8em;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.bar{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--gold)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button,.file{min-height:44px;background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:8px;font:inherit;font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8px}
+.file{border-color:var(--gold);color:var(--gold)}
+.file input{position:absolute;width:1px;height:1px;opacity:0}
+button:hover,.file:hover{border-color:var(--gold)}
+button:focus-visible,input:focus-visible,.file:focus-within{outline:2px solid var(--gold);outline-offset:2px}
+button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
+#beat{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--gold);opacity:.15;margin-right:8px;vertical-align:middle}
+.note{border-left:2px solid var(--warn);padding-left:10px}
+</style>
+
+<div class="page">
+  <header>
+    <h1>OGS 曼荼羅プレイヤー 試作</h1>
+    <p>無から一点が生まれ、曼荼羅となり、大きな波ひとつを経て一つの字が現れ、字も砕けて無に帰ります。</p>
+  </header>
+
+  <div>
+    <div class="stage" id="stg"><div class="view"><canvas id="gl"></canvas><canvas id="gx" style="pointer-events:none"></canvas>
+      <div id="credit" aria-live="polite"><div class="eye"><canvas class="g" id="crG" width="120" height="120"></canvas><div class="t" id="crT"></div><div class="r"></div><div class="a" id="crA"></div><div class="o">開羯諦経 OPEN GATE SUTRA</div></div>
+      <div class="eye" id="crE2" hidden><canvas class="g" id="crG2" width="120" height="120"></canvas><div class="t" id="crT2"></div><div class="r"></div><div class="a" id="crA2"></div><div class="o">開羯諦経 OPEN GATE SUTRA</div></div></div></div></div>
+    <ol class="story" id="story"><li>無</li><li>一点</li><li>誕生</li><li>生成</li><li>秩序へ</li><li>曼荼羅</li><li>大波</li><li>一字</li><li>無</li></ol>
+    <p id="msg" role="status"></p>
+    <div id="shotbox" hidden style="margin-top:16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+        <img id="shotimg" alt="完成した曼荼羅の画像" style="width:100%;border-radius:10px;border:1px solid var(--line)">
+        <img id="glyphimg" alt="この曲の創作字の画像" style="width:100%;border-radius:10px;border:1px solid var(--line)">
+      </div>
+      <img id="stimg" alt="左右に並べた立体視用の曼荼羅の画像" hidden style="width:100%;border-radius:10px;border:1px solid var(--line);margin-top:12px">
+      <p id="sthelp" hidden style="font-size:12.5px;color:var(--muted);margin:6px 0 0"></p>
+      <p style="font-size:12.5px;color:var(--muted);margin:6px 0 0">画像を長押し（PCは右クリック）で保存できます。</p>
+    </div>
   </div>
-  <div class="row"><label for="pg">曲の進行</label><input type="range" id="pg" min="0" max="100" step="1" value="0"><span id="po">0%</span></div>
-  <div class="row"><label for="gw">光の強さ</label><input type="range" id="gw" min="0" max="100" step="1" value="70"><span id="go">70</span></div>
-  <div class="row"><label for="bp">テンポ</label><input type="range" id="bp" min="50" max="140" step="1" value="76"><span id="bo">76</span></div>
-  <div class="btns">
-    <button id="nx">別の曲にする</button>
-    <button id="pp">一時停止</button>
+
+  <div class="panel">
+    <div class="group">
+      <h2>曲</h2>
+      <label class="file" for="au"><input type="file" id="au" accept="audio/*">曲ファイルを選ぶ（MP3・WAV）</label>
+      <div class="row"><label for="ttl">曲名</label><input type="text" id="ttl" value="曲のタイトル" autocomplete="off"></div>
+      <div class="row"><label for="art">作者</label><input type="text" id="art" value="作者名" autocomplete="off"></div>
+      <div class="row"><label for="pg">曲の進行</label><input type="range" id="pg" min="0" max="1000" step="1" value="0"><output id="po">0%</output></div>
+      <div class="btns">
+        <button type="button" id="pp">一時停止</button>
+        <button type="button" id="fin">結末を見る</button>
+        <button type="button" id="nx">別の曲の種にする</button>
+        <button type="button" id="rc">色と模様を振り直す</button>
+      </div>
+      <button type="button" id="fx" aria-pressed="false">結末：毎回ちがう</button>
+      <button type="button" id="sh" style="border-color:var(--gold);color:var(--gold)">曼荼羅と字を画像にする</button>
+      <div class="btns"><button type="button" id="sb3" aria-pressed="false">3D表示：切</button><button type="button" id="fsb">全画面</button></div>
+      <div class="row"><label for="dp">奥行き</label><input type="range" id="dp" min="5" max="30" step="1" value="16"><output id="do">1.6</output></div>
+      <div class="btns"><button type="button" id="st3">3D画像にする</button><button type="button" id="stm" aria-pressed="false">見方：平行法</button></div>
+      <div class="row"><span class="lab">流れ</span><div class="btns" style="flex:1;grid-template-columns:1fr 1fr 1fr">
+        <button type="button" id="f0" aria-pressed="true">自在</button><button type="button" id="f1" aria-pressed="false">収束寄り</button><button type="button" id="f2" aria-pressed="false">発散寄り</button></div></div>
+      <div class="row"><label for="sp">流れの速さ</label><input type="range" id="sp" min="5" max="50" step="1" value="15"><output id="so">1.5倍</output></div>
+      <div class="row" id="bpmrow"><label for="bp">テンポ</label><input type="range" id="bp" min="60" max="150" step="1" value="96"><output id="bo">96</output></div>
+    </div>
+
+    <div class="group">
+      <h2>いま拾っている音</h2>
+      <div class="row"><span class="lab"><span id="beat"></span>拍</span><output id="bs" style="flex:1;text-align:left">擬似の拍</output></div>
+      <div class="row"><span class="lab">低音</span><div class="bar"><i id="m0"></i></div></div>
+      <div class="row"><span class="lab">中音</span><div class="bar"><i id="m1"></i></div></div>
+      <div class="row"><span class="lab">高音</span><div class="bar"><i id="m2"></i></div></div>
+      <div class="row"><span class="lab">勢い</span><div class="bar"><i id="m3"></i></div></div>
+      <div class="btns"><button type="button" id="pl" aria-pressed="false">鼓動：切</button><button type="button" id="ck" aria-pressed="false">確認音：切</button></div>
+      <div class="row"><span class="lab">下読み</span><output id="an" style="flex:1;text-align:left">曲を選ぶと、再生の前に曲全体を読みます</output></div>
+      <p>流れと回転の速さは、曲の「勢い」に従います。静かな所ではほとんど止まり、激しい所では一気に流れます。色の組は曲調の変わり目で移ります。結末は毎回ちがう曼荼羅になります。構図の型は、一軸・輪・二軸・格子・花・二重の輪・渦巻きの7系統で、曲の勢いが型の選び方を左右します。</p>
+    </div>
+
+    <div class="group">
+      <h2>この試作の前提</h2>
+      <p class="note">ここでは音をその場で解析しています。本番のスマホでは同じ方法が使えないため、曲ごとに拍と音量のデータを先に作っておく方式になります。</p>
+      <p>最後に現れる字は、梵字の写しではなく、部品を組み合わせて作るOGS独自の創作字です。字は曲ごとに一つに決まります。曲を選ばないあいだは100秒を一曲に見立て、一定テンポの拍で動きます。選んだ曲ファイルはこの端末の中だけで使われます。</p>
+    </div>
   </div>
-  <p id="msg"></p>
 </div>
+
 <script>
 (function(){
-var gc=document.getElementById('gl'),tc=document.getElementById('tx'),c2=tc.getContext('2d');
-var gl=gc.getContext('webgl');var msg=document.getElementById('msg');
+function $(id){return document.getElementById(id);}
+var gx=$('gx'),x2=gx.getContext('2d');var gc=$('gl');var gl=gc.getContext('webgl',{preserveDrawingBuffer:true});var msg=$('msg');
 function fail(){msg.textContent='この端末では表示できませんでした';}
 if(!gl){fail();return;}
-var dpr=Math.min(window.devicePixelRatio||1,2),NM=9,S=0; // NM = 曼荼羅の上限数。解像度は2倍まで
-function rs(){S=gc.clientWidth;gc.width=tc.width=S*dpr;gc.height=tc.height=S*dpr;gl.viewport(0,0,gc.width,gc.height);}
+var scale=Math.min(window.devicePixelRatio||1,2),NM=12,S=0;
+var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+var sbs=false,dep=1.6,DZ=new Float32Array(12);
+function rs(){S=gc.clientWidth;gc.width=Math.round(S*scale);gc.height=Math.round(S*scale*(sbs?0.5:1));if(sbs)S=S/2;gx.width=gc.width;gx.height=gc.height;gl.viewport(0,0,gc.width,gc.height);}
 
-/* ===== 背景層：シェーダ =====
-   uniform の意味
-   Z: 輪の流れの累積（増える=外へ湧き出る／減る=中心へ吸い込む）
-   T: 経過秒   B: 鼓動の強さ(0..1強)   P: 拍の位相(0..1)   K: 各曼荼羅の広がりの鋭さ（数が多いほど小さく）
-   W: 吸い込み(-1)〜発散(+1)の向きと強さ
-   C[i]: 各曼荼羅の中心   A[i]: 存在の濃さ(0..1)   G[i]: 多角形の角数   H[i]: 円(0)〜多角形(1)の混ぜ具合 */
+/* ===== 描画 =====
+   曼荼羅は一つずつ「輪の形の領域」を持つ。An[i]=(内側の半径, 外側の半径)。
+   生きている間は円盤(内側なし)として漂い、結末では同じ中心に並ぶ同心の帯になって一つの曼荼羅を組む。
+   M1[i]=(花弁の数, 輪の密度, 花弁の尖り, らせんの傾き)  M2[i]=(色相, 輪ごとの色相の進み, 差し色までの色相差, 彩度)
+   M3[i]=(珠の有無, 内花弁の比率, 未使用, 輪の位相)  Bm[i]=鼓動  Rp=回転の位相  O=花弁の開き  Pt=一点の光  Ac=中心の光の量 */
 var vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
-var fs='precision mediump float;uniform vec2 R;uniform float Z;uniform float T;uniform float B;uniform float P;uniform float K;uniform float W;uniform vec2 C[9];uniform float A[9];uniform float G[9];uniform float H[9];'+
+var fs='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n'+
+'uniform vec2 R;uniform float Z;uniform float T;uniform float B;uniform float P;uniform float W;uniform float L;uniform float Rp;uniform float O;uniform float Fs;uniform float Fv;uniform vec3 Bg;uniform vec3 Ca[12];uniform vec3 Cb[12];uniform vec3 Cc[12];uniform float Pt;uniform float Ac;uniform float Md;uniform vec2 Bw;uniform vec2 Gd;uniform float Ey;uniform float Sb;uniform float Dz[12];uniform float Rr[12];uniform float Pr[12];uniform float Av[12];uniform float Sv;uniform float Fn;uniform vec4 Wp[12];uniform vec3 Q[9];uniform vec3 Qs;'+
+'uniform vec2 C[12];uniform vec2 An[12];uniform float A[12];uniform float G[12];uniform float H[12];uniform float Bm[12];uniform vec4 M1[12];uniform vec4 M2[12];uniform vec4 M3[12];'+
 'float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}'+
 'float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}'+
-'vec3 pal(float t){return .5+.5*cos(6.2832*(t+vec3(0.,.33,.67)));}'+
-'void main(){vec2 p=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);float r0=length(p);'+
-// 渦のねじれ（向きで反転）
-'float tw=W*1.6*exp(-r0*2.2);float cs=cos(tw),sn=sin(tw);p=vec2(p.x*cs-p.y*sn,p.x*sn+p.y*cs);'+
-'vec3 acc=vec3(0.);float ws=0.;float ln=0.;float wr=P*.75;float w0=exp(-P*2.5);'+
-'for(int i=0;i<9;i++){float al=A[i];if(al<.003)continue;float fi=float(i);vec2 q=p-C[i];float rc=length(q)+1e-4;float a=atan(q.y,q.x);'+
-'float sg=mod(fi,2.)*2.-1.;float N=floor(5.+fi*1.5);'+
-// 円⇔多角形の変形
-'float s=6.2832/G[i];float d=rc*cos(mod(a+T*.12*sg+fi,s)-.5*s)*1.14;float r=mix(rc,d,H[i]);'+
-// 鼓動：外へ伝わる波 wv、全体の拍動、円周のうねり
+'float hgt(vec2 p){float hh=0.;'+
+'for(int i=0;i<12;i++){if(A[i]<.05)continue;vec2 an=An[i];float d=length(p-C[i]);if(d>=an.y)continue;float fi=float(i);float dz=Dz[i]*A[i];'+
+'if(an.x<0.){float t=d/max(an.y,.02);hh+=dz*.75*(1.-t*t);}else{hh+=dz*.07;if(d<an.x)continue;}'+
+'float u=log(max(d,1e-4))*M1[i].y-Z*(.8+.07*fi)-M3[i].w;float f=fract(u);hh+=.5*f*(1.-f)*A[i]*min(1.,M3[i].z*4.);}'+
+'return clamp(hh,-1.3,1.7);}'+
+'void main(){vec2 fc=gl_FragCoord.xy;vec2 V=R;float ey=Ey;if(Sb>.5){V.x=R.x*.5;if(fc.x>=V.x){fc.x-=V.x;}else{ey=-Ey;}}'+
+'vec2 p=(fc-.5*V)/min(V.x,V.y);float shd=1.;if(ey!=0.){shd=1.+clamp((hgt(p+vec2(-.006,.006))-hgt(p+vec2(.006,-.006)))*1.5,-.3,.3);p.x+=ey*(hgt(p)-.3);}p*=1.-.025*B;float r0=length(p);'+
+/* 大波: 中心から外へ進む一つの大きなうねり。通る所の模様を外へ押し出す */
+'float bwd=r0-Bw.x;float bwv=Bw.y*exp(-bwd*bwd*30.);p*=1.-.2*bwv;'+
+'vec2 p0=p;'+
+'for(int j=0;j<9;j++){vec3 qq=Q[j];if(qq.z<.01)continue;vec2 dq=p-qq.xy;float tw=W*1.6*qq.z*exp(-length(dq)*Qs.x);float cs=cos(tw),sn=sin(tw);p=qq.xy+vec2(dq.x*cs-dq.y*sn,dq.x*sn+dq.y*cs);}'+
+'vec3 acc=vec3(0.);float ws=0.;float ln=0.;float wl=0.;float cov=0.;float rim=0.;float wr=P*.75;float w0=exp(-P*2.5);float lf=0.;float wg=step(1e-4,Bw.y);'+
+'for(int i=0;i<12;i++){float al=A[i];if(al<.003)continue;float fi=float(i);vec4 m1=M1[i];vec4 m2=M2[i];vec4 m3=M3[i];vec2 an=An[i];'+
+'vec2 q=p-C[i];vec4 wp=Wp[i];'+
+/* 有機的な場面: 座標そのものをゆがめる。x=流体と煙のうねり, y=植物のつるのしなり, z=炎のゆらぎ, w=輪郭のにじみ */
+'if(wp.x>.002){vec2 s1=q*3.2+fi*7.;q+=wp.x*(vec2(n(s1+vec2(0.,T*.25)),n(s1+vec2(31.7,-T*.22)))-.5+.5*(vec2(n(s1*2.1+T*.3),n(s1*2.1+vec2(9.,-T*.3)))-.5));}'+
+'if(wp.z>.002){float fy=max(q.y+.25,0.);q.x+=wp.z*(n(vec2(q.x*6.+fi,q.y*4.-T*1.9))-.5)*(.5+3.*fy);q.y-=wp.z*.5*fy*n(vec2(q.x*4.,T*1.3+fi));}'+
+'float rc=length(q)+1e-4;float a=atan(q.y,q.x);'+
+'a+=wp.y*(sin(log(rc)*4.-T*1.2+fi)+.5*sin(log(rc)*9.+T*.8+fi*2.));'+
+'float sg=mod(fi,2.)*2.-1.;float N=m1.x;float b=Bm[i];'+
+'float s=6.2832/G[i];float d=rc*cos(mod(a+Pr[i],s)-.5*s)*1.14;float r=mix(rc,d,H[i]);'+
+'float rb=r*(1.-.05*b);'+
+'float cv=smoothstep(an.x-.004,an.x+.004,rb)*(1.-smoothstep(an.y-.004-wp.w*.14,an.y+.004,rb));'+
+'rim+=(1.-smoothstep(.0008,.003,abs(rb-an.y)))*al*smoothstep(.01,.05,an.y);'+
+'if(cv<.002)continue;'+
 'float wv=w0*exp(-pow((r-wr)*8.,2.));'+
-'float rr=r*(1.-.08*B)-.04*wv-.012*B*sin(a*N+T*3.)*smoothstep(0.,.12,r)*(1.-H[i]*.7);rr=max(rr,1e-4);'+
-// 対数らせん状の輪（トンネル）と花弁
-'float u=log(rr)*1.5-Z*(.8+.07*fi)-fi*.37;float ring=floor(u);float f=fract(u);'+
-'float v=(a+T*.1*(mod(ring,2.)*2.-1.)*sg+W*.5*log(rr))/6.2832*N;'+
-'float e=1.-abs(fract(v)-.5)*2.;float pet=smoothstep(0.,.08,e*.85-f+.12);float inn=smoothstep(0.,.08,e*.5-f+.02);'+
-'vec3 c=pal(fi*.137+ring*.11+pet*.2+T*.015);c=mix(c*.4,c,pet);c=mix(c,pal(fi*.137+ring*.11+.5),inn*.7);'+
-// 重み付き合成。重なった所で輪の線 ln が足し合わされ、干渉模様になる
-'float w=(exp(-r*r*K)+.015)*al;acc+=c*w;ws+=w;'+
-'ln+=w*(smoothstep(.05,0.,f)+smoothstep(.95,1.,f)+wv*.9);}'+
-'vec3 col=acc/max(ws,1e-4);col+=vec3(1.,.82,.45)*min(ln,1.3)*.3;'+
-'col*=.8+.35*n(p*38.+T*.05);col=pow(col,vec3(.9));'+
-// 吸い込み時は中心が暗い穴、発散時は光源
-'float hole=max(0.,-W);col*=mix(1.,smoothstep(.0,.22,r0),hole*.85);'+
-'col+=vec3(1.,.9,.7)*(max(0.,W)*.3+B*.08)*exp(-r0*r0*26.);col*=(1.-.35*r0*r0*2.)*.6;'+ // 末尾の .6 は魔法陣を引き立てるための減光
+'float rr=r*(1.-.09*b)-.035*wv-.008*b*sin(a*N+T*3.)*smoothstep(0.,.12,r)*(1.-H[i]*.7);rr=max(rr,1e-4);'+
+'float u=log(rr)*m1.y-Z*(.8+.07*fi)-m3.w;float ring=floor(u);float f=fract(u);'+
+'float v=(a+Rr[i]*(mod(ring,2.)*2.-1.)+W*.5*log(rr))/6.2832*N+m1.w*u+Av[i];'+
+'float e=pow(1.-abs(fract(v)-.5)*2.,m1.z);'+
+'float d1=e*(.85+.4*O)-f+.12;float pe=.025+wp.w*.3;float pet=smoothstep(0.,pe,d1);float inn=smoothstep(0.,pe,e*m3.y-f+.02);'+
+'float ol=(1.-smoothstep(.012,.04,abs(d1)))*(1.-min(1.,wp.w*3.));'+
+'float dt=smoothstep(.18,.15,length(vec2((fract(v+.5)-.5)*1.2,(f-.58)*1.6)))*m3.x;'+
+'float alt=mod(ring,2.);vec3 ka=Ca[i];vec3 kb=Cb[i];vec3 c1=mix(ka,kb,alt);vec3 c2=mix(kb,ka,alt);'+
+'float sh=.84+.16*sin(ring*2.4+fi);'+
+'vec3 ink=vec3(.02,.02,.045);'+
+/* 塗りは一色とは限らない。m2.x=根元から先へ色が移る, m2.y=花弁の芯が明るく縁が暗い, m2.z=中心が明るく外へ沈む */
+'vec3 cf=mix(c1,mix(c1,c2,clamp(f*1.15,0.,1.)),m2.x)*sh;cf*=mix(1.,.5+.75*e,m2.y);'+
+'vec3 c=mix(c2*.22+ink,cf,pet);c=mix(c,Cc[i],inn);c=mix(c,vec3(.93,.85,.62),dt);c=mix(c,ink,ol*.9);'+
+'c*=mix(1.,1.2-.7*clamp(rb/max(an.y,.05),0.,1.),m2.z)*m2.w;'+
+'float w0i=(exp(-r*r*3.)+.02)*cv*al*m3.z;float w=w0i*w0i*36.;acc+=c*w;ws+=w;wl+=w0i;cov+=cv*al;'+
+'ln+=w0i*((1.-smoothstep(0.,.045,min(f,1.-f)))+wv*.9*(1.-wg));lf+=w0i*wv*wg;}'+
+'vec3 gold=vec3(.86,.72,.42);'+
+'vec3 col=acc/max(ws,1e-6);col=mix(col,gold,min(ln/max(wl,1e-4)*1.5,1.)*L);col*=1.+1.1*min(lf/max(wl,1e-4),1.);'+
+/* 余白: 渦の中心へ向かう細い輪と放射の線。流れと一緒に動くので、吸い込みと湧き出しが闇の中でも見える */
+'float dm=9.;vec2 dv=p;for(int j=0;j<9;j++){vec3 qq=Q[j];if(qq.z<.3)continue;vec2 ev=p-qq.xy;float le=length(ev);if(le<dm){dm=le;dv=ev;}}'+
+'float fu=fract(log(dm+.002)*2.6-Z*.9);float fl=1.-smoothstep(0.,.05,min(fu,1.-fu));'+
+'float fa=fract(atan(dv.x,dv.y)/6.2832*Fs);float fsp=1.-smoothstep(0.,.03,min(fa,1.-fa));'+
+'vec3 bg=Bg*(.45+.75*exp(-dm*3.5))+gold*(fl*.075+fsp*.035)*smoothstep(0.,.05,dm);'+
+'bg+=vec3(.8,.78,.7)*step(.9975,h(floor(p0*210.)))*.22;bg*=Fv;'+
+'col=mix(bg,col,min(cov,1.)*Md);'+
+'col=mix(col,gold,min(rim,1.)*.38*Md);float gd=Gd.x*smoothstep(Gd.y+.05,Gd.y-.16,r0)*smoothstep(0.,.3,Md);float gly=dot(col,vec3(.3,.59,.11));col=mix(col,vec3(1.,.8,.42)*(.2*min(gly*12.,1.)+1.55*gly),gd*.86);col+=(col*.45+vec3(1.,.84,.5)*.5)*bwv*Md;'+
+'col*=.95+.08*n(p*38.+T*.05);'+
+'float hole=max(0.,-W);float hl=1.;vec3 glw=vec3(0.);'+
+'for(int j=0;j<9;j++){vec3 qq=Q[j];if(qq.z<.01)continue;float dd=length(p0-qq.xy);hl*=mix(1.,smoothstep(0.,Qs.y,dd),hole*.8*qq.z);'+
+'glw+=qq.z*(vec3(1.,.9,.7)*(max(0.,W)*.25+B*.06*(1.-.75*wg))*Ac*exp(-dd*dd*Qs.z)+vec3(1.,.93,.78)*Pt*(exp(-dd*dd*2600.)*1.3+exp(-dd*dd*Qs.z*4.)*.22));}'+
+'col*=hl;col+=glw;'+
+'float lm=dot(col,vec3(.3,.59,.11));col=mix(vec3(lm),col,Sv);col*=.94+.1*(Sv-1.);'+
+'col+=gold*Fn*(.16*exp(-pow((r0-.474)*42.,2.))+.05*exp(-pow((r0-.474)*9.,2.)));'+
+'col*=(1.-.3*r0*r0*2.)*.94*shd;'+
 'gl_FragColor=vec4(col,1.);}';
 function sh(t,s){var x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x;}
 var pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);
@@ -93,129 +226,738 @@ if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){fail();return;}
 gl.useProgram(pr);
 var bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
 var lp=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(lp);gl.vertexAttribPointer(lp,2,gl.FLOAT,false,0,0);
-var U={};['R','Z','T','B','P','K','W','C','A','G','H'].forEach(function(k){U[k]=gl.getUniformLocation(pr,k);});
+var U={};['R','Z','T','B','P','W','L','Rp','O','Fs','Fv','Bg','Ca','Cb','Cc','Pt','Ac','Md','Bw','Gd','Ey','Sb','Dz','Rr','Pr','Av','Sv','Fn','Wp','Q','Qs','C','An','A','G','H','Bm','M1','M2','M3'].forEach(function(k){U[k]=gl.getUniformLocation(pr,k);});
 rs();window.addEventListener('resize',rs);
 
-/* ===== 魔法陣層：曲番号から形を作る ===== */
+/* ===== 曲の種: 配色の型と、結末の曼荼羅の設計図 ===== */
 var TAU=Math.PI*2;
-function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};} // 種つき乱数
-function gcd(a,b){return b?gcd(b,a%b):a;}
-function circ(x,y,r,n){var o=[];for(var i=0;i<=n;i++){var a=i*TAU/n;o.push([x+Math.cos(a)*r,y+Math.sin(a)*r]);}return o;}
-function star(n,k,r,rot){var g=gcd(n,k),out=[];for(var j=0;j<g;j++){var o=[];for(var i=0;i<=n/g;i++){var a=rot+(j+i*k)*TAU/n;o.push([Math.cos(a)*r,Math.sin(a)*r]);}out.push(o);}return out;}
-// 部品は現在9種。本番では30種以上に増やす。各部品 = 折れ線の配列 pl と、回転速度 rot
-function build(seed){var r=mul(seed*7919+13),E=[];
-var sym=[5,6,7,8,9,10,12][Math.floor(r()*7)];
-function add(pl,rot){E.push({pl:pl,rot:rot});}
-add([circ(0,0,0.06,24)],0);
-var fr=0.13+0.07*r(),pl=[],i,a;
-for(i=0;i<sym;i++){a=i*TAU/sym;pl.push(circ(Math.cos(a)*fr,Math.sin(a)*fr,fr,28));}add(pl,0.05);
-pl=[];for(i=0;i<sym;i++){a=i*TAU/sym+Math.PI/sym;pl.push([[Math.cos(a)*0.1,Math.sin(a)*0.1],[Math.cos(a)*0.5,Math.sin(a)*0.5]]);}add(pl,-0.03);
-var n2=[3,4,5,6][Math.floor(r()*4)];
-add(star(n2,1,0.5,0).concat(star(n2,1,0.5,Math.PI/n2)),0.04);
-add([circ(0,0,0.52,72)],0);
-var sr=0.05+0.035*r();pl=[];for(i=0;i<sym;i++){a=i*TAU/sym;pl.push(circ(Math.cos(a)*0.66,Math.sin(a)*0.66,sr,20));}add(pl,-0.02);
-var k=sym>=7?2+Math.floor(r()*2):2;
-add(star(sym,k,0.82,-Math.PI/2),0.025);
-if(r()<0.6){add(star(sym,1,0.82,-Math.PI/2+Math.PI/sym),-0.025);}
-add([circ(0,0,0.86,90),circ(0,0,0.93,90)],0);
-var tn=sym*(3+Math.floor(r()*3));pl=[];for(i=0;i<tn;i++){a=i*TAU/tn;pl.push([[Math.cos(a)*0.86,Math.sin(a)*0.86],[Math.cos(a)*0.93,Math.sin(a)*0.93]]);}add(pl,-0.015);
-if(r()<0.4)E.reverse(); // 外から内へ描く曲もある
-return {E:E,sym:sym,hue:Math.floor(r()*360)};}
+function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+/* 顔料の色。鮮やかな虹色をやめ、岩絵具に近い深い色を5色ずつ。最後の一色は余白の地色 */
+function hx(s){return [parseInt(s.slice(1,3),16)/255,parseInt(s.slice(3,5),16)/255,parseInt(s.slice(5,7),16)/255];}
+var PALS=[
+ {n:'群青と朱',c:['#24427c','#b5452f','#c39a48','#2f6b58','#e4d9be'],bg:'#070b18'},
+ {n:'緑青と臙脂',c:['#2c6c64','#7c2539','#c49b56','#22395c','#e2d5b8'],bg:'#06100f'},
+ {n:'藍と金',c:['#182c52','#3f5d84','#c7a04c','#8a3d2c','#e6dcc4'],bg:'#05080f'},
+ {n:'紫紺と丹',c:['#3a2b5e','#b65a3c','#cbab64','#2a5c69','#e3d7bd'],bg:'#0a0714'},
+ {n:'墨と金',c:['#2b2b35','#5a5962','#c5a24e','#857c6c','#e5dcc8'],bg:'#08080b'},
+ {n:'極彩',c:['#e63946','#f4a261','#2a9d8f','#3a5a9c','#f6efd9'],bg:'#0a0810'},
+ {n:'虹',c:['#ff3d7f','#ffb400','#00c2a8','#3d5afe','#fff3d6'],bg:'#07070f'},
+ {n:'炎',c:['#ff4d00','#ffb000','#8a0f33','#3a2378','#ffe9c7'],bg:'#100606'},
+ {n:'水',c:['#0077b6','#00b4d8','#7fd8e8','#1b2a8a','#f1f7ff'],bg:'#030a14'},
+ {n:'曙',c:['#ff6b6b','#ffd166','#06d6a0','#118ab2','#fff6e0'],bg:'#0b0812'},
+ {n:'紅紫',c:['#d6336c','#7b2cbf','#f59f00','#1971c2','#fbeaff'],bg:'#0c0612'}];
+/* 色の組の「温度」。0=静かな曲向き, 1=中間, 2=華やかな曲向き */
+[1,1,0,1,0,2,2,2,1,2,2].forEach(function(h,i){PALS[i].heat=h;});
+function palFor(level,rf){var l=PALS.filter(function(P){return level===0?P.heat<=1:level===1?P.heat>=1:P.heat===2;});return l[Math.floor(rf()*l.length)];}
+PALS.forEach(function(P){P.c=P.c.map(hx);P.bg=hx(P.bg);});
+/* 結末の曼荼羅を組む。軸の数(1・3・4・5・6・8)、帯の幅、中心の厚み、間に入る小さな曼荼羅の有無まで、曲ごとに変わる。
+   level=曲の勢い(0静か 1中間 2華やか)。静かな曲は軸が少なく、華やかな曲は軸が多い */
+function makeFinal(g,seed,level){var r=mul(seed*104729+level*7+5);
+function pk(a){return a[Math.floor(r()*a.length)];}
+var fin=[],i,k,a;if(g.free)g.sym=pk([5,6,7,8,9,10,12]);var sym=g.sym;
+for(i=0;i<12;i++){var m=pk([1,1,2,2,3]);if(sym*m>24)m=sym>12?1:2;
+var ia=Math.floor(r()*4),ib=(ia+1+Math.floor(r()*3))%4,ic=pk([2,4,4]);
+fin.push({N:sym*m,k:pk([1,2,2,3]),sharp:pk([.45,.8,1,1.6,2.6]),spiral:0,
+dot:r()<.5?1:0,inner:.3+.35*r(),ia:ia,ib:ib,ic:ic,gx:pk([0,.6,1]),gy:pk([0,.5,1]),gz:pk([0,.5,.9]),ph:r()});}
+/* 構図の型。静かな曲は軸の少ない型、華やかな曲は軸の多い型から選ぶ */
+var sl=[],fam=pk(level===0?['one','one','ring3','ring4','twin','flower','spiral']:level===1?['one','ring4','ring5','ring6','grid4','flower','double','spiral']:['ring5','ring6','ring8','ring8','grid9','double','spiral','flower']);
+var rot=Math.PI/2,cls=0,ord=0,n=0,twin=false,name='';
+function S(cx,cy,r1,r2,c,o){o=o||{};sl.push({cx:cx,cy:cy,r1:r1,r2:r2,cls:c,ord:ord++,solo:!!o.solo,pri:o.pri||1,bri:o.bri||1,dens:o.dens||0});}
+function ground(){S(0,0,0,.47,cls++,{pri:.04,bri:.42,dens:1.9+r()*.9});}                 /* 地になる大きな曼荼羅 */
+function borders(){var nb=12-sl.length;if(nb<=0)return;var bw=Math.min(.03,.066/nb);for(var q=0;q<nb;q++)S(0,0,.47-(nb-q)*bw,.47-(nb-q-1)*bw,cls++,{pri:4});}   /* 外周の輪 */
+function disc(x,y,rr,c,bands){if(bands>1){for(var q=0;q<bands;q++)S(x,y,q===0?0:rr*(.3+.7*q/bands),rr*(.3+.7*(q+1)/bands),c+q);}else S(x,y,0,rr,c,{solo:1});}
+if(fam==='one'){   /* 一つの軸: 12の帯。幅は不揃いにして、粗密のリズムを作る */
+var ws=[],tot=0;for(i=0;i<12;i++){ws.push(.6+r()*1.1+(i===0?.6:0));tot+=ws[i];}
+var acc=0;for(i=0;i<12;i++){var r1=acc/tot*.47;acc+=ws[i];S(0,0,r1,acc/tot*.47,i);}name='一軸';
+}else if(fam.slice(0,4)==='ring'){   /* 中心を軸の輪が囲む */
+n=+fam.slice(4);ground();
+twin=(n<=4&&r()<.45);var sb=(!twin&&n*2<=9)?2:1,rest=10-n*sb-(twin?n:0),cb=Math.max(1,Math.min(3,rest));
+var Rs=.27+r()*.045,rs=Math.min(Rs*Math.sin(Math.PI/n)*.96,.435-Rs),rc=Math.max(.05,Math.min(.17,Rs-rs-.012));
+for(i=0;i<cb;i++)S(0,0,i*rc/cb,(i+1)*rc/cb,cls++);
+var cA=cls++,cB=cls++;
+for(k=0;k<n;k++){a=rot+k*TAU/n;S(Math.cos(a)*Rs,Math.sin(a)*Rs,0,sb===2?rs*.52:rs,cA,{solo:sb===1});}
+if(sb===2)for(k=0;k<n;k++){a=rot+k*TAU/n;S(Math.cos(a)*Rs,Math.sin(a)*Rs,rs*.52,rs,cB);}
+if(twin){var Rb=Math.min(.375,Rs+.07),db=Math.sqrt(Rs*Rs+Rb*Rb-2*Rs*Rb*Math.cos(Math.PI/n))-rs-.006,rb=Math.max(.03,Math.min(.435-Rb,db,.085)),cT=cls++;
+for(k=0;k<n;k++){a=rot+Math.PI/n+k*TAU/n;S(Math.cos(a)*Rb,Math.sin(a)*Rb,0,rb,cT,{solo:1});}}
+borders();name=n+'軸'+(twin?'・二重':'');
+}else if(fam==='twin'){   /* 二つの軸が並び立つ */
+n=2;ground();var cT2=cls;cls+=4;rot=r()<.5?0:Math.PI/2;for(k=0;k<2;k++){a=rot+k*Math.PI;disc(Math.cos(a)*.222,Math.sin(a)*.222,.205,cT2,4);}borders();name='二軸';
+}else if(fam==='grid4'||fam==='grid9'){   /* 格子: 無機的な秩序 */
+var gN=fam==='grid4'?2:3,gs=gN===2?.4:.245,gr=gN===2?.185:.115,cG=cls;cls+=2;n=gN*gN;ground();
+var ga=(gN===2&&r()<.4)?Math.PI/4:0,cr=Math.cos(ga),sr=Math.sin(ga);
+for(i=0;i<gN;i++)for(k=0;k<gN;k++){var gx=(i-(gN-1)/2)*gs,gy=(k-(gN-1)/2)*gs;disc(gx*cr-gy*sr,gx*sr+gy*cr,gr,cG,gN===2?2:1);}
+if(gN===2)S(0,0,0,.092,cls++,{solo:1});borders();name=n+'軸・格子';
+}else if(fam==='flower'){   /* 六つの円が重なり合って花になる */
+n=7;ground();var fr=.19+r()*.03,cF=cls++;S(0,0,0,fr*.45,cls++);S(0,0,fr*.45,fr,cls++);
+for(k=0;k<6;k++){a=rot+k*TAU/6;S(Math.cos(a)*fr,Math.sin(a)*fr,0,fr,cF,{solo:1});}borders();name='七軸・花';
+}else if(fam==='double'){   /* 内に三つ、外に六つ */
+n=9;ground();S(0,0,0,.042,cls++);var cI=cls++,cO=cls++;
+for(k=0;k<3;k++){a=rot+k*TAU/3;S(Math.cos(a)*.17,Math.sin(a)*.17,0,.12,cI,{solo:1});}
+for(k=0;k<6;k++){a=rot+Math.PI/6+k*TAU/6;S(Math.cos(a)*.355,Math.sin(a)*.355,0,.078,cO,{solo:1});}borders();name='九軸・二重の輪';
+}else{   /* 渦巻き: ひまわりの種の並び。有機的な秩序 */
+n=10;ground();var cS=cls;cls+=3;
+rot=r()*TAU;for(k=0;k<10;k++){a=rot+k*2.39996;var Rk=.065+.0365*k,rk=Math.min(.435-Rk,.05+.0075*k);S(Math.cos(a)*Rk,Math.sin(a)*Rk,0,rk,cS+k%3,{solo:1});}borders();name='十軸・渦巻き';}
+var cen=[];sl.forEach(function(q){if(cen.length>=9)return;for(var c=0;c<cen.length;c++)if(Math.abs(cen[c][0]-q.cx)+Math.abs(cen[c][1]-q.cy)<1e-4)return;cen.push([q.cx,q.cy]);});
+g.fin=fin;g.slots=sl;g.cen=cen;g.poly=r()<0.4;g.axes=n||1;g.lay=name;g.level=level;g.pal=palFor(level,r);return g;}
+function build(seed){var r=mul(seed*7919+13);
+var g={sym:[5,6,7,8,9,10,12][Math.floor(r()*7)]};
+return makeFinal(g,seed,Math.floor(r()*3));}
+
+/* ===== 創作字: 部品を組み合わせて、曲ごとに一つの字を作る =====
+   梵字の写しではない。頭・幹・胴・脚・飾りの五つの部位に、それぞれ数種類の形を用意し、曲の種と五行で選ぶ。
+   線は平筆の理屈で描く(筆先を一定の角度に保つので、線の向きで太さが変わる)。
+   el=[木,火,土,金,水] 各0..1 */
+function makeGlyph(seed,el){
+var r=mul((seed*2654435761+97)>>>0),W=el[0],F=el[1],E=el[2],M=el[3],A=el[4];
+function wp(ws){var t=0,i;for(i=0;i<ws.length;i++)t+=ws[i];var x=r()*t;for(i=0;i<ws.length;i++){x-=ws[i];if(x<=0)return i;}return ws.length-1;}
+function j(v){return v+(r()-.5)*.03;}
+var sx=.10+r()*.09,S=[],D=[];
+function st(pts,w){var o=[];for(var i=0;i<pts.length;i++)o.push(j(pts[i]));S.push({p:o,w:w||1});}
+/* 頭: 横画 */
+var h=wp([1+3*E,1+3*A,1+2*W+2*F,1+2*A+E,1+3*M]);
+if(h===0)st([-.32,-.27,-.33,-.34,-.28,-.37,-.20,-.36,-.05,-.35,.12,-.36,.30,-.37,.33,-.37,.33,-.33,.30,-.31]);
+else if(h===1)st([-.30,-.34,-.20,-.42,-.08,-.30,.04,-.36,.14,-.41,.24,-.38,.31,-.33]);
+else if(h===2)st([-.18,-.35,-.05,-.37,.10,-.37,.22,-.36,.28,-.36,.33,-.40,.35,-.46]);
+else if(h===3)st([-.28,-.28,-.24,-.40,.20,-.42,.28,-.30]);
+else{st([-.26,-.36,-.18,-.38,-.10,-.38,-.02,-.36],.9);st([.06,-.36,.14,-.38,.24,-.38,.32,-.35],.9);}
+/* 幹: 縦画 */
+var s=wp([1+3*E,1+3*A,1+3*W,1+3*M]);
+if(s===0)st([sx,-.36,sx+.01,-.10,sx,.15,sx-.01,.30,sx-.02,.38,sx-.10,.40,sx-.16,.35],1.1);
+else if(s===1)st([sx,-.36,sx+.06,-.15,sx-.08,.05,sx-.01,.22,sx+.03,.31,sx+.02,.37,sx-.04,.40],1.1);
+else if(s===2)st([sx,-.36,sx,-.10,sx-.01,.15,sx-.01,.33,sx+.02,.39,sx+.10,.39,sx+.17,.34],1.1);
+else st([sx,-.36,sx+.01,-.20,sx,-.05,sx-.02,.06],1.1);
+/* 胴: 幹の左に付くふくらみ */
+var b=wp([1+3*E,1+2*E+2*W,1+3*A,1+3*W,1+2*M+2*F,1+3*A]);
+if(b===0)st([sx,-.16,sx-.22,-.30,-.38,-.10,-.30,.04,-.24,.14,-.05,.12,sx,.02]);
+else if(b===1)st([sx,-.22,-.10,-.34,-.34,-.24,-.28,-.12,-.24,-.04,-.06,-.04,sx-.02,-.08,-.16,-.06,-.38,.04,-.30,.16,-.24,.24,-.04,.20,sx,.12]);
+else if(b===2)st([sx,-.18,-.08,-.26,-.34,-.20,-.33,-.02,-.32,.10,-.20,.16,-.10,.12]);
+else if(b===3)st([-.32,-.10,-.18,-.24,sx+.14,-.26,sx+.16,-.10,sx+.17,.02,sx-.10,.08,-.28,.10]);
+else if(b===4)st([sx,-.20,-.02,-.20,-.20,-.19,-.30,-.16,-.31,-.08,-.24,-.02,-.14,.00,-.20,.03,-.30,.08,-.32,.16]);
+else st([sx,-.14,-.12,-.30,-.38,-.14,-.30,.04,-.24,.16,-.04,.10,-.08,-.02,-.10,-.09,-.20,-.08,-.20,-.01]);
+/* 脚: 下の払い。幹が短い型では必ず付ける */
+var l=wp([s===3?0:2,1+3*A,1+2*A+2*W,1+3*F,1+2*E+2*M]);
+if(l===1)st([sx-.02,.14,-.05,.20,-.25,.22,-.36,.40]);
+else if(l===2)st([sx-.03,.20,-.20,.20,-.34,.30,-.26,.40,-.20,.46,-.06,.44,.00,.38]);
+else if(l===3)st([sx,.16,sx+.10,.20,sx+.20,.30,sx+.24,.42]);
+else if(l===4)st([-.30,.42,-.10,.40,.12,.40,.32,.43]);
+/* 飾り: 点、月と点、炎、二つ点、払い */
+var m=wp([.6,2,2,1+4*F,1+3*M,1+3*W]);
+if(m===1)D.push([j(.02),-.50,.036]);
+else if(m===2){st([-.10,-.47,-.06,-.42,.10,-.42,.14,-.47],.75);D.push([.02,-.545,.03]);}
+else if(m===3)st([sx+.04,-.43,sx+.13,-.50,sx+.06,-.55,sx+.16,-.62],.8);
+else if(m===4){D.push([.37,j(-.08),.032]);D.push([.37,j(.08),.032]);}
+else if(m===5)st([.27,-.10,.35,-.08,.37,.00,.31,.06],.8);
+return {S:S,D:D,nib:-(.45+r()*.35),thick:.084*(.85+.45*E+.15*M-.12*A),slant:(r()-.5)*.14+.05*A,code:''+h+s+b+l+m};}
+/* 字を多角形の集まりにする。画面でも画像でも同じ形を使う */
+function glyphShapes(g){
+var quads=[],lines=[],dots=[],nx=Math.cos(g.nib),ny=Math.sin(g.nib),k;
+g.S.forEach(function(S){var p=S.p,pts=[],n=(p.length-2)/6,q,t;
+for(q=0;q<n;q++){var o=q*6;for(k=(q?1:0);k<=14;k++){t=k/14;var a=1-t;
+pts.push([a*a*a*p[o]+3*a*a*t*p[o+2]+3*a*t*t*p[o+4]+t*t*t*p[o+6],a*a*a*p[o+1]+3*a*a*t*p[o+3]+3*a*t*t*p[o+5]+t*t*t*p[o+7]]);}}
+var L=pts.length,rib=[];
+for(k=0;k<L;k++){var u=k/(L-1),pr=.42+.58*Math.pow(Math.sin(Math.PI*Math.min(1,.06+u*1.02)),.55),hw=g.thick*S.w*pr*.5;   /* 入りと抜きで細くなる */
+var x=pts[k][0]+pts[k][1]*g.slant*-1,y=pts[k][1];pts[k]=[x,y];rib.push([x-nx*hw,y-ny*hw,x+nx*hw,y+ny*hw]);}
+for(k=0;k<L-1;k++)quads.push([rib[k][0],rib[k][1],rib[k][2],rib[k][3],rib[k+1][2],rib[k+1][3],rib[k+1][0],rib[k+1][1]]);
+lines.push({pts:pts,w:g.thick*S.w*.2});});
+g.D.forEach(function(d){dots.push([d[0]+d[1]*g.slant*-1,d[1],d[2]]);});
+return {quads:quads,lines:lines,dots:dots};}
+
+/* 試作では五行を曲の種から仮に決める。本番ではOGSが持つ曲ごとの五行データを使う */
+function elFor(seed){var r=mul(seed*31+7),e=[r(),r(),r(),r(),r()],m=Math.max.apply(null,e);return e.map(function(v){return Math.pow(v/m,1.6);});}
+var ELN=['木','火','土','金','水'];
+function drawGlyph(c,sh,cx,cy,R,col,blur){
+c.save();c.translate(cx,cy);c.fillStyle=col;c.strokeStyle=col;c.lineJoin='round';c.lineCap='round';
+if(blur){c.shadowColor=blur.c;c.shadowBlur=blur.px;}
+c.beginPath();sh.quads.forEach(function(q){c.moveTo(q[0]*R,q[1]*R);c.lineTo(q[2]*R,q[3]*R);c.lineTo(q[4]*R,q[5]*R);c.lineTo(q[6]*R,q[7]*R);c.closePath();});
+sh.dots.forEach(function(d){c.moveTo(d[0]*R+d[2]*R,d[1]*R);c.arc(d[0]*R,d[1]*R,d[2]*R,0,TAU);});c.fill();
+sh.lines.forEach(function(l){c.beginPath();c.lineWidth=Math.max(1,l.w*R);l.pts.forEach(function(p,i){if(i)c.lineTo(p[0]*R,p[1]*R);else c.moveTo(p[0]*R,p[1]*R);});c.stroke();});
+c.restore();}
+var glyph=null,gsh=null,gel=null,parts=null,hzI=null,GSZ=0.44;   /* 字の大きさ(画面幅に対する割合)。以前は0.66 */
+function setGlyph(){gel=elFor(track);glyph=makeGlyph(track,gel);gsh=glyphShapes(glyph);parts=null;
+['crG','crG2'].forEach(function(id){var c=$(id).getContext('2d');c.clearRect(0,0,120,120);drawGlyph(c,gsh,60,63,92,'#d8b46a',null);});}   /* クレジットに添える、曲の字の小さな印 */
+/* 曼荼羅の光を粒に分け、字の形へ集める。粒の色は曼荼羅の色をそのまま受け継ぐ */
+function makeParts(){
+var sz=150,c=document.createElement('canvas');c.width=c.height=sz;var x=c.getContext('2d');
+var src=[],tg=[],k,px,py,i;
+try{x.drawImage(gc,0,0,sbs?gc.height:gc.width,gc.height,0,0,sz,sz);var pix=x.getImageData(0,0,sz,sz).data;
+for(py=2;py<sz-2;py+=2)for(px=2;px<sz-2;px+=2){k=(py*sz+px)*4;if(pix[k]*.3+pix[k+1]*.55+pix[k+2]*.15>38)src.push([px/sz,py/sz,pix[k],pix[k+1],pix[k+2]]);}}catch(e){}
+if(src.length<50){src=[];for(i=0;i<500;i++){var aa=i*2.39996,rr=Math.sqrt((i+.5)/500)*.45;src.push([.5+Math.cos(aa)*rr,.5+Math.sin(aa)*rr,216,180,106]);}}
+x.clearRect(0,0,sz,sz);drawGlyph(x,gsh,sz/2,sz*.52,sz*GSZ,'#fff');var mk=x.getImageData(0,0,sz,sz).data;
+for(py=0;py<sz;py++)for(px=0;px<sz;px++){if(mk[(py*sz+px)*4+3]>110)tg.push([px/sz,py/sz]);}
+if(!tg.length)tg=[[.5,.5]];
+hzI=[.024,.068].map(function(bl){var hc=document.createElement('canvas');hc.width=hc.height=240;var hx=hc.getContext('2d');hx.shadowColor='rgba(248,212,146,1)';hx.shadowBlur=240*bl;hx.shadowOffsetX=1000;
+drawGlyph(hx,gsh,120-1000,240*.52,240*GSZ,'#000',null);drawGlyph(hx,gsh,120-1000,240*.52,240*GSZ,'#000',null);return hc;});
+var n=S<430?2000:3000;parts=[];   /* 粉の量: 以前の約1.5倍。字が小さくなった分、字の面積あたりでは約3.4倍の密度になる */
+for(i=0;i<n;i++){var o=src[Math.floor(Math.random()*src.length)],t=tg[Math.floor(Math.random()*tg.length)],va=Math.random()*TAU,vs=.12+Math.random()*.55;
+parts.push({x:o[0],y:o[1],tx:t[0]+(Math.random()-.5)/sz,ty:t[1]+(Math.random()-.5)/sz,r:o[2],g:o[3],b:o[4],d:Math.random()*.32,sp:(Math.random()<.5?-1:1)*(.6+Math.random()*1.4),
+vx:Math.cos(va)*vs,vy:Math.sin(va)*vs-.08,z:.7+Math.random()*1.1});}}
+/* 終幕の層: 凝縮 → 一字 → 砕けて無 */
+function glyphLayer(p,B){
+var fw=gx.width,h=gx.height,w=sbs?h:fw;x2.setTransform(1,0,0,1,0,0);x2.globalCompositeOperation='source-over';x2.clearRect(0,0,fw,h);
+if(p<P6){parts=null;return;}
+if(!parts)makeParts();
+var tC=cl((p-P6)/(P7-P6)),tS=cl((p-P8)/GDS),u=w/360,i,n=reduce?Math.round(parts.length*.4):sbs?Math.round(parts.length*.6):parts.length;   /* 3D表示は左右2回描くので、粉を6割に抑えて負荷をそろえる */
+/* 3D表示では左目用と右目用に二度描く。字と粒は、曼荼羅より手前に浮かせる */
+var views=sbs?[[0,1],[w,-1]]:[[0,0]];
+views.forEach(function(vw){x2.save();x2.beginPath();x2.rect(vw[0],0,w,h);x2.clip();x2.translate(vw[0]+vw[1]*(crossView?-1:1)*w*0.016*dep,0);
+x2.globalCompositeOperation='lighter';
+var R=w*GSZ;
+/* ぼんやりした字: あらかじめ作っておいた、輪郭のない光のにじみを重ねる */
+function haze(al,k){if(al<=.01||!hzI)return;x2.save();x2.globalCompositeOperation='lighter';x2.globalAlpha=Math.min(1,al);x2.drawImage(hzI[k],0,.52*(h-w),w,w);x2.restore();}
+for(i=0;i<n;i++){var q=parts[i],s=ease(cl((tC-q.d)/.62)),x=q.x+(q.tx-q.x)*s,y=q.y+(q.ty-q.y)*s;
+if(!reduce){var dx=x-.5,dy=y-.5,a=q.sp*1.5*Math.sin(Math.PI*s)*(1-s*.4),ca=Math.cos(a),sa=Math.sin(a);x=.5+dx*ca-dy*sa;y=.5+dx*sa+dy*ca;}   /* 渦を巻いて集まる */
+var tp=tS>0?cl((tS-q.d*.9)/.7):0;
+if(tp>0){var e=tp*tp*(3-2*tp)*.55+tp*.45;                                                                                                 /* 粉へ還る: 弾け飛ばず、一粒ずつ時間差でほどけ、漂いながら薄れる */
+x+=q.vx*.42*e+.012*Math.sin(tp*5+q.z*9)*e;y+=q.vy*.42*e-.035*e;}
+var m=s*.75,cr=q.r+(240-q.r)*m,cg=q.g+(206-q.g)*m,cb=q.b+(140-q.b)*m,op=(.5+.3*s)*ease(tC/.22)*(1-ease((tp-.2)/.8));
+if(op<=.01)continue;var z=q.z*u*(1.5-.6*s)*(1+.5*tp);
+x2.fillStyle='rgba('+(cr|0)+','+(cg|0)+','+(cb|0)+','+op.toFixed(3)+')';x2.fillRect(x*w-z/2,y*h-z/2,z,z);}
+/* 字は、にじみ → 輪郭の順に、ゆっくり浮かぶ。消える時は逆に、輪郭 → にじみの順に薄れる */
+var hz=ease((tC-.3)/.5)*(1-ease((tS-.12)/.6)),co=ease((tC-.62)/.38)*(1-ease(tS/.4));
+var tight=ease((tC-.4)/.6)*(1-ease(tS/.6));haze(hz*.75*(1-.55*tight),1);haze(hz*.8*tight,0);   /* 広いにじみから締まったにじみへ。消える時は逆に、広がりながら薄れる */
+if(co>0){x2.globalCompositeOperation='source-over';x2.globalAlpha=co;var pb=1+.012*B;
+drawGlyph(x2,gsh,w/2,h*.52,R*pb,'rgba(3,4,9,.6)',{c:'rgba(2,3,8,.95)',px:w*.04});   /* 曼荼羅の上でも読めるよう、字の背を暗く沈める */
+drawGlyph(x2,gsh,w/2,h*.52,R*pb,'rgba(243,214,150,1)',{c:'rgba(255,186,96,.85)',px:w*.024});
+drawGlyph(x2,gsh,w/2,h*.52,R*pb,'#fbeccb',null);x2.globalAlpha=1;}
+x2.restore();});}
 
 /* ===== 状態 ===== */
-var T=0,Z=0,ph=0,th0=0,last=0,run=true,bpm=76,D=0.3,vel=0,spread=1,prog=0,DUR=40,glow=0.7; // DUR=試作上の曲の長さ(秒)。本番は audio.duration
-var cnt=3,nextC=2,dirT=1,nextD=5,track=147,sig=build(track);
+var T=0,Z=0,ph=0,pbeat=0,phalf=0,th0=0,last=0,run=true,bpm=96,D=0.3,vel=0,spread=1,prog=0,DUR=100,dragging=false;
+var Oe=0,zstep=0,bias=0,Rp=0,kick=0,beatEnv=0,beatN=0,lastBeatT=-9,ibi=0.6,beatNow=false,accentNow=false,Bs=0,speed=1.5,inten=0.4,intenT=0.4,pulseOn=false,Ls=0.4,clickOn=false,cIdx=0,ZERO=new Float32Array(12);
+var cnt=0,nextC=2,dirT=1,nextD=5,nextO=8,ord=0,ordT=0,comShape=0,track=147,sig=build(track),lastStage=0,finInit=false,Zf=0,Pt=0;
 var SIDES=[3,4,5,6,8];
-var cs=new Float32Array(NM*2),al=new Float32Array(NM),ro=new Float32Array(NM),gn=new Float32Array(NM),hm=new Float32Array(NM);
-var on=[],ht=[],pend=[],nextS=[];
+var cs=new Float32Array(NM*2),an=new Float32Array(NM*2),al=new Float32Array(NM),gn=new Float32Array(NM),hm=new Float32Array(NM),pul=new Float32Array(NM);
+var M1=new Float32Array(NM*4),M2=new Float32Array(NM*4),M3=new Float32Array(NM*4),pT=new Float32Array(NM);
+var CA=new Float32Array(36),CB=new Float32Array(36),CC=new Float32Array(36),TA=new Float32Array(36),TB=new Float32Array(36),TC=new Float32Array(36),BG=new Float32Array(3);
+var rr0=new Float32Array(NM),pr0=new Float32Array(NM),BMF=new Float32Array(NM),CUP=new Float32Array(NM*2),Zl=0,rotC=0,tF=0,phF=0;
+var rrA=new Float32Array(NM),prA=new Float32Array(NM),avA=new Float32Array(NM),tiA=new Float32Array(NM);for(var qq0=0;qq0<NM;qq0++)prA[qq0]=qq0;
+/* まっすぐな向き: 花弁の一枚が真上に来る回転と、多角形が正立する回転 */
+function upR(v,N){var st=TAU/N;return Math.round(v/st)*st;}
+function upA(N){var o=0.5-N/4;return o-Math.round(o);}
+function upP(v,G){var hf=Math.PI/G;return -Math.PI/2+Math.round((v+Math.PI/2)/hf)*hf;}
+var rad=new Float32Array(NM),radT=new Float32Array(NM),bof=new Float32Array(NM),mf=new Float32Array(NM),spr=new Float32Array(NM);
+/* 渦の中心(収束と発散の起点)。一つとは限らない。Q[j]=(x, y, 効きの強さ) */
+/* 場面: 混沌の間は有機的な質感のどれかになる。秩序の間と結末は幾何に戻る */
+var SCN=['幾何','流体','煙','植物','炎'],scene=3,orgF=0,WP=new Float32Array(48),WT=new Float32Array(48),WU=new Float32Array(48),ordInit=false,nStep=0;
+function organic(i){var m=Math.random()<0.8?scene:Math.floor(Math.random()*5),o=i*4;
+WT[o]=m===1?rnd(.05,.1):m===2?rnd(.08,.13):m===4?.02:0;WT[o+1]=m===3?rnd(.45,.95):m===1?.15:0;WT[o+2]=m===4?rnd(.07,.13):0;WT[o+3]=m===2?rnd(.35,.6):m===4?.15:m===1?.08:0;}
+function setScene(k){scene=k;for(var i=0;i<NM;i++)organic(i);}
+var Q=new Float32Array(27),nq=1,qrot=0,qR=0,qRt=0,nextQ=10;
+function setQ(n){nq=n;qRt=n<=1?0:rnd(.19,.26);}
+var on=[],ht=[],pend=[],nextS=[],par=[],mt=[],fin=[];
 function rnd(a,b){return a+Math.random()*(b-a);}
-for(var i=0;i<NM;i++){on.push(false);ht.push(0);pend.push(0);nextS.push(rnd(1,6));gn[i]=4;}
-var pg=document.getElementById('pg'),po=document.getElementById('po'),gw=document.getElementById('gw'),go=document.getElementById('go'),bp=document.getElementById('bp'),bo=document.getElementById('bo');
-pg.addEventListener('input',function(){prog=Math.round(+pg.value)/100;});
-gw.addEventListener('input',function(){glow=Math.round(+gw.value)/100;go.textContent=Math.round(glow*100);});
-bp.addEventListener('input',function(){bpm=Math.round(+bp.value);bo.textContent=bpm;});
-// 形の切り替え：角数を変える時は一度円に戻してから張り直す
-function want(i,nn){if(nn===0){ht[i]=0;pend[i]=0;}else if(nn===gn[i]){ht[i]=1;pend[i]=0;}else if(hm[i]<0.03){gn[i]=nn;ht[i]=1;pend[i]=0;}else{pend[i]=nn;ht[i]=0;}}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
 function cl(x){return Math.max(0,Math.min(1,x));}
+function ease(x){x=cl(x);return x*x*(3-2*x);}
+function setCol(arr,i,c){arr[i*3]=c[0];arr[i*3+1]=c[1];arr[i*3+2]=c[2];}
+/* 色は曲の顔料5色の中から取る。地の色2つと、内側の花弁の差し色1つ */
+function recolor(i,now){var c=sig.pal.c,ia=Math.floor(Math.random()*4),ib=(ia+1+Math.floor(Math.random()*3))%4,ic=pick([2,4,4]);
+if(ordInit){var F9=sig.fin[sig.slots[i].cls];ia=F9.ia;ib=F9.ib;ic=F9.ic;}   /* 「秩序へ」以降は、結末の設計どおりの色だけを使う(途中で別の色に振れない) */
+setCol(TA,i,c[ia]);setCol(TB,i,c[ib]);setCol(TC,i,c[ic]);if(now){setCol(CA,i,c[ia]);setCol(CB,i,c[ib]);setCol(CC,i,c[ic]);if(ordInit){setCol(SA,i,c[ia]);setCol(SB,i,c[ib]);setCol(SC,i,c[ic]);}}}
+/* 曼荼羅が生まれるたびに、模様と配色を振り直す */
+/* 結末での凹凸: 地と帯は曲ごとに丘か鉢かが決まり、軸の曼荼羅は役ごとに凸か凹かが決まる */
+function dzT(i){var sp=sig.slots[i],F=sig.fin[sp.cls],tsg=sig.fin[0].ph<0.35?-1:1;return (sp.dens||sp.cls===0)?tsg*0.8:(sp.r1>0?tsg:(F.ph<0.3?-1:1)*(0.7+0.3*F.inner));}
+function roll(i){
+M1[i*4]=pick([3,4,5,6,6,7,8,8,10,12,16]);M1[i*4+1]=rnd(1.0,2.4);M1[i*4+2]=pick([.45,.8,1,1,1.6,2.6]);M1[i*4+3]=pick([0,0,0,.25,-.25,.6,-.6]);
+M2[i*4+3]=1;M3[i*4]=Math.random()<.45?1:0;M3[i*4+1]=rnd(.3,.65);M3[i*4+2]=1;M3[i*4+3]=Math.random();
+avA[i]=0;DZ[i]=(Math.random()<0.3?-1:1)*rnd(.6,1);   /* 凸(手前へ盛り上がる)か、凹(奥へくぼむ)か */
+M2[i*4]=pick([0,0,.6,1]);M2[i*4+1]=pick([0,.5,1]);M2[i*4+2]=pick([0,0,.6,1]);
+recolor(i,true);organic(i);}
+for(var i=0;i<NM;i++){on.push(false);ht.push(0);pend.push(0);nextS.push(rnd(1,6));par.push(-1);mt.push(-1);fin.push(false);gn[i]=4;roll(i);}
+function RF(i){return 0.7+0.6*((i*0.618)%1);}
+var Z3=0;
+/* 結末の姿へ寄せる。kq=1 なら即座に、小さければゆっくり。「秩序へ」でも完成後でも同じ手続きを使うので、境目で止まらない */
+function morph(i,kq,stepN){var sp=sig.slots[i],F=sig.fin[sp.cls],o4=i*4,dn=sp.dens||(sp.r1>0?F.k/Math.log(sp.r2/sp.r1):1.7);
+radT[i]=sp.r2;avA[i]+=(upA(F.N)-avA[i])*kq;
+M1[o4+1]+=(dn-M1[o4+1])*kq;M1[o4+2]+=(F.sharp-M1[o4+2])*kq;M1[o4+3]+=(F.spiral-M1[o4+3])*kq;
+if(M1[o4]!==F.N&&stepN){var dN=F.N-M1[o4];M1[o4]+=Math.sign(dN)*(Math.abs(dN)>6?2:1);}
+M2[o4]+=(F.gx-M2[o4])*kq;M2[o4+1]+=(F.gy-M2[o4+1])*kq;M2[o4+2]+=(F.gz-M2[o4+2])*kq;M2[o4+3]+=(sp.bri-M2[o4+3])*kq;
+DZ[i]+=(dzT(i)-DZ[i])*kq;M3[o4]+=(F.dot-M3[o4])*kq;M3[o4+1]+=(F.inner-M3[o4+1])*kq;M3[o4+2]+=(sp.pri-M3[o4+2])*kq;
+var pw=(sp.r1>0?Math.log(sp.r1)*dn:F.ph)-Z3*(0.8+0.07*i);pw+=Math.round(M3[o4+3]-pw);M3[o4+3]+=(pw-M3[o4+3])*kq;   /* 輪の位相は、いちばん近い所へ寄せる(大きく流さない) */
+want(i,(sig.poly&&sp.solo)?(sig.sym>8?6:sig.sym):0);}
+/* 画像用: すべてを結末の正確な姿にそろえ、正面を向かせて送る */
+function poseForImage(){
+var keep=[M1,M2,M3,DZ,avA,radT,rad,an,al,gn,hm,ht,pend,CA,CB,CC].map(function(a){return [a,a.slice()];});   /* 画面の動きは乱さない: 写したら元へ戻す */
+for(var i=0;i<NM;i++){var sp=sig.slots[i],F=sig.fin[sp.cls],G0=sig.sym>8?6:sig.sym,pl=(sig.poly&&sp.solo);
+morph(i,1,false);M1[i*4]=F.N;if(pl)gn[i]=G0;hm[i]=pl?1:0;ht[i]=hm[i];pend[i]=0;
+rad[i]=sp.r2;an[i*2]=sp.r1===0?-1:sp.r1;an[i*2+1]=sp.r2;al[i]=1;CUP[i*2]=sp.cx;CUP[i*2+1]=sp.cy;rr0[i]=upR(rrA[i],F.N);avA[i]=upA(F.N);}
+CA.set(TA);CB.set(TB);CC.set(TC);
+gl.uniform1f(U.Sb,0);gl.uniform1f(U.Ey,0);gl.uniform1f(U.B,0);gl.uniform1fv(U.Bm,ZERO);gl.uniform1f(U.P,4);gl.uniform1f(U.Fn,1);gl.uniform1f(U.Md,1);gl.uniform2f(U.Bw,0,0);gl.uniform2f(U.Gd,0,0);
+gl.uniform1f(U.Z,Z3);gl.uniform1f(U.W,0);gl.uniform1f(U.O,0);gl.uniform1f(U.Pt,0);gl.uniform1f(U.Fv,1);gl.uniform1f(U.Ac,1);gl.uniform4fv(U.Wp,new Float32Array(48));
+gl.uniform1fv(U.Rr,rr0);gl.uniform1fv(U.Pr,pr0);gl.uniform1fv(U.Av,avA);gl.uniform2fv(U.C,CUP);gl.uniform2fv(U.An,an);gl.uniform1fv(U.A,al);gl.uniform1fv(U.G,gn);gl.uniform1fv(U.H,hm);gl.uniform1fv(U.Dz,DZ);
+gl.uniform4fv(U.M1,M1);gl.uniform4fv(U.M2,M2);gl.uniform4fv(U.M3,M3);gl.uniform3fv(U.Ca,CA);gl.uniform3fv(U.Cb,CB);gl.uniform3fv(U.Cc,CC);
+keep.forEach(function(k){for(var q=0;q<k[1].length;q++)k[0][q]=k[1][q];});}
+function want(i,nn){if(nn===0){ht[i]=0;pend[i]=0;}else if(nn===gn[i]){ht[i]=1;pend[i]=0;}else if(hm[i]<0.03){gn[i]=nn;ht[i]=1;pend[i]=0;}else{pend[i]=nn;ht[i]=0;}}
+function anyOn(not){var l=[];for(var j=0;j<NM;j++)if(on[j]&&j!==not)l.push(j);return l.length?pick(l):-1;}
+/* 大きさの決め方: 一つなら画面いっぱい。整っている時は揃え、乱れている時はばらばら */
+function retarget(){var c=rnd(.24,.5);
+var k=nq>1?0.7:1;for(var i=0;i<NM;i++){if(!on[i])continue;radT[i]=cnt<=1?1.35:(ordT>0.5?c:rnd(.16,.78))*k;}}
+function resetAll(){for(var i=0;i<NM;i++){on[i]=false;fin[i]=false;al[i]=0;rad[i]=0;radT[i]=0;bof[i]=0;mf[i]=0;hm[i]=0;ht[i]=0;pend[i]=0;}
+for(var q9=0;q9<NM;q9++)tiA[q9]=0;
+cnt=0;finInit=false;ordInit=false;ord=ordT=0;vel=0;setQ(1);scene=3;parts=null;}
 
-/* ===== 魔法陣の描画：光る線 =====
-   進行 0〜80% 形成 / 80〜94% 完成（光の波と鼓動）/ 94〜100% 外へ広がって消える
-   発光は加算合成で4層重ね描き（外側3層が色のにじみ、最内が白い芯）。shadowBlur は重いので使わない */
-var PW=[11,6,2.8,1.1],PA=[0.05,0.11,0.3,0.95];
-function sigil(B){
-var R=S/2*0.94;c2.setTransform(dpr,0,0,dpr,0,0);c2.globalCompositeOperation='source-over';c2.clearRect(0,0,S,S);c2.translate(S/2,S/2);
-c2.globalCompositeOperation='lighter';
-var end=prog>0.94?(prog-0.94)/0.06:0,done=cl((prog-0.8)/0.1);
-var fade=1-end,sc=(1+0.02*B*(0.4+done))*(1+end*0.6),hue=sig.hue;
-c2.lineJoin='round';c2.lineCap='round';
-var E=sig.E,ne=E.length,tips=[];
-for(var i=0;i<ne;i++){var f=cl((prog-i/ne*0.78)/0.2);if(f<=0)continue;
-var el=E[i],rot=el.rot*T,cr=Math.cos(rot),sn=Math.sin(rot);
-c2.save();c2.rotate(rot);c2.scale(R*sc,R*sc);
-var np=el.pl.length;c2.beginPath();
-for(var j=0;j<np;j++){var fl=cl(f*np-j);if(fl<=0)break;var pts=el.pl[j],m=(pts.length-1)*fl,mi=Math.floor(m);
-c2.moveTo(pts[0][0],pts[0][1]);for(var q=1;q<=mi;q++)c2.lineTo(pts[q][0],pts[q][1]);
-var tx=pts[mi][0],ty=pts[mi][1];
-if(mi<pts.length-1){var t=m-mi;tx=pts[mi][0]+(pts[mi+1][0]-pts[mi][0])*t;ty=pts[mi][1]+(pts[mi+1][1]-pts[mi][1])*t;c2.lineTo(tx,ty);}
-if(fl<1&&tips.length<14){tips.push([(tx*cr-ty*sn)*R*sc,(tx*sn+ty*cr)*R*sc]);}}
-var wave=0.72+0.28*Math.sin(T*2.2-i*0.9);
-var gi=glow*fade*(0.75+0.25*done)*(done>0?wave:1)*(1+0.35*B*(0.3+done));
-var u=1/(R*sc);
-for(var k=0;k<4;k++){c2.lineWidth=PW[k]*(k<3?(0.6+glow*0.7+0.3*B*done):1)*u;
-c2.strokeStyle=k<3?'hsla('+hue+',95%,62%,'+(PA[k]*gi)+')':'hsla('+hue+',100%,93%,'+(PA[k]*fade*(0.55+0.45*glow))+')';c2.stroke();}
-c2.restore();}
-// 輝く筆先
-for(var i=0;i<tips.length;i++){var x=tips[i][0],y=tips[i][1];
-c2.beginPath();c2.arc(x,y,7,0,TAU);c2.fillStyle='hsla('+hue+',95%,65%,'+(0.16*glow)+')';c2.fill();
-c2.beginPath();c2.arc(x,y,3.2,0,TAU);c2.fillStyle='hsla('+hue+',100%,80%,'+(0.4*glow)+')';c2.fill();
-c2.beginPath();c2.arc(x,y,1.4,0,TAU);c2.fillStyle='rgba(255,255,255,0.95)';c2.fill();}}
+/* ===== 拍: 本物の音でも擬似でも、ここを通る ===== */
+function beat(str){
+beatNow=true;beatN++;accentNow=(beatN%4===0);
+if(reduce)return;
+beatEnv=Math.max(beatEnv,str);kick+=0.55*str;
+for(var i=0;i<NM;i++){pT[i]=Math.max(pT[i],str*(((i+beatN)%2===0)?1:0.45));}
+if(accentNow&&!finInit&&!ordInit){recolor(Math.floor(Math.random()*NM),false);}
+}
+/* フレーズの頭で起こす変化。区切りの大きさで、変える量を決める。色と数は、この先の音の勢いを先読みして選ぶ */
+function onCut(c){
+var ea=pre?pre.e2[Math.min(pre.nF-1,Math.round((c.t+3)*pre.fps))]:eSlow,lvl=ea<0.38?0:ea<0.52?1:2,bs=bias===1?-1:1;
+var cmax=Math.max(2,Math.min(9,Math.round(2+7*cl(ea*1.7))));
+if(c.w>=0.55){                                          /* 大きな区切り: 向き・色・秩序と混沌・渦の数を入れ替える */
+dirT=(bias===0?(c.up?1:-1):bs)*rnd(0.8,1);setPal(palFor(lvl,Math.random));
+ordT=c.up?0:1;comShape=Math.random()<0.4?0:pick(SIDES);if(ordT<0.5)setScene(1+Math.floor(Math.random()*4));
+setQ(pick(c.up?[2,3,3,4,5]:[1,1,2,3]));cnt=c.up?Math.max(cnt+2,Math.round(cmax*0.8)):Math.max(1,Math.round(cnt*0.5));}
+else if(c.w>=0.25){                                     /* 中くらい: どれか一つだけ */
+var kk=Math.floor(Math.random()*3);
+if(kk===0)setQ(pick([1,2,2,3,3,4,5]));
+else if(kk===1){ordT=Math.random()<(0.75-0.6*cl(ea*1.6))?1:0;comShape=Math.random()<0.4?0:pick(SIDES);if(ordT<0.5)setScene(1+Math.floor(Math.random()*4));}
+else dirT=(bias===0?-(Math.sign(dirT)||1):bs)*rnd(0.6,1);
+if(Math.random()<0.35)setPal(palFor(lvl,Math.random));
+cnt+=(Math.random()<0.5?-1:1)*(1+Math.floor(Math.random()*2));}
+else{if(Math.random()<0.5)cnt+=(Math.random()<0.5?-1:1);else dirT=(bias===0?-(Math.sign(dirT)||1):bs)*rnd(0.5,1);}   /* 小さい: 数が一つ動くか、流れの向きが返るだけ */
+cnt=Math.max(1,Math.min(cmax,cnt));retarget();}
+/* 小節の頭: 混沌の間だけ、どれか一つの曼荼羅が形を変える */
+function onBar(){if(ordT>0.5)return;var l=[];for(var j=0;j<NM;j++)if(on[j])l.push(j);if(l.length)want(pick(l),Math.random()<0.3?0:pick(SIDES));}
+/* 「秩序へ」の始まり: 結末の構図と色を決める */
+var SA=new Float32Array(36),SB=new Float32Array(36),SC=new Float32Array(36),SG=new Float32Array(3);
+function beginOrder(){ordInit=true;ordT=1;Z3=Z;SA.set(CA);SB.set(CB);SC.set(CC);SG.set(BG);   /* いまの色を覚えておく: 結末の色へは「秩序へ」の全体をかけて移る */
+var lvl=(buf&&pre)?pre.level:(buf&&fN>8)?((fE/fN)<0.4?0:(fE/fN)<0.52?1:2):(fixedEnd?sig.level:Math.floor(Math.random()*3));
+sig.free=!fixedEnd;makeFinal(sig,fixedEnd?track:Math.floor(Math.random()*1e6),lvl);
+var pc0=sig.pal.c;for(var q0=0;q0<NM;q0++){var F0=sig.fin[sig.slots[q0].cls];setCol(TA,q0,pc0[F0.ia]);setCol(TB,q0,pc0[F0.ib]);setCol(TC,q0,pc0[F0.ic]);}}
+function section(dir){   /* 曲調が大きく変わった瞬間: 向きを返し、秩序と混沌を入れ替え、全体の色を回す */
+if(finInit)return;
+if(bias===0){dirT=dir?dir*rnd(0.8,1):-(Math.sign(dirT)||1);nextD=T+rnd(4,10);}
+if(ordInit)return;
+setPal(palFor(mood(),Math.random));
+ordT=ordT>0.5?0:1;nextO=T+rnd(6,14);nextC=T;setScene(1+Math.floor(Math.random()*4));setQ(pick([1,2,3,4,5]));nextQ=T+rnd(9,20);}
+
+/* ===== 音 ===== */
+var actx=null,ana=null,fd=null,buf=null,src=null,playing=false,offset=0,t0=0;
+var prevMid=0,avgFluxM=0.01,mx=[.08,.08,.08],lv=[0,0,0],prevLo=0,avgFlux=0.01,eSlow=0,eLong=0,lastSec=0;
+function ensureCtx(){
+if(!actx){var AC=window.AudioContext||window.webkitAudioContext;actx=new AC();ana=actx.createAnalyser();ana.fftSize=1024;ana.smoothingTimeConstant=0.3;ana.connect(actx.destination);fd=new Uint8Array(ana.frequencyBinCount);}
+if(actx.state==='suspended')actx.resume();}
+function stopSrc(){if(src){src.onended=null;try{src.stop();}catch(e){}try{src.disconnect();}catch(e){}src=null;}playing=false;}
+function startSrc(){stopSrc();ensureCtx();src=actx.createBufferSource();src.buffer=buf;src.connect(ana);var me=src;
+src.onended=function(){if(src===me&&playing){offset=0;syncPointers(0);startSrc();}};
+src.start(0,offset);t0=actx.currentTime-offset;playing=true;$('pp').textContent='一時停止';}
+function curTime(){return playing?Math.min(buf.duration,actx.currentTime-t0):offset;}
+function band(lo,hi){var hz=actx.sampleRate/ana.fftSize,a=Math.max(1,Math.round(lo/hz)),b=Math.min(fd.length-1,Math.round(hi/hz)),s=0;for(var i=a;i<=b;i++)s+=fd[i];return s/((b-a+1)*255);}
+function analyse(dt){
+ana.getByteFrequencyData(fd);
+var raw=[band(30,180),band(300,2500),band(4000,12000)];
+for(var k=0;k<3;k++){mx[k]=Math.max(mx[k]*Math.pow(0.9,dt),raw[k],.06);lv[k]=raw[k]/mx[k];}
+var flux=Math.max(0,lv[0]-prevLo);prevLo=lv[0];
+avgFlux+=(flux-avgFlux)*Math.min(1,dt*1.5);
+var fm=Math.max(0,lv[1]-prevMid);prevMid=lv[1];avgFluxM+=(fm-avgFluxM)*Math.min(1,dt*1.5);
+if(fm>avgFluxM*2.2+0.04&&!reduce)Oe=Math.max(Oe,Math.min(1,0.5+fm*3));
+if(flux>avgFlux*1.9+0.025&&T-lastBeatT>0.17){
+var gap=T-lastBeatT;if(gap>0.25&&gap<1.3)ibi+=(gap-ibi)*0.25;
+lastBeatT=T;beat(Math.min(1,0.6+0.4*flux/(avgFlux*5+0.05)));}
+var en=(lv[0]+lv[1]+lv[2])/3;fE+=en*dt;fN+=dt;eSlow+=(en-eSlow)*Math.min(1,dt/2);eLong+=(en-eLong)*Math.min(1,dt/12);
+if(T-lastSec>6&&eLong>0.05&&(eSlow>eLong*1.4||eSlow<eLong*0.62)){lastSec=T;eLong=eSlow;section();}
+}
+function newSeed(n){track=n;sig=build(track);setGlyph();fE=0;fN=0;for(var j=0;j<NM;j++)if(!fin[j])recolor(j,false);}
+/* 曲調: いまの勢いを3段階で見る。色の組は曲調の変わり目でこの段階に合わせて移る */
+var fE=0,fN=0,trackName='',fixedEnd=false;
+function mood(){return eSlow<0.38?0:eSlow<0.52?1:2;}
+function setPal(P){if(P===sig.pal)return;sig.pal=P;for(var j=0;j<NM;j++)recolor(j,false);}
+$('au').addEventListener('change',function(){
+var f=this.files&&this.files[0];if(!f)return;
+try{ensureCtx();}catch(e){msg.textContent='この端末では音を扱えませんでした';return;}
+msg.textContent='曲の構成を読んでいます…';
+var fr=new FileReader();
+fr.onload=function(){
+actx.decodeAudioData(fr.result,function(b){
+buf=b;offset=0;prog=0;
+var hsh=5381;for(var i=0;i<f.name.length;i++)hsh=((hsh*33)^f.name.charCodeAt(i))>>>0;
+resetAll();newSeed((hsh%999)+1);trackName=f.name.replace(/\.[^.]+$/,'');$('ttl').value=trackName;setCredit();
+try{pre=preAnalyse(b);}catch(e){pre=null;}
+fitStory();syncPointers(0);
+$('an').textContent=pre?((pre.beats?'約'+Math.round(pre.bpm)+'拍/分':'拍は不明瞭')+' ・ 場面が変わる所 '+pre.cuts.length+'か所（大きな区切り '+pre.cuts.filter(function(c){return c.w>=0.55;}).length+'） ・ 本編 '+fmt(pre.t0)+'〜'+fmt(pre.t1)):'下読みできませんでした';
+lastSec=T;eSlow=eLong=0;mx=[.08,.08,.08];
+$('bpmrow').hidden=true;startSrc();
+},function(){msg.textContent='この曲ファイルは読めませんでした。MP3かWAVで試してください';});};
+fr.onerror=function(){msg.textContent='この曲ファイルは読めませんでした';};
+fr.readAsArrayBuffer(f);});
+
+/* ===== 操作 ===== */
+var pg=$('pg'),po=$('po');
+/* ===== 曲の下読み: 再生の前に曲全体を読み、拍の位置・曲調の区切り・本編の始まりと終わりを割り出す =====
+   その場で音を拾う方式は「過去」しか分からないが、下読みなら「この先」が分かる。
+   本番では、投稿時に一度だけこれを行い、結果を小さなデータとして曲に添える(スマホでも使える) */
+function preAnalyse(b){
+var sr=b.sampleRate,L=b.length,c0=b.getChannelData(0),c1=b.numberOfChannels>1?b.getChannelData(1):null,hop=512,nF=Math.floor(L/hop),fps=sr/hop;
+var lo=new Float32Array(nF),mi=new Float32Array(nF),hi=new Float32Array(nF),a1=1-Math.exp(-TAU*160/sr),a2=1-Math.exp(-TAU*2800/sr),y1=0,y2=0,i,k,f;
+for(f=0;f<nF;f++){var sl=0,sm=0,sh=0,o=f*hop;for(k=0;k<hop;k++){var x=c1?(c0[o+k]+c1[o+k])*.5:c0[o+k];y1+=a1*(x-y1);y2+=a2*(x-y2);var m=y2-y1,h=x-y2;sl+=y1*y1;sm+=m*m;sh+=h*h;}
+lo[f]=Math.sqrt(sl/hop);mi[f]=Math.sqrt(sm/hop);hi[f]=Math.sqrt(sh/hop);}
+function norm(a){var s=Array.prototype.slice.call(a).sort(function(p,q){return p-q;}),p=s[Math.floor(s.length*.97)]||1e-6;for(var q=0;q<a.length;q++)a[q]=Math.min(1.2,a[q]/(p+1e-9));}
+norm(lo);norm(mi);norm(hi);
+var en=new Float32Array(nF),on=new Float32Array(nF),mfl=new Float32Array(nF);
+for(f=0;f<nF;f++){en[f]=(lo[f]+mi[f]+hi[f])/3;if(f){on[f]=Math.max(0,lo[f]-lo[f-1])+.4*Math.max(0,mi[f]+hi[f]-mi[f-1]-hi[f-1]);mfl[f]=Math.max(0,mi[f]-mi[f-1]);}}
+function box(a,w){var out=new Float32Array(a.length),s=0,q;for(q=0;q<a.length;q++){s+=a[q];if(q>=w)s-=a[q-w];out[q]=s/Math.min(q+1,w);}return out;}
+var e07=box(en,Math.round(fps*1.2)),hits=new Float32Array(nF);for(f=0;f<nF;f++)hits[f]=on[f]>0.1?1:0;
+var dn=box(hits,Math.round(fps*2.5)),it=new Float32Array(nF);
+function span(a){var q=[],st=Math.max(1,Math.floor(a.length/4000));for(var z=0;z<a.length;z+=st)q.push(a[z]);q.sort(function(u,v){return u-v;});return [q[Math.floor(q.length*.12)],q[Math.floor(q.length*.95)]+1e-6];}
+var se=span(e07),sd=span(dn);
+for(f=0;f<nF;f++){var ie=(e07[f]-se[0])/(se[1]-se[0]),id=(dn[f]-sd[0])/(sd[1]-sd[0]);it[f]=Math.max(0,Math.min(1,.65*ie+.35*id));}
+var e2=box(en,Math.round(fps*2)),emax=0;for(f=0;f<nF;f++)if(e2[f]>emax)emax=e2[f];
+/* 本編の始まりと終わり(前後の無音を除く) */
+var f0=0,f1=nF-1;while(f0<nF-1&&e2[f0]<emax*.07)f0++;while(f1>f0&&e2[f1]<emax*.07)f1--;
+f0=Math.max(0,f0-Math.round(fps*1.2));
+/* テンポ: 打点の並びが、どの間隔で繰り返しているか */
+var lmin=Math.round(fps*60/176),lmax=Math.round(fps*60/68),best=0,bl=lmin,ac0=1e-9,lag;
+for(f=f0;f<f1;f++)ac0+=on[f]*on[f];
+var acs=[];for(lag=lmin;lag<=lmax;lag++){var s=0;for(f=f0;f<f1-lag;f++)s+=on[f]*on[f+lag];var bpm0=fps*60/lag,pri=Math.exp(-Math.pow(Math.log(bpm0/118)/.55,2));s*=.6+.4*pri;acs.push(s);if(s>best){best=s;bl=lag;}}
+var bi=bl-lmin,lagf=bl;if(bi>0&&bi<acs.length-1){var d=acs[bi-1]-2*acs[bi]+acs[bi+1];if(d<0)lagf=bl+.5*(acs[bi-1]-acs[bi+1])/d;}
+var conf=best/ac0,beats=null,down=0,Tb=lagf/fps;
+if(conf>0.07){
+/* 拍の位置: まず全体でいちばん合う出だしを探し、その後は一拍ずつ、近くの打点に少しだけ寄せながら進む */
+function track(lg,win,pull){var bp=0,bs=-1,ph,q2,s2;for(ph=0;ph<lg;ph++){s2=0;for(q2=f0+ph;q2<f1;q2+=lg)s2+=on[Math.round(q2)];if(s2>bs){bs=s2;bp=ph;}}
+var out=[],pos=f0+bp,wn=Math.max(1,Math.round(lg*win));
+while(pos<f1){var c=Math.round(pos),bj=0,bv=-1;for(k=-wn;k<=wn;k++){var v=(on[c+k]||0)*(1-.5*Math.abs(k)/wn);if(v>bv){bv=v;bj=k;}}
+var hit=bv>.03;out.push({f:pos+(hit?bj*pull:0),t:(pos+(hit?bj*pull:0))/fps,s:Math.min(1,.55+bv*1.6),hit:hit,lo:lo[Math.max(0,Math.min(nF-1,c))]});pos+=lg+(hit?bj*pull*.6:0);}
+return out;}
+beats=track(lagf,.14,.5);
+var sx=0,sy=0,sxx=0,sxy=0,nn=0;beats.forEach(function(bb,q){if(!bb.hit)return;sx+=q;sy+=bb.f;sxx+=q*q;sxy+=q*bb.f;nn++;});
+if(nn>16){var slope=(nn*sxy-sx*sy)/(nn*sxx-sx*sx);if(slope>lagf*.94&&slope<lagf*1.06){lagf=slope;Tb=lagf/fps;beats=track(lagf,.09,.6);}}
+var ds=[0,0,0,0];beats.forEach(function(bb,q){ds[q%4]+=bb.lo+bb.s*.5;});for(k=1;k<4;k++)if(ds[k]>ds[down])down=k;}
+/* 曲調の区切り: 前の4秒と次の4秒で、勢いや明るさが大きく変わる所 */
+var br=new Float32Array(nF);for(f=0;f<nF;f++)br[f]=hi[f]/(lo[f]+hi[f]+.05);
+var w4=Math.round(fps*4),E4=box(en,w4),B4=box(br,w4),nov=new Float32Array(nF);
+for(f=f0+w4;f<f1-w4;f++)nov[f]=Math.abs(E4[f+w4]-E4[f])+.35*Math.abs(B4[f+w4]-B4[f]);
+var secs=[],gap=Math.round(fps*8);
+for(f=f0+w4;f<f1-w4;f++){if(nov[f]<.16)continue;var pk=true;for(k=-gap;k<=gap;k++)if(nov[f+k]>nov[f]){pk=false;break;}if(!pk)continue;
+var ts=f/fps;if(beats){var nb=0,nd=9;beats.forEach(function(bb,q){if((q-down+400)%4===0&&Math.abs(bb.t-ts)<nd){nd=Math.abs(bb.t-ts);nb=bb.t;}});if(nd<Tb*2.2)ts=nb;}   /* 小節の頭にそろえる */
+secs.push({t:ts,up:E4[Math.min(nF-1,f+w4)]>E4[f],amt:nov[f]});}
+/* フレーズの頭を割り出す。小節(4拍)を数え、4小節ごとの区切りが、曲調の変わり目にいちばん重なる並びを選ぶ。
+   それぞれの区切りに「変化の大きさ」w(0..1)を付ける。場面の切り替えはこの区切りでだけ行い、大きさに応じて変える量を決める */
+var cuts=[],bars=[],nq2=[];for(f=f0;f<f1;f+=8)nq2.push(nov[f]);nq2.sort(function(u,v){return u-v;});var nref=Math.max(.12,nq2[Math.floor(nq2.length*.97)]||0);
+function novAt(tq){var c=Math.round(tq*fps),m=0,hw=Math.round(fps*.9);for(var z=-hw;z<=hw;z+=4){var v=nov[c+z]||0;if(v>m)m=v;}return m;}
+function upAt(tq){var c=Math.max(0,Math.min(nF-1,Math.round(tq*fps)));return E4[Math.min(nF-1,c+w4)]>E4[c];}
+if(beats){beats.forEach(function(bb,q){if(((q-down)%4+4)%4===0)bars.push(bb.t);});
+var bo=0,bsc=-1,oo,zz;for(oo=0;oo<4;oo++){var sc2=0;for(zz=oo;zz<bars.length;zz+=4)sc2+=novAt(bars[zz]);if(sc2>bsc){bsc=sc2;bo=oo;}}
+for(zz=bo;zz<bars.length;zz+=4)cuts.push({t:bars[zz],w:Math.min(1,novAt(bars[zz])/nref),up:upAt(bars[zz])});}
+else{   /* 拍のない曲: 曲調の変わり目と、旋律の息継ぎ(中音がふっと引く所)を区切りにする */
+secs.forEach(function(q){cuts.push({t:q.t,w:Math.min(1,q.amt/nref),up:q.up});});
+var m06=box(mi,Math.round(fps*.6)),m4=box(mi,Math.round(fps*4)),hw2=Math.round(fps*1.5);
+for(f=f0+hw2;f<f1-hw2;f++){if(m06[f]>.6*m4[f])continue;var mn2=true;for(k=-hw2;k<=hw2;k+=3)if(m06[f+k]<m06[f]){mn2=false;break;}if(!mn2)continue;
+var ts2=f/fps,far=true;cuts.forEach(function(c){if(Math.abs(c.t-ts2)<6)far=false;});if(far)cuts.push({t:ts2,w:.3,up:upAt(ts2)});}
+cuts.sort(function(u,v){return u.t-v.t;});}
+var mean=0;for(f=f0;f<=f1;f++)mean+=en[f];mean/=(f1-f0+1);
+return {cuts:cuts,bars:bars,it:it,fps:fps,nF:nF,lo:lo,mi:mi,hi:hi,mfl:mfl,e2:e2,t0:f0/fps,t1:Math.min(b.duration,(f1+1)/fps+0.6),beats:beats,down:down,Tb:Tb,bpm:60/Tb,conf:conf,secs:secs,level:mean<0.36?0:mean<0.5?1:2,mean:mean};}
+
+var pre=null,bIdx=0,sIdx=0,primed=false,kIdx=0,rIdx=0,kSnd=0,cutEv=null,barEv=false,crOn=false;
+var PD=[0.03,0.10,0.77];
+function fmt(t){t=Math.max(0,Math.round(t));return Math.floor(t/60)+':'+('0'+t%60).slice(-2);}
+/* 物語の区切りを曲の構成に合わせる。終盤にいちばん近い「曲調の区切り」から、秩序へ向かい始める */
+function fitStory(){P1=PD[0];P2=PD[1];P3=PD[2];
+/* 「秩序へ」は、終盤のフレーズの頭から始める。変化の大きい区切りを優先する */
+var len=pre?pre.t1-pre.t0:0;
+if(pre){var bsf=-9,bf=-1;(pre.cuts.length?pre.cuts:pre.secs).forEach(function(q){var fr=(q.t-pre.t0)/len;if(fr>0.64&&fr<0.80){var sc=(q.w===undefined?0.5:q.w)*0.6-Math.abs(fr-0.77)*5;if(sc>bsf){bsf=sc;bf=fr;}}});if(bf>0)P3=bf;}
+/* 終幕の順序: 曼荼羅(動き続ける) → 大波 → 字が現れる → 曼荼羅が消える → 字が砕ける → 闇に曲名と作者 */
+P4=Math.min(P3+0.085,0.845);P5=P4+0.006;PW=P4+0.028;
+if(pre&&pre.bars.length){var bw=9,bt=-1;pre.bars.forEach(function(tb){var fr=(tb-pre.t0)/len;if(Math.abs(fr-PW)<bw){bw=Math.abs(fr-PW);bt=fr;}});if(bw<0.012)PW=bt;}   /* 大波は小節の頭で打つ */
+P6=PW+0.012;P7=P6+0.04;P8=P7+0.018;PC=P8+0.024;}   /* 字: 4%かけて粉から組み上がり、少し留まり、3.6%かけて粉へ還る。闇になりきる頃に曲名が現れる */
+function progToTime(v){return pre?pre.t0+v*(pre.t1-pre.t0):v*buf.duration;}
+function syncPointers(t){bIdx=0;sIdx=0;cIdx=0;primed=false;if(!pre)return;if(pre.beats){while(bIdx<pre.beats.length&&pre.beats[bIdx].t<t)bIdx++;cIdx=bIdx;}while(sIdx<pre.secs.length&&pre.secs[sIdx].t<t)sIdx++;
+kIdx=0;while(kIdx<pre.cuts.length&&pre.cuts[kIdx].t<t)kIdx++;kSnd=kIdx;rIdx=0;while(rIdx<pre.bars.length&&pre.bars[rIdx]<t)rIdx++;}
+/* 再生中: 下読みした結果を、いまの再生位置で引く。音が耳に届くまでの遅れも差し引く */
+function scripted(){
+var lat=(actx.outputLatency||0)+(actx.baseLatency||0),t=curTime()-lat,fi=Math.max(0,Math.min(pre.nF-1,Math.round(t*pre.fps)));
+lv[0]=pre.lo[fi];lv[1]=pre.mi[fi];lv[2]=pre.hi[fi];eSlow=pre.e2[fi];intenT=pre.it[fi];
+/* 確認用: 割り出した拍の位置で「カチ」と鳴らす。曲と合っているかを耳で確かめられる */
+if(clickOn&&pre.beats){var tn=curTime();while(cIdx<pre.beats.length&&pre.beats[cIdx].t<tn+0.2){var bt=pre.beats[cIdx].t;if(bt>tn){var os=actx.createOscillator(),gn2=actx.createGain(),at=t0+bt;
+os.frequency.value=((cIdx-pre.down)%4+4)%4===0?1760:1175;gn2.gain.setValueAtTime(0.0001,actx.currentTime);gn2.gain.setValueAtTime(0.3,at);gn2.gain.exponentialRampToValueAtTime(0.001,at+0.05);os.connect(gn2);gn2.connect(actx.destination);os.start(at);os.stop(at+0.07);}cIdx++;}}
+if(pre.mfl[fi]>0.16&&!reduce)Oe=Math.max(Oe,Math.min(1,0.45+pre.mfl[fi]*2.5));
+if(pre.beats){ibi=pre.Tb;while(bIdx<pre.beats.length&&pre.beats[bIdx].t<=t){var bb=pre.beats[bIdx];beatN=((bIdx-pre.down)%4+4)%4+3;lastBeatT=T;beat(bb.s*(0.55+0.45*Math.min(1,bb.lo*1.3)));bIdx++;}}
+var CT=pre.cuts;
+while(kIdx<CT.length&&CT[kIdx].t<=t){cutEv=CT[kIdx];kIdx++;primed=false;}
+/* 大きく盛り上がる区切りの直前は、中心へ引き絞っておく。区切りの瞬間に一気に外へ放つ */
+if(kIdx<CT.length){var nc=CT[kIdx];if(!primed&&nc.up&&nc.w>=0.55&&t>nc.t-pre.Tb*2.5&&!ordInit&&bias===0){primed=true;dirT=-1;}}
+while(rIdx<pre.bars.length&&pre.bars[rIdx]<=t){barEv=true;rIdx++;}
+/* 確認用: 場面が変わる所(フレーズの頭)で鐘を鳴らす。大きな区切りは低く長い音 */
+if(clickOn){var tn3=curTime();while(kSnd<CT.length&&CT[kSnd].t<tn3+0.2){var c9=CT[kSnd];if(c9.t>tn3){var o9=actx.createOscillator(),g9=actx.createGain(),a9=t0+c9.t,big=c9.w>=0.55;
+o9.type='triangle';o9.frequency.value=big?392:659;g9.gain.setValueAtTime(0.0001,actx.currentTime);g9.gain.setValueAtTime(big?0.4:0.22,a9);g9.gain.exponentialRampToValueAtTime(0.001,a9+(big?0.9:0.35));o9.connect(g9);g9.connect(actx.destination);o9.start(a9);o9.stop(a9+(big?1:0.4));}kSnd++;}}
+return t;}
+function seek(v){prog=cl(v);if(buf){offset=Math.min(buf.duration-0.05,progToTime(prog));syncPointers(offset);if(playing)startSrc();}}
+pg.addEventListener('input',function(){dragging=true;prog=(+pg.value)/1000;po.textContent=Math.round(prog*100)+'%';});
+pg.addEventListener('change',function(){dragging=false;seek((+pg.value)/1000);});
+$('bp').addEventListener('input',function(){bpm=Math.round(+this.value);$('bo').textContent=bpm;});
+$('pp').addEventListener('click',function(){
+if(buf){if(playing){offset=curTime();stopSrc();this.textContent='再生';}else{startSrc();}}
+else{run=!run;this.textContent=run?'一時停止':'再生';}});
+$('fin').addEventListener('click',function(){seek(0.75);});
+$('nx').addEventListener('click',function(){resetAll();newSeed(1+Math.floor(Math.random()*999));seek(0);});
+$('sp').addEventListener('input',function(){speed=(+this.value)/10;$('so').textContent=speed.toFixed(1)+'倍';});
+$('rc').addEventListener('click',function(){for(var j=0;j<NM;j++)if(!fin[j])roll(j);});
+[0,1,2].forEach(function(k){$('f'+k).addEventListener('click',function(){bias=k;nextD=T;for(var j=0;j<3;j++)$('f'+j).setAttribute('aria-pressed',j===k?'true':'false');});});
+
+/* ===== 完成図を一枚の画像にする(SNS用 1080×1350) ===== */
+var wantShot=false;
+function shot(){
+var W=1080,Hh=1350,ow=gc.width,oh=gc.height,z=new Float32Array(NM);
+try{
+gc.width=W;gc.height=W;gl.viewport(0,0,W,W);gl.uniform2f(U.R,W,W);poseForImage();   /* 画面では動き続けているが、画像は必ず正面を向いた完成の姿で写す */
+gl.drawArrays(gl.TRIANGLES,0,3);
+var cv=document.createElement('canvas');cv.width=W;cv.height=Hh;var x=cv.getContext('2d'),bgc=sig.pal.bg;
+x.fillStyle='rgb('+Math.round(bgc[0]*255*0.6)+','+Math.round(bgc[1]*255*0.6)+','+Math.round(bgc[2]*255*0.6)+')';x.fillRect(0,0,W,Hh);
+x.drawImage(gc,0,0,W,W);
+var SF='"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif';
+x.strokeStyle='rgba(216,180,106,.55)';x.lineWidth=1.5;x.beginPath();x.moveTo(90,1118);x.lineTo(W-90,1118);x.stroke();
+x.textAlign='center';x.textBaseline='middle';
+x.fillStyle='#efe6d0';x.font='500 46px '+SF;var nm=$('ttl').value||trackName||('種 '+track);if(nm.length>22)nm=nm.slice(0,21)+'…';x.fillText(nm,W/2,1178);
+x.fillStyle='rgba(216,180,106,.95)';x.font='26px '+SF;x.fillText('開 羯 諦 経   OPEN GATE SUTRA',W/2,1244);
+x.fillStyle='rgba(232,224,204,.55)';x.font='21px '+SF;x.fillText(sig.lay+' ・ '+sig.sym+'回対称 ・ '+sig.pal.n,W/2,1294);
+$('shotimg').src=cv.toDataURL('image/jpeg',0.93);
+var c2=document.createElement('canvas');c2.width=W;c2.height=Hh;var y=c2.getContext('2d');
+var gr=y.createRadialGradient(W/2,560,20,W/2,560,760);gr.addColorStop(0,'rgb('+Math.round(bgc[0]*255*1.5+10)+','+Math.round(bgc[1]*255*1.5+10)+','+Math.round(bgc[2]*255*1.5+12)+')');gr.addColorStop(1,'rgb('+Math.round(bgc[0]*150)+','+Math.round(bgc[1]*150)+','+Math.round(bgc[2]*150)+')');
+y.fillStyle=gr;y.fillRect(0,0,W,Hh);
+y.save();y.globalAlpha=.16;y.drawImage(gc,90,110,900,900);y.restore();                       /* 字の背に、生まれ元の曼荼羅を淡く敷く */
+drawGlyph(y,gsh,W/2,580,760,'rgba(243,214,150,1)',{c:'rgba(255,186,96,.8)',px:44});drawGlyph(y,gsh,W/2,580,760,'#fbeccb',null);
+y.strokeStyle='rgba(216,180,106,.55)';y.lineWidth=1.5;y.beginPath();y.moveTo(90,1118);y.lineTo(W-90,1118);y.stroke();
+y.textAlign='center';y.textBaseline='middle';y.fillStyle='#efe6d0';y.font='500 46px '+SF;y.fillText(nm,W/2,1178);
+y.fillStyle='rgba(216,180,106,.95)';y.font='26px '+SF;y.fillText('開 羯 諦 経   OPEN GATE SUTRA',W/2,1244);
+var mxi=0;gel.forEach(function(v,q){if(v>gel[mxi])mxi=q;});
+y.fillStyle='rgba(232,224,204,.55)';y.font='21px '+SF;y.fillText('この曲の一字 ・ '+ELN[mxi]+'の気',W/2,1294);
+$('glyphimg').src=c2.toDataURL('image/jpeg',0.93);$('shotbox').hidden=false;
+}catch(e){msg.textContent='画像にできませんでした';}
+gc.width=ow;gc.height=oh;gl.viewport(0,0,ow,oh);}
+$('pl').addEventListener('click',function(){pulseOn=!pulseOn;this.setAttribute('aria-pressed',pulseOn?'true':'false');this.textContent='鼓動：'+(pulseOn?'入':'切');});
+$('ck').addEventListener('click',function(){clickOn=!clickOn;if(buf)cIdx=bIdx;this.setAttribute('aria-pressed',clickOn?'true':'false');this.textContent='確認音：'+(clickOn?'入':'切');if(buf&&pre){kSnd=kIdx;}});
+$('fx').addEventListener('click',function(){fixedEnd=!fixedEnd;this.setAttribute('aria-pressed',fixedEnd?'true':'false');this.textContent='結末：'+(fixedEnd?'曲ごとに固定':'毎回ちがう');});
+/* ===== 立体視の画像: 左目用と右目用を並べる ===== */
+var wantSt=false,crossView=false;
+function stereo(){
+var Sq=1000,ow=gc.width,oh=gc.height,z=new Float32Array(NM),e=0.009*dep;
+try{
+gc.width=Sq;gc.height=Sq;gl.viewport(0,0,Sq,Sq);gl.uniform2f(U.R,Sq,Sq);poseForImage();
+var m=30,W=Sq*2+m*3,H=Sq+160,cv=document.createElement('canvas');cv.width=W;cv.height=H;var x=cv.getContext('2d'),bgc=sig.pal.bg;
+x.fillStyle='rgb('+Math.round(bgc[0]*130)+','+Math.round(bgc[1]*130)+','+Math.round(bgc[2]*130)+')';x.fillRect(0,0,W,H);
+/* 近いものほど、左目の絵では右へ、右目の絵では左へ寄る。交差法では左右の絵を入れ替える */
+[-1,1].forEach(function(eye,k){gl.uniform1f(U.Ey,eye*e);gl.drawArrays(gl.TRIANGLES,0,3);var slot=crossView?1-k:k,px=m+slot*(Sq+m);
+x.drawImage(gc,px,70,Sq,Sq);x.fillStyle='rgba(239,230,208,.9)';x.beginPath();x.arc(px+Sq/2,36,7,0,TAU);x.fill();});   /* 上の点は、二つを重ねる時の目印 */
+var SF='"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif';
+x.textAlign='center';x.textBaseline='middle';x.fillStyle='#efe6d0';x.font='500 30px '+SF;
+var nm=$('ttl').value||trackName||('種 '+track);if(nm.length>30)nm=nm.slice(0,29)+'…';
+x.fillText(nm+'　・　開羯諦経 OPEN GATE SUTRA',W/2,Sq+70+38);
+x.fillStyle='rgba(216,180,106,.9)';x.font='22px '+SF;x.fillText(crossView?'交差法（寄り目で見る）':'平行法（遠くを見るように見る）',W/2,Sq+70+74);
+$('stimg').src=cv.toDataURL('image/jpeg',0.9);$('stimg').hidden=false;$('shotbox').hidden=false;
+$('sthelp').textContent=crossView?'見方（交差法）：寄り目にして、上の二つの点が三つに見えたら、真ん中の点の下の絵が立体になります。':'見方（平行法）：絵の向こうの遠くを見るように力を抜き、上の二つの点が三つに見えたら、真ん中の点の下の絵が立体になります。スマホは横向きがおすすめです。';
+$('sthelp').hidden=false;
+}catch(err){msg.textContent='3D画像にできませんでした';}
+gl.uniform1f(U.Ey,0);gc.width=ow;gc.height=oh;gl.viewport(0,0,ow,oh);}
+$('st3').addEventListener('click',function(){wantSt=true;if(!(prog>=P5&&prog<PW-0.004))seek(P5+0.002);});
+$('stm').addEventListener('click',function(){crossView=!crossView;this.setAttribute('aria-pressed',crossView?'true':'false');this.textContent='見方：'+(crossView?'交差法':'平行法');});
+$('sh').addEventListener('click',function(){wantShot=true;if(!(prog>=P5&&prog<PW-0.004))seek(P5+0.002);});
+function setCredit(){var a=$('ttl').value||trackName||'',b=$('art').value||'';$('crT').textContent=a;$('crA').textContent=b;$('crT2').textContent=a;$('crA2').textContent=b;}
+/* 3D表示: 画面を左右に分け、左目用と右目用を動いたまま描く。スマホを横にしてゴーグルに入れれば、そのまま立体で見られる */
+$('dp').addEventListener('input',function(){dep=(+this.value)/10;$('do').textContent=dep.toFixed(1);});
+$('sb3').addEventListener('click',function(){sbs=!sbs;this.setAttribute('aria-pressed',sbs?'true':'false');this.textContent='3D表示：'+(sbs?'入':'切');
+$('stg').classList.toggle('sbs',sbs);$('crE2').hidden=!sbs;parts=null;rs();});
+$('fsb').addEventListener('click',function(){var st=$('stg');
+if(document.fullscreenElement){document.exitFullscreen();return;}
+if(st.requestFullscreen){var pr3=st.requestFullscreen();if(pr3&&pr3.catch)pr3.catch(function(){msg.textContent='この端末では全画面にできません。横向きにしてご覧ください';});}
+else msg.textContent='この端末では全画面にできません。横向きにしてご覧ください';});
+$('stg').addEventListener('click',function(){if(document.fullscreenElement)document.exitFullscreen();});
+document.addEventListener('fullscreenchange',function(){setTimeout(rs,80);});
+$('ttl').addEventListener('input',setCredit);$('art').addEventListener('input',setCredit);setCredit();
+
+/* ===== 物語の区切り(曲の進行に対する割合) ===== */
+var P1,P2,P3,P4,P5,P6,P7,P8,PW,PC,PWd=0.03,GDS=0.036;fitStory();
+setGlyph();
+var NAMES=['無','一点','誕生','生成','秩序へ','曼荼羅','大波','一字','無'],li=$('story').children,shown=-1;
+function chapter(){return prog<0.012?0:prog<P1?1:prog<P2?2:prog<P3?3:prog<P4?4:prog<PW?5:prog<P7?6:prog<P8+GDS*0.8?7:8;}
 
 /* ===== 毎コマの更新 ===== */
+var slowF=0;
 function frame(ts){
-var dt=Math.min(0.05,(ts-last)/1000);last=ts;
-if(run){T+=dt;ph+=dt*bpm/60;var P=ph-Math.floor(ph);
-prog+=dt/DUR;if(prog>=1){prog=0;} // 本番: prog = audio.currentTime / audio.duration
-pg.value=Math.round(prog*100);po.textContent=Math.round(prog*100)+'%';
-// 鼓動：二段打ち（ドクン・ドクッ）。本番: 拍の検出と低音の強さに置き換える
-var B=Math.exp(-7*P)+(P>0.26?0.6*Math.exp(-9*(P-0.26)):0);
-// 向きの変化：3〜11秒ごと。8割で反転、強さ0.5〜1
-if(T>nextD){dirT=(Math.random()<0.8?-Math.sign(dirT):Math.sign(dirT))*rnd(0.5,1);nextD=T+rnd(3,11);}
-// 数の変化：1.2〜5.5秒ごと。55%で±1〜2、30%で別の数へ、15%で1か最大へ。向きとは無関係
-if(T>nextC){var q=Math.random();
+var raw=(ts-last)/1000,dt=Math.min(0.05,raw);last=ts;
+if(raw>0.034&&raw<0.5){slowF++;if(slowF>50&&scale>1){scale=Math.max(1,scale-0.25);slowF=0;rs();}}else if(slowF>0)slowF--;
+var live=buf&&playing,idle=buf&&!playing;
+if(run||buf){
+var vd=idle?dt*0.3:dt;
+T+=vd;beatNow=false;accentNow=false;cutEv=null;barEv=false;
+var P,i;
+if(live){if(pre){var tv=scripted();if(!dragging)prog=cl((tv-pre.t0)/(pre.t1-pre.t0));}else{analyse(dt);if(!dragging)prog=cl(curTime()/buf.duration);}P=Math.min(1,(T-lastBeatT)/ibi);}
+else if(idle){lv[0]*=0.9;lv[1]*=0.9;lv[2]*=0.9;P=1;}
+else{
+ph+=dt*bpm/60;if(Math.floor(ph)>pbeat){pbeat=Math.floor(ph);beat(pbeat%4===0?1:0.72);}
+if(Math.floor(ph+0.5)>phalf){phalf=Math.floor(ph+0.5);if(!reduce){beatEnv=Math.max(beatEnv,0.22);Oe=Math.max(Oe,0.6);}}
+P=ph-Math.floor(ph);if(!dragging){prog+=dt/DUR;if(prog>=1.06)prog=0;}
+lv[0]=beatEnv;lv[1]=0.45+0.25*Math.sin(T*0.7);lv[2]=0.35+0.3*Math.sin(T*1.9)*Math.sin(T*0.43);
+eSlow=0.35+0.3*Math.sin(T*0.11);intenT=0.5-0.5*Math.cos(T*0.26);}
+var pr2=Math.min(1,prog);
+if(!dragging){pg.value=Math.round(pr2*1000);po.textContent=Math.round(pr2*100)+'%';}
+
+beatEnv*=Math.exp(-vd*4);kick*=Math.exp(-vd*3);Oe*=Math.exp(-vd*4);
+/* 鼓動はなめらかに: 立ち上がりに少し時間をかけ、ゆっくり引く。打点で跳ねるのではなく、うねる */
+Bs+=(beatEnv-Bs)*Math.min(1,vd*(beatEnv>Bs?13:4.5));
+for(i=0;i<NM;i++){pT[i]*=Math.exp(-vd*3.6);pul[i]+=(pT[i]-pul[i])*Math.min(1,vd*(pT[i]>pul[i]?13:4.5));}
+var quiet=live&&(T-lastBeatT>2.2);
+var swell=quiet&&!reduce?0.55*lv[0]:0;
+var B=(reduce||!pulseOn)?0:Math.min(1.3,Bs+(live?0.2*lv[0]:0)+swell);
+if(idle)intenT=0.15;inten+=(intenT-inten)*Math.min(1,vd*(intenT>inten?2.2:1.1));Ls+=(lv[2]-Ls)*Math.min(1,vd*1.2);
+var tf=1.9-1.5*inten;   /* 勢いがある所ほど、変化の間隔が詰まる */
+if(quiet)for(i=0;i<NM;i++)pT[i]=Math.max(pT[i],swell);
+
+var stage=pr2<P1?0:pr2<P2?1:pr2<P3?2:pr2<P4?3:4;
+if(stage<lastStage&&(lastStage>=3||stage<2))resetAll();     /* 巻き戻しや次の周: 無からやり直す */
+if(stage===2&&lastStage<2)nextQ=T+rnd(4,8);
+lastStage=stage;
+var noBeat=idle||quiet;
+function due(t,acc){return T>t&&((acc?accentNow:beatNow)||noBeat||T>t+(acc?3:1.5));}
+
+if(stage<2&&nq!==1)setQ(1);
+if(stage===0){cnt=0;Pt=ease(pr2/P1);}
+else if(stage===1){cnt=1;Pt=1-ease((pr2-P1)/0.03);}
+else if(stage===2){Pt=0;if(cnt<1)cnt=1;
+/* 曲の勢いが、数の上限と、秩序に寄るか混沌に寄るかを決める */
+var cmax=Math.max(2,Math.min(9,Math.round(2+7*cl(eSlow*1.7))));
+var cutMode=live&&pre&&pre.cuts.length>2;
+if(cutMode){if(cutEv)onCut(cutEv);if(barEv)onBar();}   /* 曲を下読みできた時: 時計まかせの切り替えをやめ、フレーズの頭でだけ変える */
+else{
+if(due(nextD,true)){var cur=Math.sign(dirT)||1,bs=bias===1?-1:1;
+var nd=bias===0?(Math.random()<0.8?-cur:cur):(cur===bs?(Math.random()<0.3?-bs:bs):bs);
+dirT=nd*rnd(0.5,1);nextD=T+((bias!==0&&nd!==bs)?rnd(1.2,2.6):rnd(3,11))*tf;}
+if(due(nextC,false)){var q=Math.random(),c0=cnt;
 if(q<0.55){cnt+=(Math.random()<0.5?-1:1)*(Math.random()<0.7?1:2);}
-else if(q<0.85){cnt=1+Math.floor(Math.random()*NM);}
-else{cnt=Math.random()<0.5?1:NM;}
-cnt=Math.max(1,Math.min(NM,cnt));nextC=T+rnd(1.2,5.5);}
-vel+=(dirT-vel)*Math.min(1,dt*1.1);
-D+=((dirT<0?0.08:0.34)-D)*Math.min(1,dt*0.5); // 曼荼羅どうしの距離
-var sum=0;
-for(var i=0;i<NM;i++){var w=i<cnt;
-// 生まれ方・消え方：吸い込み中に生まれる→外から来る／発散中に生まれる→中心から湧く／発散中に消える→外へ飛び去る／吸い込み中に消える→その場で溶ける
-if(w&&!on[i]){on[i]=true;ro[i]=vel<0?0.85:0;}
-if(!w&&on[i]){on[i]=false;}
-if(on[i]){ro[i]+=(0-ro[i])*Math.min(1,dt*1.3);al[i]+=(1-al[i])*Math.min(1,dt*1.4);}
-else{if(vel>0)ro[i]+=dt*0.5;al[i]+=(0-al[i])*Math.min(1,dt*1.8);}
-sum+=al[i];
-// 形の変化：各曼荼羅が2.5〜9秒ごとに独立して。3割が円、7割が多角形
-if(T>nextS[i]){want(i,Math.random()<0.3?0:SIDES[Math.floor(Math.random()*SIDES.length)]);nextS[i]=T+rnd(2.5,9);}
+else if(q<0.85){cnt=1+Math.floor(Math.random()*cmax);}
+else{cnt=Math.random()<0.5?1:cmax;}
+cnt=Math.max(1,Math.min(cmax,cnt));nextC=T+rnd(1.2,5.5)*tf;if(cnt!==c0)setTimeout(retarget,0);}
+if(due(nextO,true)){ordT=Math.random()<(0.75-0.6*cl(eSlow*1.6))?1:0;nextO=T+rnd(6,15);
+comShape=Math.random()<0.4?0:pick(SIDES);retarget();if(ordT<0.5)setScene(1+Math.floor(Math.random()*4));
+if(Math.random()<0.6)setPal(palFor(mood(),Math.random));}
+if(due(nextQ,true)){setQ(pick([1,2,2,3,3,4,5]));nextQ=T+rnd(9,20);retarget();}   /* 渦の中心の数が変わる */
+}
+}
+else if(stage===3){   /* 秩序へ: 点に潰さず、いま在る曼荼羅がそのまま結末の位置と形へ移っていく */
+Pt=0;cnt=NM;dirT=0;
+if(!ordInit)beginOrder();
+nq=sig.cen.length;}
+else{Pt=0;dirT=0;if(!ordInit)beginOrder();nq=sig.cen.length;}
+var t3=stage===3?(pr2-P3)/(P4-P3):0;
+if(stage===3&&beatNow)nStep++;
+orgF+=(((stage===2&&ordT<0.5)?1:(stage===1?0.45:0))-orgF)*Math.min(1,vd*0.9);
+ord+=(ordT-ord)*Math.min(1,vd*0.8);
+
+var sm=0,nOn=0,rank=[],mem=[0,0,0,0,0,0,0,0,0],j;
+qR+=(qRt-qR)*Math.min(1,vd*0.8);qrot+=vd*0.05*(1+2*kick);
+for(j=0;j<9;j++){var act=j<nq,qx=Q[j*3],qy=Q[j*3+1];
+if(act){var gx,gy;if(stage>=3&&sig.cen[j]){gx=sig.cen[j][0];gy=sig.cen[j][1];}else{gx=Math.cos(j*TAU/nq+qrot)*qR;gy=Math.sin(j*TAU/nq+qrot)*qR;}
+var qs=Math.min(1,vd*(stage>=3?2.5:1.2));Q[j*3]=qx+(gx-qx)*qs;Q[j*3+1]=qy+(gy-qy)*qs;}
+Q[j*3+2]+=((act?1:0)-Q[j*3+2])*Math.min(1,vd*1.5);}
+if(stage<4){
+vel+=(dirT-vel)*Math.min(1,vd*(stage===3?2.5:1.6));
+D+=((dirT<0?0.1:0.36)-D)*Math.min(1,vd*0.5);
+for(i=0;i<NM;i++){var w=i<cnt;
+if(w&&!on[i]){on[i]=true;roll(i);al[i]=1;rad[i]=0;mf[i]=0;
+par[i]=anyOn(i);bof[i]=par[i]>=0?1:0;                      /* 親がいれば、親の場所から分かれて出てくる */
+radT[i]=stage===1?0.08:(cnt<=1?1.35:(ordT>0.5?rnd(.24,.5):rnd(.16,.78)));
+gn[i]=pick(SIDES);hm[i]=0;ht[i]=(Math.random()<0.3||stage===1)?0:1;}
+if(!w&&on[i]){on[i]=false;radT[i]=0;mf[i]=0;mt[i]=stage===3?-2:anyOn(i);}   /* 消える時は、隣の曼荼羅へ吸い込まれる */
+if(stage===1&&i===0)radT[0]=0.08+1.27*ease((pr2-P1)/(P2-P1));
+if(stage===3){var sp3=sig.slots[i],F3=sig.fin[sp3.cls],ti=ease((t3-sp3.ord*0.05)/0.55),o4=i*4;
+tiA[i]=ti;
+if(ti>0){var kq=Math.min(1,vd*2.2);prA[i]+=(upP(prA[i],sig.sym>8?6:sig.sym)-prA[i])*kq;morph(i,kq*ti,beatNow||noBeat||Math.random()<vd*3);}}
+rad[i]+=(radT[i]-rad[i])*Math.min(1,vd*(on[i]?1.5:(stage===3?3.2:2.4)));
+if(on[i]){bof[i]*=Math.exp(-vd*1.6);nOn++;rank[i]=mem[i%nq]++;
+if(stage===2){
+if(ordT>0.5){want(i,comShape);}
+else if(!cutMode&&due(nextS[i],false)){want(i,Math.random()<0.3?0:pick(SIDES));nextS[i]=T+rnd(2.5,9)*tf;}}
 if(pend[i]>0&&hm[i]<0.03){gn[i]=pend[i];pend[i]=0;ht[i]=1;}
-hm[i]+=(ht[i]-hm[i])*Math.min(1,dt*1.6);}
-var sp2=Math.min(1,Math.max(0,sum-1));spread+=(sp2-spread)*Math.min(1,dt*2); // 1つだけの時は中心に置く
-Z+=dt*vel*(0.55+0.45*B);
-th0+=dt*(0.2+0.55*Math.max(0,-vel)*(1-D/0.36));
-for(var i=0;i<NM;i++){var th=i*2.39996+th0*(i%2?1:0.7)+0.4*Math.sin(T*0.31+i*2.1); // 黄金角で配置
-var of=0.55+0.6*((i*0.618)%1);
-var rad=(D*of*spread*(on[i]?al[i]:1)+ro[i])*(1+0.25*Math.sin(T*0.53+i*1.7))*(1+0.05*B);
-cs[i*2]=Math.cos(th)*rad;cs[i*2+1]=Math.sin(th)*rad;}
-gl.uniform2f(U.R,gc.width,gc.height);gl.uniform1f(U.Z,Z);gl.uniform1f(U.T,T);gl.uniform1f(U.B,B);gl.uniform1f(U.P,P);gl.uniform1f(U.K,2+1.5*sum);gl.uniform1f(U.W,vel);gl.uniform2fv(U.C,cs);gl.uniform1fv(U.A,al);gl.uniform1fv(U.G,gn);gl.uniform1fv(U.H,hm);
+hm[i]+=(ht[i]-hm[i])*Math.min(1,vd*1.6);}
+else if(al[i]>0){mf[i]+=(1-mf[i])*Math.min(1,vd*2.2);if(rad[i]<0.012){al[i]=0;rad[i]=0;}}
+sm+=al[i];
+an[i*2]=-1;an[i*2+1]=rad[i]*(1+0.04*pul[i]);
+if(stage===3){var s3=sig.slots[i],tj=ease((t3-s3.ord*0.05)/0.55);if(s3.r1>0&&tj>0)an[i*2]=s3.r1*tj;}}
+var flow=0.08+2.5*Math.pow(inten,1.6);                /* 静かな所はほとんど止まり、激しい所は一気に流れる */
+Z+=vd*vel*speed*flow*(1+(pulseOn?0.3*Bs:0));if(stage===3)Z+=vd*0.1*ease(t3*2);
+var dR=vd*(0.1+1.7*inten+(pulseOn?2.2*kick:0));for(i=0;i<NM;i++){var sgi=(i%2)*2-1,fr=stage===3?1-tiA[i]:1;rrA[i]+=dR*0.1*sgi*fr+(stage===3?vd*0.05*RF(i)*sgi*tiA[i]:0);prA[i]+=dR*0.12*sgi*fr;}   /* 「秩序へ」では、止まるのではなく、完成後のゆっくりした速さへ落ち着いていく */
+th0+=vd*(0.05+0.5*inten+0.55*Math.max(0,-vel)*(1-D/0.38)*(0.3+inten)+(pulseOn?0.5*kick:0));
+var nx2=new Float32Array(NM*2);
+for(i=0;i<NM;i++){
+var th=i*2.39996+th0*(i%2?1:0.7)+0.4*Math.sin(T*0.31+i*2.1),of=0.55+0.6*((i*0.618)%1);
+var qa=i%nq,ls=nq>1?0.5:1,bx=Q[qa*3],by=Q[qa*3+1];
+spr[i]+=((mem[qa]>1?1:0)-spr[i])*Math.min(1,vd*1.6);
+var rc0=D*of*ls*spr[i]*(1+0.25*Math.sin(T*0.53+i*1.7));
+var x=bx+Math.cos(th)*rc0,y=by+Math.sin(th)*rc0;
+if(on[i]){var tho=rank[i]*TAU/Math.max(1,mem[qa])+th0*0.6,ro=D*0.95*ls*spr[i];   /* 秩序: それぞれの渦の周りに、等間隔で並ぶ */
+x+=(bx+Math.cos(tho)*ro-x)*ord;y+=(by+Math.sin(tho)*ro-y)*ord;
+if(bof[i]>0.002&&par[i]>=0){x+=(cs[par[i]*2]-x)*bof[i];y+=(cs[par[i]*2+1]-y)*bof[i];}}
+else if(al[i]>0){var tx=bx,ty=by;if(mt[i]>=0&&al[mt[i]]>0){tx=cs[mt[i]*2];ty=cs[mt[i]*2+1];}
+else if(mt[i]===-2){var bd=9;sig.cen.forEach(function(c){var dd=Math.hypot(c[0]-cs[i*2],c[1]-cs[i*2+1]);if(dd<bd){bd=dd;tx=c[0];ty=c[1];}});}   /* 収束: いちばん近い結末の中心へ */
+x=cs[i*2]+(tx-cs[i*2])*Math.min(1,vd*3);y=cs[i*2+1]+(ty-cs[i*2+1])*Math.min(1,vd*3);}
+if(stage===3){var s4=sig.slots[i],tk=ease((t3-s4.ord*0.05)/0.55);x+=(s4.cx-x)*tk;y+=(s4.cy-y)*tk;}
+nx2[i*2]=x;nx2[i*2+1]=y;}
+cs.set(nx2);
+}else{
+/* ===== 結末: 一点から、内側の帯から順に開いて、一つの曼荼羅になる。そして散る ===== */
+if(!finInit){finInit=true;rotC=0;tF=0;ordT=1;for(i=0;i<NM;i++){fin[i]=true;pr0[i]=upP(prA[i],sig.sym>8?6:sig.sym);}}
+vel+=(0-vel)*Math.min(1,vd*3);
+/* 完成しても止めない。「秩序へ」の終わりの速さのまま流れ続ける。形と位置は目標へ追いつき続けるだけで、固定はしない */
+tF+=vd;var mv=(reduce?0.4:1)*ease(tF/3);
+Z+=vd*0.1*(1+0.5*Math.sin(tF*0.45));rotC+=vd*0.02*mv;
+var cR=Math.cos(rotC),sR=Math.sin(rotC),kq4=Math.min(1,vd*2.2),kp=Math.min(1,vd*2.5),stN=beatNow||noBeat||Math.random()<vd*3;
+for(i=0;i<NM;i++){var sp=sig.slots[i],sg4=(i%2)*2-1;
+morph(i,kq4,stN);
+if(pend[i]>0&&hm[i]<0.03){gn[i]=pend[i];pend[i]=0;ht[i]=1;}
+hm[i]+=(ht[i]-hm[i])*Math.min(1,vd*1.6);
+al[i]+=(1-al[i])*Math.min(1,vd*2);sm+=al[i];
+rrA[i]+=vd*0.05*RF(i)*sg4;prA[i]+=((pr0[i]-rotC)-prA[i])*kp;
+cs[i*2]+=((sp.cx*cR-sp.cy*sR)-cs[i*2])*kp;cs[i*2+1]+=((sp.cx*sR+sp.cy*cR)-cs[i*2+1])*kp;
+rad[i]+=(sp.r2-rad[i])*Math.min(1,vd*1.5);
+var ax=an[i*2]<0?0:an[i*2];an[i*2]=sp.r1===0?-1:ax+(sp.r1-ax)*kp;an[i*2+1]=rad[i];
+BMF[i]=0.3*mv*(0.5+0.5*Math.sin(tF*0.6+sp.cx*9+sp.cy*13));}   /* 同じ中心の帯はそろって、ゆっくり息をする */
+}
+if(stage===3&&ordInit){   /* 色はいきなり替えない。形が整っていくのと同じ歩みで、少しずつ結末の色に染まる */
+var cw=ease(t3/0.92);for(i=0;i<36;i++){CA[i]=SA[i]+(TA[i]-SA[i])*cw;CB[i]=SB[i]+(TB[i]-SB[i])*cw;CC[i]=SC[i]+(TC[i]-SC[i])*cw;}
+for(i=0;i<3;i++)BG[i]=SG[i]+(sig.pal.bg[i]-SG[i])*cw;}
+else{var cq=Math.min(1,vd*0.9);for(i=0;i<36;i++){CA[i]+=(TA[i]-CA[i])*cq;CB[i]+=(TB[i]-CB[i])*cq;CC[i]+=(TC[i]-CC[i])*cq;}
+for(i=0;i<3;i++)BG[i]+=(sig.pal.bg[i]-BG[i])*Math.min(1,vd*0.6);}
+var fv=stage===0?ease(pr2/P1):(stage===4?1-ease((pr2-P8)/GDS):1);
+var energy=cl((eSlow-0.25)*2.2);
+var holdGlow=stage===4?ease((pr2-P4)/0.012)*(1-ease((pr2-P6)/0.02)):0;
+/* 大波: 止めていた鼓動を、ここで一度だけ、大きくゆっくり打つ */
+var Bu=B,Pu=pulseOn?P:4,BmU=pulseOn?pul:ZERO,bwx=0,bwy=0,Md=1,gdA=0,gdF=0;
+if(stage===4){var tw=(pr2-PW)/PWd,env=0;
+if(tw>0&&tw<1&&!reduce){env=tw<0.22?ease(tw/0.22):1-ease((tw-0.22)/0.78);bwx=tw*0.85;bwy=Math.min(1,tw*7)*(1-ease((tw-0.75)/0.25));Pu=tw;}
+/* 金: 鼓動とともに、中心から外へ染め広げる。染まった金は、曼荼羅が消えるまで残る */
+if(tw>0){if(tw<1&&!reduce){gdA=ease(tw/0.12);gdF=tw*1.25-0.04;}else{gdA=ease(tw);gdF=2;}}
+for(i=0;i<NM;i++)BMF[i]+=env*1.3+(pulseOn?pul[i]:0);BmU=BMF;Bu=B+env*2.2;
+Md=(1-0.45*ease((pr2-P6)/(P7-P6)))*(1-ease((pr2-(P7-0.006))/0.02));}   /* 字が現れるにつれて沈み、そのあと消える */
+gl.uniform2f(U.R,gc.width,gc.height);gl.uniform1f(U.Sb,sbs?1:0);gl.uniform1f(U.Ey,sbs?(crossView?-1:1)*0.009*dep:0);gl.uniform1fv(U.Dz,DZ);gl.uniform1f(U.Z,Z);gl.uniform1f(U.T,T);gl.uniform1f(U.B,Bu);gl.uniform1f(U.P,Pu);gl.uniform1f(U.Md,Md);gl.uniform2f(U.Bw,bwx,bwy);gl.uniform2f(U.Gd,gdA,gdF);
+gl.uniform1f(U.W,reduce?vel*0.3:vel);gl.uniform1f(U.L,0.36+0.2*Ls+0.2*holdGlow);gl.uniform1fv(U.Rr,rrA);gl.uniform1fv(U.Pr,prA);gl.uniform1fv(U.Av,avA);gl.uniform1f(U.Fs,sig.sym*2);gl.uniform1f(U.Fv,fv);gl.uniform3fv(U.Bg,BG);
+gl.uniform3fv(U.Ca,CA);gl.uniform3fv(U.Cb,CB);gl.uniform3fv(U.Cc,CC);
+gl.uniform1f(U.O,pulseOn?Oe:0);gl.uniform1f(U.Sv,1.18+0.42*energy+0.25*holdGlow);gl.uniform1f(U.Fn,holdGlow);gl.uniform1f(U.Pt,Pt);gl.uniform1f(U.Ac,stage===4?Md:Math.min(1,sm));
+gl.uniform3fv(U.Q,Q);gl.uniform3f(U.Qs,nq>1?4.6:2.2,nq>1?0.11:0.2,nq>1?90:26);
+gl.uniform2fv(U.C,cs);gl.uniform2fv(U.An,an);gl.uniform1fv(U.A,al);gl.uniform1fv(U.G,gn);gl.uniform1fv(U.H,hm);gl.uniform1fv(U.Bm,BmU);
+for(i=0;i<48;i++){WP[i]+=(WT[i]-WP[i])*Math.min(1,vd*1.1);WU[i]=reduce?0:WP[i]*orgF*(0.45+0.9*inten);}
+gl.uniform4fv(U.Wp,WU);gl.uniform4fv(U.M1,M1);gl.uniform4fv(U.M2,M2);gl.uniform4fv(U.M3,M3);
 gl.drawArrays(gl.TRIANGLES,0,3);
-sigil(B);
-msg.textContent='曲 '+track+'（'+sig.sym+'回対称） ・ 曼荼羅 '+Math.max(1,Math.round(sum))+'つ ・ '+(prog>0.94?'散る':prog>0.8?'完成':'形成中');}
+
+var ch=chapter();if(ch!==shown){shown=ch;for(i=0;i<li.length;i++)li[i].className=i===ch?'now':'';}
+$('beat').style.opacity=(0.15+0.85*Math.min(1,beatEnv)).toFixed(2);
+$('m0').style.width=Math.round(cl(lv[0])*100)+'%';$('m1').style.width=Math.round(cl(lv[1])*100)+'%';$('m2').style.width=Math.round(cl(lv[2])*100)+'%';$('m3').style.width=Math.round(cl(inten)*100)+'%';
+$('bs').textContent=live?(quiet?'拍が弱いので音量のうねりに追従':(pre?'下読みした拍に同期':'音から検出中')+'（約'+Math.round(60/ibi)+'拍/分）'):idle?'一時停止中':'擬似の拍';
+var cnow=0;for(i=0;i<NM;i++)if(al[i]>0.5)cnow++;
+msg.textContent=(buf?'曲に同期':'擬似の拍')+' ・ 種 '+track+'（'+sig.pal.n+'・'+sig.sym+'回対称） ・ '+NAMES[ch]+
+(stage===2?' ・ 曼荼羅 '+cnow+'つ ・ 渦 '+nq+'つ ・ '+(ordT>0.5?'秩序（幾何）':'混沌（'+SCN[scene]+'）')+' ・ '+(dirT<0?'収束':'発散'):stage>=3?' ・ 結末「'+sig.lay+'」':'');
+if(wantShot&&stage===4&&pr2>=P5&&pr2<PW){wantShot=false;shot();}
+if(wantSt&&stage===4&&pr2>=P5&&pr2<PW){wantSt=false;stereo();}
+glyphLayer(pr2,Bu);
+var con=pr2>=PC;if(con!==crOn){crOn=con;$('credit').classList.toggle('on',con);}
+}
 requestAnimationFrame(frame);}
-document.getElementById('nx').addEventListener('click',function(){track=1+Math.floor(Math.random()*999);sig=build(track);prog=0;});
-document.getElementById('pp').addEventListener('click',function(){run=!run;this.textContent=run?'一時停止':'再生';});
+document.addEventListener('visibilitychange',function(){last=performance.now();});
 requestAnimationFrame(function(ts){last=ts;frame(ts);});
 })();
 </script>
+
 </body>
 </html>

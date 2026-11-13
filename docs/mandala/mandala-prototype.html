@@ -1,12 +1,4 @@
-<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>html{color-scheme:dark}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
-</head>
-<body>
-<title>OGS 曼荼羅 v2.1 試作</title>
+<title>OGS 曼荼羅 v2.2 試作</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* レイアウト: 正方形の舞台を主役に置き、操作は脇(狭い画面では下)に静かに並べる。暗い一色の世界に固定 */
@@ -25,6 +17,8 @@ header p{margin:4px 0 0;color:var(--muted);font-size:13px}
 .stage{position:relative;width:100%;max-width:100%;border-radius:10px;overflow:hidden;background:#020205;display:flex;align-items:center;justify-content:center}
 .view{position:relative;width:100%;max-width:100%;aspect-ratio:1/1}
 .stage.sbs .view{aspect-ratio:2/1}
+.stage.wide .view{aspect-ratio:16/9}
+.stage.wide:fullscreen .view{width:100vw;height:100vh;aspect-ratio:auto}
 .stage:fullscreen{width:100vw;height:100vh;border-radius:0;background:#000}
 .stage:fullscreen .view{width:min(100vw,100vh)}
 .stage.sbs:fullscreen .view{width:min(100vw,200vh)}
@@ -32,17 +26,17 @@ header p{margin:4px 0 0;color:var(--muted);font-size:13px}
 #credit{position:absolute;inset:0;display:flex;pointer-events:none;font-family:var(--serif);color:#efe6d0}
 #credit .eye{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 14%}
 #credit .eye[hidden]{display:none}
-#credit .g{position:static;inset:auto;flex:none;width:30px;height:30px;opacity:0;margin-bottom:16px}
-#credit .t{font-size:clamp(12px,3.3vw,15px);letter-spacing:.42em;margin-right:-.42em;line-height:1.9;opacity:0;text-wrap:balance}
-#credit .r{width:0;height:1px;background:var(--gold);opacity:.6;margin:14px 0 13px}
-#credit .a{font-size:11px;letter-spacing:.36em;margin-right:-.36em;color:#b9b09a;opacity:0}
-#credit .o{font-size:10px;letter-spacing:.44em;margin-right:-.44em;color:var(--gold);opacity:0;margin-top:28px;white-space:nowrap}
+#credit .g{position:static;inset:auto;flex:none;width:clamp(30px,calc(var(--u,4px)*5.2),68px);height:clamp(30px,calc(var(--u,4px)*5.2),68px);opacity:0;margin-bottom:clamp(16px,calc(var(--u,4px)*2.4),30px)}
+#credit .t{font-size:clamp(13px,calc(var(--u,4px)*2.5),32px);letter-spacing:.42em;margin-right:-.42em;line-height:1.9;opacity:0;text-wrap:balance}
+#credit .r{width:0;height:1px;background:var(--gold);opacity:.6;margin:clamp(14px,calc(var(--u,4px)*2),26px) 0 clamp(13px,calc(var(--u,4px)*1.9),25px)}
+#credit .a{font-size:clamp(11px,calc(var(--u,4px)*1.7),22px);letter-spacing:.36em;margin-right:-.36em;color:#b9b09a;opacity:0}
+#credit .o{font-size:clamp(10px,calc(var(--u,4px)*1.35),17px);letter-spacing:.44em;margin-right:-.44em;color:var(--gold);opacity:0;margin-top:clamp(28px,calc(var(--u,4px)*4.2),54px);white-space:nowrap}
 #credit.on .g{opacity:.85;transition:opacity 1.6s ease}
-#credit.on .r{width:34px;transition:width 1.6s ease .5s}
+#credit.on .r{width:clamp(34px,calc(var(--u,4px)*5.5),72px);transition:width 1.6s ease .5s}
 #credit.on .t{opacity:.95;transition:opacity 1.8s ease .8s}
 #credit.on .a{opacity:.9;transition:opacity 1.8s ease 1.5s}
 #credit.on .o{opacity:.6;transition:opacity 1.8s ease 2.3s}
-.stage.sbs #credit .t{font-size:clamp(11px,1.7vw,13px)}.stage.sbs #credit .g{width:22px;height:22px}
+.stage.sbs #credit .t{font-size:clamp(11px,calc(var(--u,4px)*2.3),26px)}.stage.sbs #credit .g{width:clamp(22px,calc(var(--u,4px)*4.6),56px);height:clamp(22px,calc(var(--u,4px)*4.6),56px)}
 .row input[type=text]{flex:1;min-width:0;min-height:38px;background:transparent;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit;font-size:14px}
 #msg{font-size:13px;color:var(--muted);margin:10px 0 0;font-variant-numeric:tabular-nums}
 .story{display:flex;gap:4px;margin:10px 0 0;padding:0;list-style:none;font-family:var(--serif);font-size:12.5px;color:var(--muted)}
@@ -55,6 +49,7 @@ header p{margin:4px 0 0;color:var(--muted);font-size:13px}
 .row{display:flex;align-items:center;gap:10px}
 .row label,.row .lab{font-size:14px;min-width:5.2em}
 .row input[type=range]{flex:1;min-width:0;accent-color:var(--gold)}
+.row select{flex:1;min-width:0;min-height:38px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:0 8px;font:inherit;font-size:14px}
 .row output{font-size:13px;min-width:2.8em;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
 .bar{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:var(--gold)}
@@ -108,12 +103,13 @@ button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
       </div>
       <button type="button" id="fx" aria-pressed="false">結末：毎回ちがう</button>
       <button type="button" id="sh" style="border-color:var(--gold);color:var(--gold)">曼荼羅と字を画像にする</button>
-      <div class="btns"><button type="button" id="sb3" aria-pressed="false">3D表示：切</button><button type="button" id="fsb">全画面</button></div>
+      <div class="btns"><button type="button" id="wd" aria-pressed="false">画面の形：正方形</button><button type="button" id="sb3" aria-pressed="false">3D表示：切</button><button type="button" id="fsb">全画面</button></div>
       <div class="row"><label for="dp">奥行き</label><input type="range" id="dp" min="5" max="30" step="1" value="16"><output id="do">1.6</output></div>
       <div class="btns"><button type="button" id="st3">3D画像にする</button><button type="button" id="stm" aria-pressed="false">見方：平行法</button></div>
       <div class="row"><span class="lab">流れ</span><div class="btns" style="flex:1;grid-template-columns:1fr 1fr 1fr">
         <button type="button" id="f0" aria-pressed="true">自在</button><button type="button" id="f1" aria-pressed="false">収束寄り</button><button type="button" id="f2" aria-pressed="false">発散寄り</button></div></div>
       <div class="row"><label for="sp">流れの速さ</label><input type="range" id="sp" min="5" max="50" step="1" value="15"><output id="so">1.5倍</output></div>
+      <div class="row"><label for="sm">星の動き</label><select id="sm"><option value="a">おまかせ（物語に合わせる）</option><option value="x">横へ流れる</option><option value="y">縦へ流れる</option><option value="i">奥から手前へ</option><option value="o">手前から奥へ</option></select></div>
       <div class="row" id="bpmrow"><label for="bp">テンポ</label><input type="range" id="bp" min="60" max="150" step="1" value="96"><output id="bo">96</output></div>
     </div>
 
@@ -143,10 +139,18 @@ function $(id){return document.getElementById(id);}
 var gx=$('gx'),x2=gx.getContext('2d');var gc=$('gl');var gl=gc.getContext('webgl',{preserveDrawingBuffer:true});var msg=$('msg');
 function fail(){msg.textContent='この端末では表示できませんでした';}
 if(!gl){fail();return;}
-var scale=Math.min(window.devicePixelRatio||1,2),NM=12,S=0;
+var scale=Math.min(window.devicePixelRatio||1,2),NM=12,S=0,AR=1,KX=1,WN=0,SK=0,SKX=0,SKY=0,SKZ=0,SVX=0,SVY=0,SVZ=0,starN=0,wideMan=null;
+var coarse=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
 var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 var sbs=false,dep=1.6,DZ=new Float32Array(12);
-function rs(){S=gc.clientWidth;gc.width=Math.round(S*scale);gc.height=Math.round(S*scale*(sbs?0.5:1));if(sbs)S=S/2;gx.width=gc.width;gx.height=gc.height;gl.viewport(0,0,gc.width,gc.height);}
+function rs(){var cw=gc.clientWidth,ch=gc.clientHeight||cw;S=cw;
+AR=sbs?1:Math.max(1,Math.min(2.4,cw/ch));KX=1+(AR-1)*0.75;   /* 画面の横縦比。正方形なら1、16:9なら約1.78。KXは横に広げる度合い */
+var sc2=scale,mp=2.6e6;if(cw*ch*sc2*sc2>mp)sc2=Math.sqrt(mp/(cw*ch));   /* 全画面が大きくても、描く点の数は約260万までに抑える */
+var stS=$('stg').style;if(stS&&stS.setProperty)stS.setProperty('--u',(ch/100)+'px');   /* クレジットの文字の大きさの基準 */
+gc.width=Math.round(cw*sc2);gc.height=Math.round(ch*sc2);if(sbs)S=S/2;gx.width=gc.width;gx.height=gc.height;gl.viewport(0,0,gc.width,gc.height);}
+/* 画面の形: スマホと3D表示は正方形のまま。PCの全画面は横長(16:9)。ボタンでも切り替えられる */
+function wantWide(){return !sbs&&!coarse&&(wideMan!==null?wideMan:!!document.fullscreenElement);}
+function applyWide(){var w=wantWide();$('stg').classList.toggle('wide',w);$('wd').textContent='画面の形：'+(w?'横長（16:9）':'正方形');$('wd').setAttribute('aria-pressed',w?'true':'false');$('wd').disabled=sbs;rs();}
 
 /* ===== 描画 =====
    曼荼羅は一つずつ「輪の形の領域」を持つ。An[i]=(内側の半径, 外側の半径)。
@@ -155,9 +159,18 @@ function rs(){S=gc.clientWidth;gc.width=Math.round(S*scale);gc.height=Math.round
    M3[i]=(珠の有無, 内花弁の比率, 未使用, 輪の位相)  Bm[i]=鼓動  Rp=回転の位相  O=花弁の開き  Pt=一点の光  Ac=中心の光の量 */
 var vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
 var fs='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n'+
-'uniform vec2 R;uniform float Z;uniform float T;uniform float B;uniform float P;uniform float W;uniform float L;uniform float Rp;uniform float O;uniform float Fs;uniform float Fv;uniform vec3 Bg;uniform vec3 Ca[12];uniform vec3 Cb[12];uniform vec3 Cc[12];uniform float Pt;uniform float Ac;uniform float Md;uniform vec2 Bw;uniform vec2 Gd;uniform float Ey;uniform float Sb;uniform float Dz[12];uniform float Rr[12];uniform float Pr[12];uniform float Av[12];uniform float Sv;uniform float Fn;uniform vec4 Wp[12];uniform vec3 Q[9];uniform vec3 Qs;'+
+'uniform vec2 R;uniform float Z;uniform float T;uniform float B;uniform float P;uniform float W;uniform float L;uniform float Rp;uniform float O;uniform float Fs;uniform float Fv;uniform vec3 Bg;uniform vec3 Ca[12];uniform vec3 Cb[12];uniform vec3 Cc[12];uniform float Pt;uniform float Ac;uniform float Md;uniform vec2 Bw;uniform vec2 Gd;uniform vec4 Sk;uniform float As;uniform float Ey;uniform float Sb;uniform float Dz[12];uniform float Rr[12];uniform float Pr[12];uniform float Av[12];uniform float Sv;uniform float Fn;uniform vec4 Wp[12];uniform vec3 Q[9];uniform vec3 Qs;'+
 'uniform vec2 C[12];uniform vec2 An[12];uniform float A[12];uniform float G[12];uniform float H[12];uniform float Bm[12];uniform vec4 M1[12];uniform vec4 M2[12];uniform vec4 M3[12];'+
 'float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}'+
+/* 星: 三つの層が違う速さで流れる。遠い星は小さく暗くゆっくり、近い星は大きく明るく速い。層ごとに少し違う速さで動くので奥行きが出る。
+   sc=格子の細かさ th=星になる割合 sp=流れる速さ(画面の高さ/秒)。3D表示では、遠い層ほど奥へ寄せる */
+/* 星: 四つの層。Sk=(視点の横位置, 縦位置, 奥行きの位相, またたきの時計)。
+   視点が横や縦へ動くと、近い星ほど速く流れる。奥行きの位相が進むと、星が奥から手前へ(逆なら手前から奥へ)通り過ぎる。
+   星の位置は升目の中で大きくずらし、乱数も縦横に筋の出ないものを使う */
+'float h2(vec2 p){vec3 a=fract(vec3(p.xyx)*.1031);a+=dot(a,a.yzx+33.33);return fract((a.x+a.y)*a.z);}'+
+'vec3 star(vec2 q,float k,float px,float ey){float f=fract(Sk.z+k*.25),zs=.42*exp2(f*2.5);q.x-=ey*mix(.55,.15,f);vec2 g=(q/zs+Sk.xy)*56.+k*37.3;vec2 id=floor(g),fp=fract(g)-.5;float hv=h2(id);if(hv<.93)return vec3(0.);'+
+'vec2 o=(vec2(h2(id+19.7),h2(id+71.3))-.5)*.72;float rd=clamp(1.3*56.*px/zs,.1,.14),d=length(fp-o);float tw=.7+.3*sin(Sk.w*(.5+h2(id+5.1)*1.6)+hv*670.);'+
+'float kk=smoothstep(rd,0.,d)*tw*(.4+.6*h2(id+3.1))*smoothstep(0.,.14,f)*smoothstep(1.,.8,f)*mix(.5,1.45,f);return mix(vec3(.72,.82,1.),vec3(1.,.9,.74),h2(id+11.7))*kk;}'+
 'float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}'+
 'float hgt(vec2 p){float hh=0.;'+
 'for(int i=0;i<12;i++){if(A[i]<.05)continue;vec2 an=An[i];float d=length(p-C[i]);if(d>=an.y)continue;float fi=float(i);float dz=Dz[i]*A[i];'+
@@ -165,7 +178,7 @@ var fs='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecis
 'float u=log(max(d,1e-4))*M1[i].y-Z*(.8+.07*fi)-M3[i].w;float f=fract(u);hh+=.5*f*(1.-f)*A[i]*min(1.,M3[i].z*4.);}'+
 'return clamp(hh,-1.3,1.7);}'+
 'void main(){vec2 fc=gl_FragCoord.xy;vec2 V=R;float ey=Ey;if(Sb>.5){V.x=R.x*.5;if(fc.x>=V.x){fc.x-=V.x;}else{ey=-Ey;}}'+
-'vec2 p=(fc-.5*V)/min(V.x,V.y);float shd=1.;if(ey!=0.){shd=1.+clamp((hgt(p+vec2(-.006,.006))-hgt(p+vec2(.006,-.006)))*1.5,-.3,.3);p.x+=ey*(hgt(p)-.3);}p*=1.-.025*B;float r0=length(p);'+
+'vec2 p=(fc-.5*V)/min(V.x,V.y);vec2 ps=p;float shd=1.;if(ey!=0.){shd=1.+clamp((hgt(p+vec2(-.006,.006))-hgt(p+vec2(.006,-.006)))*1.5,-.3,.3);p.x+=ey*(hgt(p)-.3);}p*=1.-.025*B;float r0=length(p);'+
 /* 大波: 中心から外へ進む一つの大きなうねり。通る所の模様を外へ押し出す */
 'float bwd=r0-Bw.x;float bwv=Bw.y*exp(-bwd*bwd*30.);p*=1.-.2*bwv;'+
 'vec2 p0=p;'+
@@ -208,7 +221,7 @@ var fs='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecis
 'float fu=fract(log(dm+.002)*2.6-Z*.9);float fl=1.-smoothstep(0.,.05,min(fu,1.-fu));'+
 'float fa=fract(atan(dv.x,dv.y)/6.2832*Fs);float fsp=1.-smoothstep(0.,.03,min(fa,1.-fa));'+
 'vec3 bg=Bg*(.45+.75*exp(-dm*3.5))+gold*(fl*.075+fsp*.035)*smoothstep(0.,.05,dm);'+
-'bg+=vec3(.8,.78,.7)*step(.9975,h(floor(p0*210.)))*.22;bg*=Fv;'+
+'float spx=1./min(V.x,V.y);bg+=star(ps,0.,spx,ey)+star(ps,1.,spx,ey)+star(ps,2.,spx,ey)+star(ps,3.,spx,ey);bg*=Fv;'+
 'col=mix(bg,col,min(cov,1.)*Md);'+
 'col=mix(col,gold,min(rim,1.)*.38*Md);float gd=Gd.x*smoothstep(Gd.y+.05,Gd.y-.16,r0)*smoothstep(0.,.3,Md);float gly=dot(col,vec3(.3,.59,.11));col=mix(col,vec3(1.,.8,.42)*(.2*min(gly*12.,1.)+1.55*gly),gd*.86);col+=(col*.45+vec3(1.,.84,.5)*.5)*bwv*Md;'+
 'col*=.95+.08*n(p*38.+T*.05);'+
@@ -218,7 +231,7 @@ var fs='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecis
 'col*=hl;col+=glw;'+
 'float lm=dot(col,vec3(.3,.59,.11));col=mix(vec3(lm),col,Sv);col*=.94+.1*(Sv-1.);'+
 'col+=gold*Fn*(.16*exp(-pow((r0-.474)*42.,2.))+.05*exp(-pow((r0-.474)*9.,2.)));'+
-'col*=(1.-.3*r0*r0*2.)*.94*shd;'+
+'float rv=length(vec2(p.x/As,p.y));col*=(1.-.3*rv*rv*2.)*.94*shd;'+
 'gl_FragColor=vec4(col,1.);}';
 function sh(t,s){var x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x;}
 var pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,vs));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(pr);
@@ -226,8 +239,11 @@ if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){fail();return;}
 gl.useProgram(pr);
 var bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
 var lp=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(lp);gl.vertexAttribPointer(lp,2,gl.FLOAT,false,0,0);
-var U={};['R','Z','T','B','P','W','L','Rp','O','Fs','Fv','Bg','Ca','Cb','Cc','Pt','Ac','Md','Bw','Gd','Ey','Sb','Dz','Rr','Pr','Av','Sv','Fn','Wp','Q','Qs','C','An','A','G','H','Bm','M1','M2','M3'].forEach(function(k){U[k]=gl.getUniformLocation(pr,k);});
+var U={};['R','Z','T','B','P','W','L','Rp','O','Fs','Fv','Bg','Ca','Cb','Cc','Pt','Ac','Md','Bw','Gd','Sk','As','Ey','Sb','Dz','Rr','Pr','Av','Sv','Fn','Wp','Q','Qs','C','An','A','G','H','Bm','M1','M2','M3'].forEach(function(k){U[k]=gl.getUniformLocation(pr,k);});
+if(coarse)$('wd').hidden=true;
 rs();window.addEventListener('resize',rs);
+if(window.ResizeObserver){var lastBox='';new ResizeObserver(function(){var k=gc.clientWidth+'x'+gc.clientHeight;if(k!==lastBox){lastBox=k;rs();}}).observe(gc);}
+$('wd').addEventListener('click',function(){wideMan=!wantWide();applyWide();});
 
 /* ===== 曲の種: 配色の型と、結末の曼荼羅の設計図 ===== */
 var TAU=Math.PI*2;
@@ -261,17 +277,19 @@ fin.push({N:sym*m,k:pk([1,2,2,3]),sharp:pk([.45,.8,1,1.6,2.6]),spiral:0,
 dot:r()<.5?1:0,inner:.3+.35*r(),ia:ia,ib:ib,ic:ic,gx:pk([0,.6,1]),gy:pk([0,.5,1]),gz:pk([0,.5,.9]),ph:r()});}
 /* 構図の型。静かな曲は軸の少ない型、華やかな曲は軸の多い型から選ぶ */
 var sl=[],fam=pk(level===0?['one','one','ring3','ring4','twin','flower','spiral']:level===1?['one','ring4','ring5','ring6','grid4','flower','double','spiral']:['ring5','ring6','ring8','ring8','grid9','double','spiral','flower']);
-var rot=Math.PI/2,cls=0,ord=0,n=0,twin=false,name='';
-function S(cx,cy,r1,r2,c,o){o=o||{};sl.push({cx:cx,cy:cy,r1:r1,r2:r2,cls:c,ord:ord++,solo:!!o.solo,pri:o.pri||1,bri:o.bri||1,dens:o.dens||0});}
+var rot=Math.PI/2,cls=0,ord=0,n=0,twin=false,name='',wn=WN;
+/* 横長の画面では、中央の大きな曼荼羅の両脇に、左右対称の曼荼羅を一つずつ置く。画面の端で少し切れてもよい */
+function wings(){if(!wn)return;var hw=AR*.5,rw=Math.max(.12,Math.min(.34,(hw-.47)*.78)),xw=hw-rw*.92,cW=cls++;S(-xw,0,0,rw,cW,{solo:1,wing:1});S(xw,0,0,rw,cW,{solo:1,wing:1});}
+function S(cx,cy,r1,r2,c,o){o=o||{};sl.push({cx:cx,cy:cy,r1:r1,r2:r2,cls:c,ord:ord++,solo:!!o.solo,wing:!!o.wing,pri:o.pri||1,bri:o.bri||1,dens:o.dens||0});}
 function ground(){S(0,0,0,.47,cls++,{pri:.04,bri:.42,dens:1.9+r()*.9});}                 /* 地になる大きな曼荼羅 */
 function borders(){var nb=12-sl.length;if(nb<=0)return;var bw=Math.min(.03,.066/nb);for(var q=0;q<nb;q++)S(0,0,.47-(nb-q)*bw,.47-(nb-q-1)*bw,cls++,{pri:4});}   /* 外周の輪 */
 function disc(x,y,rr,c,bands){if(bands>1){for(var q=0;q<bands;q++)S(x,y,q===0?0:rr*(.3+.7*q/bands),rr*(.3+.7*(q+1)/bands),c+q);}else S(x,y,0,rr,c,{solo:1});}
 if(fam==='one'){   /* 一つの軸: 12の帯。幅は不揃いにして、粗密のリズムを作る */
-var ws=[],tot=0;for(i=0;i<12;i++){ws.push(.6+r()*1.1+(i===0?.6:0));tot+=ws[i];}
-var acc=0;for(i=0;i<12;i++){var r1=acc/tot*.47;acc+=ws[i];S(0,0,r1,acc/tot*.47,i);}name='一軸';
+var nB=12-wn,ws=[],tot=0;for(i=0;i<nB;i++){ws.push(.6+r()*1.1+(i===0?.6:0));tot+=ws[i];}
+var acc=0;for(i=0;i<nB;i++){var r1=acc/tot*.47;acc+=ws[i];S(0,0,r1,acc/tot*.47,i);}cls=nB;wings();name='一軸';
 }else if(fam.slice(0,4)==='ring'){   /* 中心を軸の輪が囲む */
 n=+fam.slice(4);ground();
-twin=(n<=4&&r()<.45);var sb=(!twin&&n*2<=9)?2:1,rest=10-n*sb-(twin?n:0),cb=Math.max(1,Math.min(3,rest));
+twin=(n<=4&&r()<.45);var sb=(!twin&&n*2<=9)?2:1,rest=10-n*sb-(twin?n:0)-wn,cb=Math.max(1,Math.min(3,rest));
 var Rs=.27+r()*.045,rs=Math.min(Rs*Math.sin(Math.PI/n)*.96,.435-Rs),rc=Math.max(.05,Math.min(.17,Rs-rs-.012));
 for(i=0;i<cb;i++)S(0,0,i*rc/cb,(i+1)*rc/cb,cls++);
 var cA=cls++,cB=cls++;
@@ -279,24 +297,24 @@ for(k=0;k<n;k++){a=rot+k*TAU/n;S(Math.cos(a)*Rs,Math.sin(a)*Rs,0,sb===2?rs*.52:r
 if(sb===2)for(k=0;k<n;k++){a=rot+k*TAU/n;S(Math.cos(a)*Rs,Math.sin(a)*Rs,rs*.52,rs,cB);}
 if(twin){var Rb=Math.min(.375,Rs+.07),db=Math.sqrt(Rs*Rs+Rb*Rb-2*Rs*Rb*Math.cos(Math.PI/n))-rs-.006,rb=Math.max(.03,Math.min(.435-Rb,db,.085)),cT=cls++;
 for(k=0;k<n;k++){a=rot+Math.PI/n+k*TAU/n;S(Math.cos(a)*Rb,Math.sin(a)*Rb,0,rb,cT,{solo:1});}}
-borders();name=n+'軸'+(twin?'・二重':'');
+wings();borders();name=n+'軸'+(twin?'・二重':'');
 }else if(fam==='twin'){   /* 二つの軸が並び立つ */
-n=2;ground();var cT2=cls;cls+=4;rot=r()<.5?0:Math.PI/2;for(k=0;k<2;k++){a=rot+k*Math.PI;disc(Math.cos(a)*.222,Math.sin(a)*.222,.205,cT2,4);}borders();name='二軸';
+n=2;ground();var cT2=cls;cls+=4;rot=r()<.5?0:Math.PI/2;for(k=0;k<2;k++){a=rot+k*Math.PI;disc(Math.cos(a)*.222,Math.sin(a)*.222,.205,cT2,4);}wings();borders();name='二軸';
 }else if(fam==='grid4'||fam==='grid9'){   /* 格子: 無機的な秩序 */
 var gN=fam==='grid4'?2:3,gs=gN===2?.4:.245,gr=gN===2?.185:.115,cG=cls;cls+=2;n=gN*gN;ground();
 var ga=(gN===2&&r()<.4)?Math.PI/4:0,cr=Math.cos(ga),sr=Math.sin(ga);
 for(i=0;i<gN;i++)for(k=0;k<gN;k++){var gx=(i-(gN-1)/2)*gs,gy=(k-(gN-1)/2)*gs;disc(gx*cr-gy*sr,gx*sr+gy*cr,gr,cG,gN===2?2:1);}
-if(gN===2)S(0,0,0,.092,cls++,{solo:1});borders();name=n+'軸・格子';
+if(gN===2)S(0,0,0,.092,cls++,{solo:1});wings();borders();name=n+'軸・格子';
 }else if(fam==='flower'){   /* 六つの円が重なり合って花になる */
 n=7;ground();var fr=.19+r()*.03,cF=cls++;S(0,0,0,fr*.45,cls++);S(0,0,fr*.45,fr,cls++);
-for(k=0;k<6;k++){a=rot+k*TAU/6;S(Math.cos(a)*fr,Math.sin(a)*fr,0,fr,cF,{solo:1});}borders();name='七軸・花';
+for(k=0;k<6;k++){a=rot+k*TAU/6;S(Math.cos(a)*fr,Math.sin(a)*fr,0,fr,cF,{solo:1});}wings();borders();name='七軸・花';
 }else if(fam==='double'){   /* 内に三つ、外に六つ */
-n=9;ground();S(0,0,0,.042,cls++);var cI=cls++,cO=cls++;
+n=9;ground();if(!wn)S(0,0,0,.042,cls++);var cI=cls++,cO=cls++;
 for(k=0;k<3;k++){a=rot+k*TAU/3;S(Math.cos(a)*.17,Math.sin(a)*.17,0,.12,cI,{solo:1});}
-for(k=0;k<6;k++){a=rot+Math.PI/6+k*TAU/6;S(Math.cos(a)*.355,Math.sin(a)*.355,0,.078,cO,{solo:1});}borders();name='九軸・二重の輪';
+for(k=0;k<6;k++){a=rot+Math.PI/6+k*TAU/6;S(Math.cos(a)*.355,Math.sin(a)*.355,0,.078,cO,{solo:1});}wings();borders();name='九軸・二重の輪';
 }else{   /* 渦巻き: ひまわりの種の並び。有機的な秩序 */
 n=10;ground();var cS=cls;cls+=3;
-rot=r()*TAU;for(k=0;k<10;k++){a=rot+k*2.39996;var Rk=.065+.0365*k,rk=Math.min(.435-Rk,.05+.0075*k);S(Math.cos(a)*Rk,Math.sin(a)*Rk,0,rk,cS+k%3,{solo:1});}borders();name='十軸・渦巻き';}
+rot=r()*TAU;for(k=0;k<10-wn;k++){a=rot+k*2.39996;var Rk=.065+.0365*k,rk=Math.min(.435-Rk,.05+.0075*k);S(Math.cos(a)*Rk,Math.sin(a)*Rk,0,rk,cS+k%3,{solo:1});}wings();borders();name='十軸・渦巻き';}
 var cen=[];sl.forEach(function(q){if(cen.length>=9)return;for(var c=0;c<cen.length;c++)if(Math.abs(cen[c][0]-q.cx)+Math.abs(cen[c][1]-q.cy)<1e-4)return;cen.push([q.cx,q.cy]);});
 g.fin=fin;g.slots=sl;g.cen=cen;g.poly=r()<0.4;g.axes=n||1;g.lay=name;g.level=level;g.pal=palFor(level,r);return g;}
 function build(seed){var r=mul(seed*7919+13);
@@ -379,8 +397,9 @@ function setGlyph(){gel=elFor(track);glyph=makeGlyph(track,gel);gsh=glyphShapes(
 function makeParts(){
 var sz=150,c=document.createElement('canvas');c.width=c.height=sz;var x=c.getContext('2d');
 var src=[],tg=[],k,px,py,i;
-try{x.drawImage(gc,0,0,sbs?gc.height:gc.width,gc.height,0,0,sz,sz);var pix=x.getImageData(0,0,sz,sz).data;
-for(py=2;py<sz-2;py+=2)for(px=2;px<sz-2;px+=2){k=(py*sz+px)*4;if(pix[k]*.3+pix[k+1]*.55+pix[k+2]*.15>38)src.push([px/sz,py/sz,pix[k],pix[k+1],pix[k+2]]);}}catch(e){}
+var ar=sbs?1:AR,sw=Math.round(sz*ar);c.width=sw;   /* 横長なら、画面全体から粉を取る。座標は正方形を基準にそろえる(横へはみ出してよい) */
+try{x.drawImage(gc,0,0,sbs?gc.height:gc.width,gc.height,0,0,sw,sz);var pix=x.getImageData(0,0,sw,sz).data;
+for(py=2;py<sz-2;py+=2)for(px=2;px<sw-2;px+=2){k=(py*sw+px)*4;if(pix[k]*.3+pix[k+1]*.55+pix[k+2]*.15>38)src.push([.5+(px/sw-.5)*ar,py/sz,pix[k],pix[k+1],pix[k+2]]);}}catch(e){}
 if(src.length<50){src=[];for(i=0;i<500;i++){var aa=i*2.39996,rr=Math.sqrt((i+.5)/500)*.45;src.push([.5+Math.cos(aa)*rr,.5+Math.sin(aa)*rr,216,180,106]);}}
 x.clearRect(0,0,sz,sz);drawGlyph(x,gsh,sz/2,sz*.52,sz*GSZ,'#fff');var mk=x.getImageData(0,0,sz,sz).data;
 for(py=0;py<sz;py++)for(px=0;px<sz;px++){if(mk[(py*sz+px)*4+3]>110)tg.push([px/sz,py/sz]);}
@@ -393,13 +412,13 @@ parts.push({x:o[0],y:o[1],tx:t[0]+(Math.random()-.5)/sz,ty:t[1]+(Math.random()-.
 vx:Math.cos(va)*vs,vy:Math.sin(va)*vs-.08,z:.7+Math.random()*1.1});}}
 /* 終幕の層: 凝縮 → 一字 → 砕けて無 */
 function glyphLayer(p,B){
-var fw=gx.width,h=gx.height,w=sbs?h:fw;x2.setTransform(1,0,0,1,0,0);x2.globalCompositeOperation='source-over';x2.clearRect(0,0,fw,h);
+var fw=gx.width,h=gx.height,w=sbs?h:Math.min(fw,h);x2.setTransform(1,0,0,1,0,0);x2.globalCompositeOperation='source-over';x2.clearRect(0,0,fw,h);
 if(p<P6){parts=null;return;}
 if(!parts)makeParts();
 var tC=cl((p-P6)/(P7-P6)),tS=cl((p-P8)/GDS),u=w/360,i,n=reduce?Math.round(parts.length*.4):sbs?Math.round(parts.length*.6):parts.length;   /* 3D表示は左右2回描くので、粉を6割に抑えて負荷をそろえる */
 /* 3D表示では左目用と右目用に二度描く。字と粒は、曼荼羅より手前に浮かせる */
-var views=sbs?[[0,1],[w,-1]]:[[0,0]];
-views.forEach(function(vw){x2.save();x2.beginPath();x2.rect(vw[0],0,w,h);x2.clip();x2.translate(vw[0]+vw[1]*(crossView?-1:1)*w*0.016*dep,0);
+var views=sbs?[[0,1],[w,-1]]:[[(fw-w)/2,0]];
+views.forEach(function(vw){x2.save();if(sbs){x2.beginPath();x2.rect(vw[0],0,w,h);x2.clip();}x2.translate(vw[0]+vw[1]*(crossView?-1:1)*w*0.016*dep,0);
 x2.globalCompositeOperation='lighter';
 var R=w*GSZ;
 /* ぼんやりした字: あらかじめ作っておいた、輪郭のない光のにじみを重ねる */
@@ -480,7 +499,8 @@ function poseForImage(){
 var keep=[M1,M2,M3,DZ,avA,radT,rad,an,al,gn,hm,ht,pend,CA,CB,CC].map(function(a){return [a,a.slice()];});   /* 画面の動きは乱さない: 写したら元へ戻す */
 for(var i=0;i<NM;i++){var sp=sig.slots[i],F=sig.fin[sp.cls],G0=sig.sym>8?6:sig.sym,pl=(sig.poly&&sp.solo);
 morph(i,1,false);M1[i*4]=F.N;if(pl)gn[i]=G0;hm[i]=pl?1:0;ht[i]=hm[i];pend[i]=0;
-rad[i]=sp.r2;an[i*2]=sp.r1===0?-1:sp.r1;an[i*2+1]=sp.r2;al[i]=1;CUP[i*2]=sp.cx;CUP[i*2+1]=sp.cy;rr0[i]=upR(rrA[i],F.N);avA[i]=upA(F.N);}
+rad[i]=sp.r2;an[i*2]=sp.r1===0?-1:sp.r1;an[i*2+1]=sp.r2;al[i]=sp.wing?0:1;   /* 両脇の曼荼羅は、正方形の画像には写さない(半分切れて写るため) */
+CUP[i*2]=sp.cx;CUP[i*2+1]=sp.cy;rr0[i]=upR(rrA[i],F.N);avA[i]=upA(F.N);}
 CA.set(TA);CB.set(TB);CC.set(TC);
 gl.uniform1f(U.Sb,0);gl.uniform1f(U.Ey,0);gl.uniform1f(U.B,0);gl.uniform1fv(U.Bm,ZERO);gl.uniform1f(U.P,4);gl.uniform1f(U.Fn,1);gl.uniform1f(U.Md,1);gl.uniform2f(U.Bw,0,0);gl.uniform2f(U.Gd,0,0);
 gl.uniform1f(U.Z,Z3);gl.uniform1f(U.W,0);gl.uniform1f(U.O,0);gl.uniform1f(U.Pt,0);gl.uniform1f(U.Fv,1);gl.uniform1f(U.Ac,1);gl.uniform4fv(U.Wp,new Float32Array(48));
@@ -505,7 +525,7 @@ for(var i=0;i<NM;i++){pT[i]=Math.max(pT[i],str*(((i+beatN)%2===0)?1:0.45));}
 if(accentNow&&!finInit&&!ordInit){recolor(Math.floor(Math.random()*NM),false);}
 }
 /* フレーズの頭で起こす変化。区切りの大きさで、変える量を決める。色と数は、この先の音の勢いを先読みして選ぶ */
-function onCut(c){
+function onCut(c){starN++;
 var ea=pre?pre.e2[Math.min(pre.nF-1,Math.round((c.t+3)*pre.fps))]:eSlow,lvl=ea<0.38?0:ea<0.52?1:2,bs=bias===1?-1:1;
 var cmax=Math.max(2,Math.min(9,Math.round(2+7*cl(ea*1.7))));
 if(c.w>=0.55){                                          /* 大きな区切り: 向き・色・秩序と混沌・渦の数を入れ替える */
@@ -525,7 +545,7 @@ cnt=Math.max(1,Math.min(cmax,cnt));retarget();}
 function onBar(){if(ordT>0.5)return;var l=[];for(var j=0;j<NM;j++)if(on[j])l.push(j);if(l.length)want(pick(l),Math.random()<0.3?0:pick(SIDES));}
 /* 「秩序へ」の始まり: 結末の構図と色を決める */
 var SA=new Float32Array(36),SB=new Float32Array(36),SC=new Float32Array(36),SG=new Float32Array(3);
-function beginOrder(){ordInit=true;ordT=1;Z3=Z;SA.set(CA);SB.set(CB);SC.set(CC);SG.set(BG);   /* いまの色を覚えておく: 結末の色へは「秩序へ」の全体をかけて移る */
+function beginOrder(){ordInit=true;ordT=1;Z3=Z;WN=AR>1.15?2:0;SA.set(CA);SB.set(CB);SC.set(CC);SG.set(BG);   /* いまの色を覚えておく: 結末の色へは「秩序へ」の全体をかけて移る */
 var lvl=(buf&&pre)?pre.level:(buf&&fN>8)?((fE/fN)<0.4?0:(fE/fN)<0.52?1:2):(fixedEnd?sig.level:Math.floor(Math.random()*3));
 sig.free=!fixedEnd;makeFinal(sig,fixedEnd?track:Math.floor(Math.random()*1e6),lvl);
 var pc0=sig.pal.c;for(var q0=0;q0<NM;q0++){var F0=sig.fin[sig.slots[q0].cls];setCol(TA,q0,pc0[F0.ia]);setCol(TB,q0,pc0[F0.ib]);setCol(TC,q0,pc0[F0.ic]);}}
@@ -641,8 +661,14 @@ var cuts=[],bars=[],nq2=[];for(f=f0;f<f1;f+=8)nq2.push(nov[f]);nq2.sort(function
 function novAt(tq){var c=Math.round(tq*fps),m=0,hw=Math.round(fps*.9);for(var z=-hw;z<=hw;z+=4){var v=nov[c+z]||0;if(v>m)m=v;}return m;}
 function upAt(tq){var c=Math.max(0,Math.min(nF-1,Math.round(tq*fps)));return E4[Math.min(nF-1,c+w4)]>E4[c];}
 if(beats){beats.forEach(function(bb,q){if(((q-down)%4+4)%4===0)bars.push(bb.t);});
-var bo=0,bsc=-1,oo,zz;for(oo=0;oo<4;oo++){var sc2=0;for(zz=oo;zz<bars.length;zz+=4)sc2+=novAt(bars[zz]);if(sc2>bsc){bsc=sc2;bo=oo;}}
-for(zz=bo;zz<bars.length;zz+=4)cuts.push({t:bars[zz],w:Math.min(1,novAt(bars[zz])/nref),up:upAt(bars[zz])});}
+/* 節は4小節ごとが基本。ただし曲の途中に2小節や6小節の節が挟まると、その先がずっと節の途中で切り替わってしまう。
+   そこで、小節の頭を順にたどり、「基本は4小節おき、曲調の変わり目に重なるなら2や6小節おきも許す」並びのうち、いちばん曲に合うものを選ぶ */
+var nB2=bars.length,nvw=[],Sc=[],Pv=[],zz,dd,DS=[4,2,6],DB={4:.25,2:-.4,6:-.4};
+for(zz=0;zz<nB2;zz++){nvw.push(Math.min(1,novAt(bars[zz])/nref));Sc.push(zz<4?nvw[zz]:-1e9);Pv.push(-1);}
+for(zz=0;zz<nB2;zz++)for(dd=0;dd<3;dd++){var jj=zz-DS[dd];if(jj<0||Sc[jj]<-1e8)continue;var cs=Sc[jj]+nvw[zz]+DB[DS[dd]];if(cs>Sc[zz]){Sc[zz]=cs;Pv[zz]=jj;}}
+var be=-1,bsc=-1e9;for(zz=Math.max(0,nB2-4);zz<nB2;zz++)if(Sc[zz]>bsc){bsc=Sc[zz];be=zz;}
+var chain=[];while(be>=0){chain.push(be);be=Pv[be];}chain.reverse();
+chain.forEach(function(q){cuts.push({t:bars[q],w:nvw[q],up:upAt(bars[q])});});}
 else{   /* 拍のない曲: 曲調の変わり目と、旋律の息継ぎ(中音がふっと引く所)を区切りにする */
 secs.forEach(function(q){cuts.push({t:q.t,w:Math.min(1,q.amt/nref),up:q.up});});
 var m06=box(mi,Math.round(fps*.6)),m4=box(mi,Math.round(fps*4)),hw2=Math.round(fps*1.5);
@@ -657,11 +683,17 @@ var PD=[0.03,0.10,0.77];
 function fmt(t){t=Math.max(0,Math.round(t));return Math.floor(t/60)+':'+('0'+t%60).slice(-2);}
 /* 物語の区切りを曲の構成に合わせる。終盤にいちばん近い「曲調の区切り」から、秩序へ向かい始める */
 function fitStory(){P1=PD[0];P2=PD[1];P3=PD[2];
+/* v を、いちばん近い節の頭(割合 tol 以内)へ寄せる。なければ小節の頭へ。lo〜hi の外には出さない */
+function snapP(v,tol,lo,hi){if(!pre)return v;var ln=pre.t1-pre.t0,bd=tol,bv=-1,q,fr;
+for(q=0;q<pre.cuts.length;q++){fr=(pre.cuts[q].t-pre.t0)/ln;if(fr>=lo&&fr<=hi&&Math.abs(fr-v)<bd){bd=Math.abs(fr-v);bv=fr;}}
+if(bv<0){bd=Math.min(tol,0.012);for(q=0;q<pre.bars.length;q++){fr=(pre.bars[q]-pre.t0)/ln;if(fr>=lo&&fr<=hi&&Math.abs(fr-v)<bd){bd=Math.abs(fr-v);bv=fr;}}}
+return bv<0?v:bv;}
+P1=snapP(P1,0.025,0.013,0.06);P2=snapP(P2,0.04,P1+0.03,0.16);
 /* 「秩序へ」は、終盤のフレーズの頭から始める。変化の大きい区切りを優先する */
 var len=pre?pre.t1-pre.t0:0;
 if(pre){var bsf=-9,bf=-1;(pre.cuts.length?pre.cuts:pre.secs).forEach(function(q){var fr=(q.t-pre.t0)/len;if(fr>0.64&&fr<0.80){var sc=(q.w===undefined?0.5:q.w)*0.6-Math.abs(fr-0.77)*5;if(sc>bsf){bsf=sc;bf=fr;}}});if(bf>0)P3=bf;}
 /* 終幕の順序: 曼荼羅(動き続ける) → 大波 → 字が現れる → 曼荼羅が消える → 字が砕ける → 闇に曲名と作者 */
-P4=Math.min(P3+0.085,0.845);P5=P4+0.006;PW=P4+0.028;
+P4=snapP(Math.min(P3+0.085,0.845),0.03,P3+0.05,0.845);P5=P4+0.006;PW=snapP(P4+0.028,0.02,P4+0.012,Math.min(P4+0.06,0.89));   /* 曼荼羅の完成と大波も、節の頭に */
 if(pre&&pre.bars.length){var bw=9,bt=-1;pre.bars.forEach(function(tb){var fr=(tb-pre.t0)/len;if(Math.abs(fr-PW)<bw){bw=Math.abs(fr-PW);bt=fr;}});if(bw<0.012)PW=bt;}   /* 大波は小節の頭で打つ */
 P6=PW+0.012;P7=P6+0.04;P8=P7+0.018;PC=P8+0.024;}   /* 字: 4%かけて粉から組み上がり、少し留まり、3.6%かけて粉へ還る。闇になりきる頃に曲名が現れる */
 function progToTime(v){return pre?pre.t0+v*(pre.t1-pre.t0):v*buf.duration;}
@@ -703,7 +735,7 @@ var wantShot=false;
 function shot(){
 var W=1080,Hh=1350,ow=gc.width,oh=gc.height,z=new Float32Array(NM);
 try{
-gc.width=W;gc.height=W;gl.viewport(0,0,W,W);gl.uniform2f(U.R,W,W);poseForImage();   /* 画面では動き続けているが、画像は必ず正面を向いた完成の姿で写す */
+gc.width=W;gc.height=W;gl.viewport(0,0,W,W);gl.uniform2f(U.R,W,W);gl.uniform1f(U.As,1);poseForImage();   /* 画面では動き続けているが、画像は必ず正面を向いた完成の姿で写す */
 gl.drawArrays(gl.TRIANGLES,0,3);
 var cv=document.createElement('canvas');cv.width=W;cv.height=Hh;var x=cv.getContext('2d'),bgc=sig.pal.bg;
 x.fillStyle='rgb('+Math.round(bgc[0]*255*0.6)+','+Math.round(bgc[1]*255*0.6)+','+Math.round(bgc[2]*255*0.6)+')';x.fillRect(0,0,W,Hh);
@@ -736,7 +768,7 @@ var wantSt=false,crossView=false;
 function stereo(){
 var Sq=1000,ow=gc.width,oh=gc.height,z=new Float32Array(NM),e=0.009*dep;
 try{
-gc.width=Sq;gc.height=Sq;gl.viewport(0,0,Sq,Sq);gl.uniform2f(U.R,Sq,Sq);poseForImage();
+gc.width=Sq;gc.height=Sq;gl.viewport(0,0,Sq,Sq);gl.uniform2f(U.R,Sq,Sq);gl.uniform1f(U.As,1);poseForImage();
 var m=30,W=Sq*2+m*3,H=Sq+160,cv=document.createElement('canvas');cv.width=W;cv.height=H;var x=cv.getContext('2d'),bgc=sig.pal.bg;
 x.fillStyle='rgb('+Math.round(bgc[0]*130)+','+Math.round(bgc[1]*130)+','+Math.round(bgc[2]*130)+')';x.fillRect(0,0,W,H);
 /* 近いものほど、左目の絵では右へ、右目の絵では左へ寄る。交差法では左右の絵を入れ替える */
@@ -759,13 +791,13 @@ function setCredit(){var a=$('ttl').value||trackName||'',b=$('art').value||'';$(
 /* 3D表示: 画面を左右に分け、左目用と右目用を動いたまま描く。スマホを横にしてゴーグルに入れれば、そのまま立体で見られる */
 $('dp').addEventListener('input',function(){dep=(+this.value)/10;$('do').textContent=dep.toFixed(1);});
 $('sb3').addEventListener('click',function(){sbs=!sbs;this.setAttribute('aria-pressed',sbs?'true':'false');this.textContent='3D表示：'+(sbs?'入':'切');
-$('stg').classList.toggle('sbs',sbs);$('crE2').hidden=!sbs;parts=null;rs();});
+$('stg').classList.toggle('sbs',sbs);$('crE2').hidden=!sbs;parts=null;applyWide();});
 $('fsb').addEventListener('click',function(){var st=$('stg');
 if(document.fullscreenElement){document.exitFullscreen();return;}
 if(st.requestFullscreen){var pr3=st.requestFullscreen();if(pr3&&pr3.catch)pr3.catch(function(){msg.textContent='この端末では全画面にできません。横向きにしてご覧ください';});}
 else msg.textContent='この端末では全画面にできません。横向きにしてご覧ください';});
 $('stg').addEventListener('click',function(){if(document.fullscreenElement)document.exitFullscreen();});
-document.addEventListener('fullscreenchange',function(){setTimeout(rs,80);});
+document.addEventListener('fullscreenchange',function(){if(!document.fullscreenElement)wideMan=null;setTimeout(applyWide,80);});
 $('ttl').addEventListener('input',setCredit);$('art').addEventListener('input',setCredit);setCredit();
 
 /* ===== 物語の区切り(曲の進行に対する割合) ===== */
@@ -822,7 +854,7 @@ var cmax=Math.max(2,Math.min(9,Math.round(2+7*cl(eSlow*1.7))));
 var cutMode=live&&pre&&pre.cuts.length>2;
 if(cutMode){if(cutEv)onCut(cutEv);if(barEv)onBar();}   /* 曲を下読みできた時: 時計まかせの切り替えをやめ、フレーズの頭でだけ変える */
 else{
-if(due(nextD,true)){var cur=Math.sign(dirT)||1,bs=bias===1?-1:1;
+if(due(nextD,true)){starN++;var cur=Math.sign(dirT)||1,bs=bias===1?-1:1;
 var nd=bias===0?(Math.random()<0.8?-cur:cur):(cur===bs?(Math.random()<0.3?-bs:bs):bs);
 dirT=nd*rnd(0.5,1);nextD=T+((bias!==0&&nd!==bs)?rnd(1.2,2.6):rnd(3,11))*tf;}
 if(due(nextC,false)){var q=Math.random(),c0=cnt;
@@ -849,7 +881,7 @@ ord+=(ordT-ord)*Math.min(1,vd*0.8);
 var sm=0,nOn=0,rank=[],mem=[0,0,0,0,0,0,0,0,0],j;
 qR+=(qRt-qR)*Math.min(1,vd*0.8);qrot+=vd*0.05*(1+2*kick);
 for(j=0;j<9;j++){var act=j<nq,qx=Q[j*3],qy=Q[j*3+1];
-if(act){var gx,gy;if(stage>=3&&sig.cen[j]){gx=sig.cen[j][0];gy=sig.cen[j][1];}else{gx=Math.cos(j*TAU/nq+qrot)*qR;gy=Math.sin(j*TAU/nq+qrot)*qR;}
+if(act){var gx,gy;if(stage>=3&&sig.cen[j]){gx=sig.cen[j][0];gy=sig.cen[j][1];}else{gx=Math.cos(j*TAU/nq+qrot)*qR*KX;gy=Math.sin(j*TAU/nq+qrot)*qR;}
 var qs=Math.min(1,vd*(stage>=3?2.5:1.2));Q[j*3]=qx+(gx-qx)*qs;Q[j*3+1]=qy+(gy-qy)*qs;}
 Q[j*3+2]+=((act?1:0)-Q[j*3+2])*Math.min(1,vd*1.5);}
 if(stage<4){
@@ -893,6 +925,7 @@ if(bof[i]>0.002&&par[i]>=0){x+=(cs[par[i]*2]-x)*bof[i];y+=(cs[par[i]*2+1]-y)*bof
 else if(al[i]>0){var tx=bx,ty=by;if(mt[i]>=0&&al[mt[i]]>0){tx=cs[mt[i]*2];ty=cs[mt[i]*2+1];}
 else if(mt[i]===-2){var bd=9;sig.cen.forEach(function(c){var dd=Math.hypot(c[0]-cs[i*2],c[1]-cs[i*2+1]);if(dd<bd){bd=dd;tx=c[0];ty=c[1];}});}   /* 収束: いちばん近い結末の中心へ */
 x=cs[i*2]+(tx-cs[i*2])*Math.min(1,vd*3);y=cs[i*2+1]+(ty-cs[i*2+1])*Math.min(1,vd*3);}
+x*=KX;   /* 横長なら、曼荼羅どうしを横へ広げて並べる */
 if(stage===3){var s4=sig.slots[i],tk=ease((t3-s4.ord*0.05)/0.55);x+=(s4.cx-x)*tk;y+=(s4.cy-y)*tk;}
 nx2[i*2]=x;nx2[i*2+1]=y;}
 cs.set(nx2);
@@ -924,14 +957,22 @@ var fv=stage===0?ease(pr2/P1):(stage===4?1-ease((pr2-P8)/GDS):1);
 var energy=cl((eSlow-0.25)*2.2);
 var holdGlow=stage===4?ease((pr2-P4)/0.012)*(1-ease((pr2-P6)/0.02)):0;
 /* 大波: 止めていた鼓動を、ここで一度だけ、大きくゆっくり打つ */
-var Bu=B,Pu=pulseOn?P:4,BmU=pulseOn?pul:ZERO,bwx=0,bwy=0,Md=1,gdA=0,gdF=0;
+var Bu=B,Pu=pulseOn?P:4,BmU=pulseOn?pul:ZERO,bwx=0,bwy=0,Md=1,gdA=0,gdF=0,RM=Math.hypot(AR/2,.5)/.7071;
 if(stage===4){var tw=(pr2-PW)/PWd,env=0;
-if(tw>0&&tw<1&&!reduce){env=tw<0.22?ease(tw/0.22):1-ease((tw-0.22)/0.78);bwx=tw*0.85;bwy=Math.min(1,tw*7)*(1-ease((tw-0.75)/0.25));Pu=tw;}
+if(tw>0&&tw<1&&!reduce){env=tw<0.22?ease(tw/0.22):1-ease((tw-0.22)/0.78);bwx=tw*0.85*RM;bwy=Math.min(1,tw*7)*(1-ease((tw-0.75)/0.25));Pu=tw;}
 /* 金: 鼓動とともに、中心から外へ染め広げる。染まった金は、曼荼羅が消えるまで残る */
-if(tw>0){if(tw<1&&!reduce){gdA=ease(tw/0.12);gdF=tw*1.25-0.04;}else{gdA=ease(tw);gdF=2;}}
+if(tw>0){if(tw<1&&!reduce){gdA=ease(tw/0.12);gdF=(tw*1.25-0.04)*RM;}else{gdA=ease(tw);gdF=2;}}
 for(i=0;i<NM;i++)BMF[i]+=env*1.3+(pulseOn?pul[i]:0);BmU=BMF;Bu=B+env*2.2;
 Md=(1-0.45*ease((pr2-P6)/(P7-P6)))*(1-ease((pr2-(P7-0.006))/0.02));}   /* 字が現れるにつれて沈み、そのあと消える */
-gl.uniform2f(U.R,gc.width,gc.height);gl.uniform1f(U.Sb,sbs?1:0);gl.uniform1f(U.Ey,sbs?(crossView?-1:1)*0.009*dep:0);gl.uniform1fv(U.Dz,DZ);gl.uniform1f(U.Z,Z);gl.uniform1f(U.T,T);gl.uniform1f(U.B,Bu);gl.uniform1f(U.P,Pu);gl.uniform1f(U.Md,Md);gl.uniform2f(U.Bw,bwx,bwy);gl.uniform2f(U.Gd,gdA,gdF);
+gl.uniform2f(U.R,gc.width,gc.height);gl.uniform1f(U.Sb,sbs?1:0);gl.uniform1f(U.Ey,sbs?(crossView?-1:1)*0.009*dep:0);gl.uniform1fv(U.Dz,DZ);gl.uniform1f(U.Z,Z);gl.uniform1f(U.T,T);gl.uniform1f(U.B,Bu);gl.uniform1f(U.P,Pu);gl.uniform1f(U.Md,Md);gl.uniform2f(U.Bw,bwx,bwy);gl.uniform2f(U.Gd,gdA,gdF);SK+=vd*(reduce?0.25:1);
+/* 星の動き。おまかせでは物語に合わせて変える: 始まりは奥から手前へ、生成は場面が変わるたびに横と縦を入れ替え、秩序へは縦、
+   曼荼羅と大波は奥から手前へ(大波は速く)、一字は横へ静かに、終わりの無は手前から奥へ遠ざかる。切り替えはゆっくり混ぜる */
+var stMode=$('sm').value||'a',stVel=[0,0,0],chS=chapter();
+if(stMode==='x')stVel=[1,0,.12];else if(stMode==='y')stVel=[0,1,.12];else if(stMode==='i')stVel=[.2,.08,1];else if(stMode==='o')stVel=[.2,.08,-1];
+else stVel=chS<=2?[.2,.08,.5+.15*chS]:chS===3?(starN%2?[.1,1,.15]:[1,.1,.15]):chS===4?[.1,1,.2]:chS===5?[.2,.08,1]:chS===6?[.15,.05,2.4]:chS===7?[.6,.1,.1]:[.15,.05,-.8];
+var stMix=Math.min(1,vd*0.7),stGain=(reduce?0.25:1)*(0.65+0.7*inten);SVX+=(stVel[0]-SVX)*stMix;SVY+=(stVel[1]-SVY)*stMix;SVZ+=(stVel[2]-SVZ)*stMix;
+SKX+=SVX*0.012*stGain*vd;SKY+=SVY*0.012*stGain*vd;SKZ+=SVZ*0.02*stGain*vd;SKZ-=Math.floor(SKZ);
+gl.uniform4f(U.Sk,SKX,SKY,SKZ,SK);gl.uniform1f(U.As,KX);
 gl.uniform1f(U.W,reduce?vel*0.3:vel);gl.uniform1f(U.L,0.36+0.2*Ls+0.2*holdGlow);gl.uniform1fv(U.Rr,rrA);gl.uniform1fv(U.Pr,prA);gl.uniform1fv(U.Av,avA);gl.uniform1f(U.Fs,sig.sym*2);gl.uniform1f(U.Fv,fv);gl.uniform3fv(U.Bg,BG);
 gl.uniform3fv(U.Ca,CA);gl.uniform3fv(U.Cb,CB);gl.uniform3fv(U.Cc,CC);
 gl.uniform1f(U.O,pulseOn?Oe:0);gl.uniform1f(U.Sv,1.18+0.42*energy+0.25*holdGlow);gl.uniform1f(U.Fn,holdGlow);gl.uniform1f(U.Pt,Pt);gl.uniform1f(U.Ac,stage===4?Md:Math.min(1,sm));
@@ -958,6 +999,3 @@ document.addEventListener('visibilitychange',function(){last=performance.now();}
 requestAnimationFrame(function(ts){last=ts;frame(ts);});
 })();
 </script>
-
-</body>
-</html>

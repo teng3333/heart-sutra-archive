@@ -1,4 +1,4 @@
-<title>OGS 曼荼羅 v2.2 試作</title>
+<title>OGS 曼荼羅 v2.3 試作</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* レイアウト: 正方形の舞台を主役に置き、操作は脇(狭い画面では下)に静かに並べる。暗い一色の世界に固定 */
@@ -109,6 +109,7 @@ button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
       <div class="row"><span class="lab">流れ</span><div class="btns" style="flex:1;grid-template-columns:1fr 1fr 1fr">
         <button type="button" id="f0" aria-pressed="true">自在</button><button type="button" id="f1" aria-pressed="false">収束寄り</button><button type="button" id="f2" aria-pressed="false">発散寄り</button></div></div>
       <div class="row"><label for="sp">流れの速さ</label><input type="range" id="sp" min="5" max="50" step="1" value="15"><output id="so">1.5倍</output></div>
+      <div class="row"><label for="pm">色合い</label><select id="pm"><option value="a">おまかせ（曲で決める）</option><option value="c">落ち着いた色</option><option value="p">ポップな色</option></select></div>
       <div class="row"><label for="sm">星の動き</label><select id="sm"><option value="a">おまかせ（物語に合わせる）</option><option value="x">横へ流れる</option><option value="y">縦へ流れる</option><option value="i">奥から手前へ</option><option value="o">手前から奥へ</option></select></div>
       <div class="row" id="bpmrow"><label for="bp">テンポ</label><input type="range" id="bp" min="60" max="150" step="1" value="96"><output id="bo">96</output></div>
     </div>
@@ -160,7 +161,7 @@ function applyWide(){var w=wantWide();$('stg').classList.toggle('wide',w);$('wd'
 var vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
 var fs='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n'+
 'uniform vec2 R;uniform float Z;uniform float T;uniform float B;uniform float P;uniform float W;uniform float L;uniform float Rp;uniform float O;uniform float Fs;uniform float Fv;uniform vec3 Bg;uniform vec3 Ca[12];uniform vec3 Cb[12];uniform vec3 Cc[12];uniform float Pt;uniform float Ac;uniform float Md;uniform vec2 Bw;uniform vec2 Gd;uniform vec4 Sk;uniform float As;uniform float Ey;uniform float Sb;uniform float Dz[12];uniform float Rr[12];uniform float Pr[12];uniform float Av[12];uniform float Sv;uniform float Fn;uniform vec4 Wp[12];uniform vec3 Q[9];uniform vec3 Qs;'+
-'uniform vec2 C[12];uniform vec2 An[12];uniform float A[12];uniform float G[12];uniform float H[12];uniform float Bm[12];uniform vec4 M1[12];uniform vec4 M2[12];uniform vec4 M3[12];'+
+'uniform vec2 C[12];uniform vec2 An[12];uniform float A[12];uniform float G[12];uniform float H[12];uniform float Bm[12];uniform vec4 M1[12];uniform vec4 M2[12];uniform vec4 M3[12];uniform float Pf[12];'+
 'float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}'+
 /* 星: 三つの層が違う速さで流れる。遠い星は小さく暗くゆっくり、近い星は大きく明るく速い。層ごとに少し違う速さで動くので奥行きが出る。
    sc=格子の細かさ th=星になる割合 sp=流れる速さ(画面の高さ/秒)。3D表示では、遠い層ほど奥へ寄せる */
@@ -201,7 +202,9 @@ var fs='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecis
 'float rr=r*(1.-.09*b)-.035*wv-.008*b*sin(a*N+T*3.)*smoothstep(0.,.12,r)*(1.-H[i]*.7);rr=max(rr,1e-4);'+
 'float u=log(rr)*m1.y-Z*(.8+.07*fi)-m3.w;float ring=floor(u);float f=fract(u);'+
 'float v=(a+Rr[i]*(mod(ring,2.)*2.-1.)+W*.5*log(rr))/6.2832*N+m1.w*u+Av[i];'+
-'float e=pow(1.-abs(fract(v)-.5)*2.,m1.z);'+
+/* 花弁の型 Pf: 0=尖った花弁(これまでの形) 1=丸い花弁(うろこ・蓮) 2=波(ゆるやかにうねる帯) 3=角(凸凹の歯)。間の値は二つの型を混ぜる(型が変わる時もなめらか) */
+'float tri=1.-abs(fract(v)-.5)*2.;float pf=Pf[i];float e=pow(tri,m1.z)*max(0.,1.-pf);'+
+'if(pf>.001){e+=pow(sqrt(max(0.,1.-(1.-tri)*(1.-tri))),.6+.4*m1.z)*max(0.,1.-abs(pf-1.))+(.3+.34*(.5+.5*cos((fract(v)-.5)*6.2832)))*max(0.,1.-abs(pf-2.))+smoothstep(.44,.56,tri)*.92*max(0.,1.-abs(pf-3.));}'+
 'float d1=e*(.85+.4*O)-f+.12;float pe=.025+wp.w*.3;float pet=smoothstep(0.,pe,d1);float inn=smoothstep(0.,pe,e*m3.y-f+.02);'+
 'float ol=(1.-smoothstep(.012,.04,abs(d1)))*(1.-min(1.,wp.w*3.));'+
 'float dt=smoothstep(.18,.15,length(vec2((fract(v+.5)-.5)*1.2,(f-.58)*1.6)))*m3.x;'+
@@ -218,16 +221,18 @@ var fs='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecis
 'vec3 col=acc/max(ws,1e-6);col=mix(col,gold,min(ln/max(wl,1e-4)*1.5,1.)*L);col*=1.+1.1*min(lf/max(wl,1e-4),1.);'+
 /* 余白: 渦の中心へ向かう細い輪と放射の線。流れと一緒に動くので、吸い込みと湧き出しが闇の中でも見える */
 'float dm=9.;vec2 dv=p;for(int j=0;j<9;j++){vec3 qq=Q[j];if(qq.z<.3)continue;vec2 ev=p-qq.xy;float le=length(ev);if(le<dm){dm=le;dv=ev;}}'+
-'float fu=fract(log(dm+.002)*2.6-Z*.9);float fl=1.-smoothstep(0.,.05,min(fu,1.-fu));'+
+'float fu=fract(log(dm+.002)*2.6-Z*.9);float fl=1.-smoothstep(0.,.058,min(fu,1.-fu));'+
 'float fa=fract(atan(dv.x,dv.y)/6.2832*Fs);float fsp=1.-smoothstep(0.,.03,min(fa,1.-fa));'+
 'vec3 bg=Bg*(.45+.75*exp(-dm*3.5))+gold*(fl*.075+fsp*.035)*smoothstep(0.,.05,dm);'+
 'float spx=1./min(V.x,V.y);bg+=star(ps,0.,spx,ey)+star(ps,1.,spx,ey)+star(ps,2.,spx,ey)+star(ps,3.,spx,ey);bg*=Fv;'+
 'col=mix(bg,col,min(cov,1.)*Md);'+
 'col=mix(col,gold,min(rim,1.)*.38*Md);float gd=Gd.x*smoothstep(Gd.y+.05,Gd.y-.16,r0)*smoothstep(0.,.3,Md);float gly=dot(col,vec3(.3,.59,.11));col=mix(col,vec3(1.,.8,.42)*(.2*min(gly*12.,1.)+1.55*gly),gd*.86);col+=(col*.45+vec3(1.,.84,.5)*.5)*bwv*Md;'+
-'col*=.95+.08*n(p*38.+T*.05);'+
-'float hole=max(0.,-W);float hl=1.;vec3 glw=vec3(0.);'+
-'for(int j=0;j<9;j++){vec3 qq=Q[j];if(qq.z<.01)continue;float dd=length(p0-qq.xy);hl*=mix(1.,smoothstep(0.,Qs.y,dd),hole*.8*qq.z);'+
-'glw+=qq.z*(vec3(1.,.9,.7)*(max(0.,W)*.25+B*.06*(1.-.75*wg))*Ac*exp(-dd*dd*Qs.z)+vec3(1.,.93,.78)*Pt*(exp(-dd*dd*2600.)*1.3+exp(-dd*dd*Qs.z*4.)*.22));}'+
+'col*=.975+.04*n(p*64.+T*.05);'+   /* 絵の具のざらつき。以前は .95+.08・粗さ38 で、淡い色の上にまだらな斑点として見えたので、半分に弱めて細かくした */
+
+/* 渦の中心の暗がりと明かり。cvm=その場所を曼荼羅が覆っている度合い。覆われた所では暗がりをほぼ消し(画面いっぱいの曼荼羅の上で目立つため)、明かりは宇宙(余白)でだけはっきり灯す */
+'float cvm=min(cov,1.)*Md;float hole=max(0.,-W)*mix(.3,.05,cvm);float hl=1.;vec3 glw=vec3(0.);float gk=mix(.2,.07,cvm);'+
+'for(int j=0;j<9;j++){vec3 qq=Q[j];if(qq.z<.01)continue;float dd=length(p0-qq.xy);hl*=mix(1.,smoothstep(0.,Qs.y,dd),hole*qq.z);'+
+'glw+=qq.z*(vec3(1.,.9,.7)*(max(0.,W)*gk+B*.06*(1.-.75*wg))*Ac*exp(-dd*dd*Qs.z)+vec3(1.,.93,.78)*Pt*(exp(-dd*dd*2600.)*1.3+exp(-dd*dd*Qs.z*4.)*.22));}'+
 'col*=hl;col+=glw;'+
 'float lm=dot(col,vec3(.3,.59,.11));col=mix(vec3(lm),col,Sv);col*=.94+.1*(Sv-1.);'+
 'col+=gold*Fn*(.16*exp(-pow((r0-.474)*42.,2.))+.05*exp(-pow((r0-.474)*9.,2.)));'+
@@ -239,10 +244,11 @@ if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){fail();return;}
 gl.useProgram(pr);
 var bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
 var lp=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(lp);gl.vertexAttribPointer(lp,2,gl.FLOAT,false,0,0);
-var U={};['R','Z','T','B','P','W','L','Rp','O','Fs','Fv','Bg','Ca','Cb','Cc','Pt','Ac','Md','Bw','Gd','Sk','As','Ey','Sb','Dz','Rr','Pr','Av','Sv','Fn','Wp','Q','Qs','C','An','A','G','H','Bm','M1','M2','M3'].forEach(function(k){U[k]=gl.getUniformLocation(pr,k);});
+var U={};['R','Z','T','B','P','W','L','Rp','O','Fs','Fv','Bg','Ca','Cb','Cc','Pt','Ac','Md','Bw','Gd','Sk','As','Ey','Sb','Dz','Rr','Pr','Av','Sv','Fn','Wp','Q','Qs','C','An','A','G','H','Bm','Pf','M1','M2','M3'].forEach(function(k){U[k]=gl.getUniformLocation(pr,k);});
 if(coarse)$('wd').hidden=true;
 rs();window.addEventListener('resize',rs);
 if(window.ResizeObserver){var lastBox='';new ResizeObserver(function(){var k=gc.clientWidth+'x'+gc.clientHeight;if(k!==lastBox){lastBox=k;rs();}}).observe(gc);}
+$('pm').addEventListener('change',function(){setPal(palFor(mood(),Math.random));});
 $('wd').addEventListener('click',function(){wideMan=!wantWide();applyWide();});
 
 /* ===== 曲の種: 配色の型と、結末の曼荼羅の設計図 ===== */
@@ -264,7 +270,10 @@ var PALS=[
  {n:'紅紫',c:['#d6336c','#7b2cbf','#f59f00','#1971c2','#fbeaff'],bg:'#0c0612'}];
 /* 色の組の「温度」。0=静かな曲向き, 1=中間, 2=華やかな曲向き */
 [1,1,0,1,0,2,2,2,1,2,2].forEach(function(h,i){PALS[i].heat=h;});
-function palFor(level,rf){var l=PALS.filter(function(P){return level===0?P.heat<=1:level===1?P.heat>=1:P.heat===2;});return l[Math.floor(rf()*l.length)];}
+/* 標準は落ち着いた色(温度0と1)。「ポップ」と判定した曲(速くて、終始勢いのある曲)だけ華やかな色(温度2)を使う */
+var popAuto=false;
+function popNow(){var v=$('pm').value||'a';return v==='p'||(v==='a'&&popAuto);}
+function palFor(level,rf){var pop=popNow(),l=PALS.filter(function(P){return pop?P.heat===2:P.heat<=1;});return l[Math.floor(rf()*l.length)];}
 PALS.forEach(function(P){P.c=P.c.map(hx);P.bg=hx(P.bg);});
 /* 結末の曼荼羅を組む。軸の数(1・3・4・5・6・8)、帯の幅、中心の厚み、間に入る小さな曼荼羅の有無まで、曲ごとに変わる。
    level=曲の勢い(0静か 1中間 2華やか)。静かな曲は軸が少なく、華やかな曲は軸が多い */
@@ -446,7 +455,7 @@ var Oe=0,zstep=0,bias=0,Rp=0,kick=0,beatEnv=0,beatN=0,lastBeatT=-9,ibi=0.6,beatN
 var cnt=0,nextC=2,dirT=1,nextD=5,nextO=8,ord=0,ordT=0,comShape=0,track=147,sig=build(track),lastStage=0,finInit=false,Zf=0,Pt=0;
 var SIDES=[3,4,5,6,8];
 var cs=new Float32Array(NM*2),an=new Float32Array(NM*2),al=new Float32Array(NM),gn=new Float32Array(NM),hm=new Float32Array(NM),pul=new Float32Array(NM);
-var M1=new Float32Array(NM*4),M2=new Float32Array(NM*4),M3=new Float32Array(NM*4),pT=new Float32Array(NM);
+var PF=new Float32Array(NM),FAMS=[0,0,0,1,1,2,3],M1=new Float32Array(NM*4),M2=new Float32Array(NM*4),M3=new Float32Array(NM*4),pT=new Float32Array(NM);
 var CA=new Float32Array(36),CB=new Float32Array(36),CC=new Float32Array(36),TA=new Float32Array(36),TB=new Float32Array(36),TC=new Float32Array(36),BG=new Float32Array(3);
 var rr0=new Float32Array(NM),pr0=new Float32Array(NM),BMF=new Float32Array(NM),CUP=new Float32Array(NM*2),Zl=0,rotC=0,tF=0,phF=0;
 var rrA=new Float32Array(NM),prA=new Float32Array(NM),avA=new Float32Array(NM),tiA=new Float32Array(NM);for(var qq0=0;qq0<NM;qq0++)prA[qq0]=qq0;
@@ -478,7 +487,7 @@ setCol(TA,i,c[ia]);setCol(TB,i,c[ib]);setCol(TC,i,c[ic]);if(now){setCol(CA,i,c[i
 function dzT(i){var sp=sig.slots[i],F=sig.fin[sp.cls],tsg=sig.fin[0].ph<0.35?-1:1;return (sp.dens||sp.cls===0)?tsg*0.8:(sp.r1>0?tsg:(F.ph<0.3?-1:1)*(0.7+0.3*F.inner));}
 function roll(i){
 M1[i*4]=pick([3,4,5,6,6,7,8,8,10,12,16]);M1[i*4+1]=rnd(1.0,2.4);M1[i*4+2]=pick([.45,.8,1,1,1.6,2.6]);M1[i*4+3]=pick([0,0,0,.25,-.25,.6,-.6]);
-M2[i*4+3]=1;M3[i*4]=Math.random()<.45?1:0;M3[i*4+1]=rnd(.3,.65);M3[i*4+2]=1;M3[i*4+3]=Math.random();
+PF[i]=pick(FAMS);M2[i*4+3]=1;M3[i*4]=Math.random()<.45?1:0;M3[i*4+1]=rnd(.3,.65);M3[i*4+2]=1;M3[i*4+3]=Math.random();
 avA[i]=0;DZ[i]=(Math.random()<0.3?-1:1)*rnd(.6,1);   /* 凸(手前へ盛り上がる)か、凹(奥へくぼむ)か */
 M2[i*4]=pick([0,0,.6,1]);M2[i*4+1]=pick([0,.5,1]);M2[i*4+2]=pick([0,0,.6,1]);
 recolor(i,true);organic(i);}
@@ -488,6 +497,7 @@ var Z3=0;
 /* 結末の姿へ寄せる。kq=1 なら即座に、小さければゆっくり。「秩序へ」でも完成後でも同じ手続きを使うので、境目で止まらない */
 function morph(i,kq,stepN){var sp=sig.slots[i],F=sig.fin[sp.cls],o4=i*4,dn=sp.dens||(sp.r1>0?F.k/Math.log(sp.r2/sp.r1):1.7);
 radT[i]=sp.r2;avA[i]+=(upA(F.N)-avA[i])*kq;
+if(F.fam===undefined)F.fam=FAMS[Math.floor(F.sharp*7.3+F.N*1.7+sp.cls*2.9)%FAMS.length];PF[i]+=(F.fam-PF[i])*kq;   /* 結末では、同じ役の曼荼羅は同じ花弁の型にそろえる */
 M1[o4+1]+=(dn-M1[o4+1])*kq;M1[o4+2]+=(F.sharp-M1[o4+2])*kq;M1[o4+3]+=(F.spiral-M1[o4+3])*kq;
 if(M1[o4]!==F.N&&stepN){var dN=F.N-M1[o4];M1[o4]+=Math.sign(dN)*(Math.abs(dN)>6?2:1);}
 M2[o4]+=(F.gx-M2[o4])*kq;M2[o4+1]+=(F.gy-M2[o4+1])*kq;M2[o4+2]+=(F.gz-M2[o4+2])*kq;M2[o4+3]+=(sp.bri-M2[o4+3])*kq;
@@ -496,7 +506,7 @@ var pw=(sp.r1>0?Math.log(sp.r1)*dn:F.ph)-Z3*(0.8+0.07*i);pw+=Math.round(M3[o4+3]
 want(i,(sig.poly&&sp.solo)?(sig.sym>8?6:sig.sym):0);}
 /* 画像用: すべてを結末の正確な姿にそろえ、正面を向かせて送る */
 function poseForImage(){
-var keep=[M1,M2,M3,DZ,avA,radT,rad,an,al,gn,hm,ht,pend,CA,CB,CC].map(function(a){return [a,a.slice()];});   /* 画面の動きは乱さない: 写したら元へ戻す */
+var keep=[PF,M1,M2,M3,DZ,avA,radT,rad,an,al,gn,hm,ht,pend,CA,CB,CC].map(function(a){return [a,a.slice()];});   /* 画面の動きは乱さない: 写したら元へ戻す */
 for(var i=0;i<NM;i++){var sp=sig.slots[i],F=sig.fin[sp.cls],G0=sig.sym>8?6:sig.sym,pl=(sig.poly&&sp.solo);
 morph(i,1,false);M1[i*4]=F.N;if(pl)gn[i]=G0;hm[i]=pl?1:0;ht[i]=hm[i];pend[i]=0;
 rad[i]=sp.r2;an[i*2]=sp.r1===0?-1:sp.r1;an[i*2+1]=sp.r2;al[i]=sp.wing?0:1;   /* 両脇の曼荼羅は、正方形の画像には写さない(半分切れて写るため) */
@@ -504,7 +514,7 @@ CUP[i*2]=sp.cx;CUP[i*2+1]=sp.cy;rr0[i]=upR(rrA[i],F.N);avA[i]=upA(F.N);}
 CA.set(TA);CB.set(TB);CC.set(TC);
 gl.uniform1f(U.Sb,0);gl.uniform1f(U.Ey,0);gl.uniform1f(U.B,0);gl.uniform1fv(U.Bm,ZERO);gl.uniform1f(U.P,4);gl.uniform1f(U.Fn,1);gl.uniform1f(U.Md,1);gl.uniform2f(U.Bw,0,0);gl.uniform2f(U.Gd,0,0);
 gl.uniform1f(U.Z,Z3);gl.uniform1f(U.W,0);gl.uniform1f(U.O,0);gl.uniform1f(U.Pt,0);gl.uniform1f(U.Fv,1);gl.uniform1f(U.Ac,1);gl.uniform4fv(U.Wp,new Float32Array(48));
-gl.uniform1fv(U.Rr,rr0);gl.uniform1fv(U.Pr,pr0);gl.uniform1fv(U.Av,avA);gl.uniform2fv(U.C,CUP);gl.uniform2fv(U.An,an);gl.uniform1fv(U.A,al);gl.uniform1fv(U.G,gn);gl.uniform1fv(U.H,hm);gl.uniform1fv(U.Dz,DZ);
+gl.uniform1fv(U.Rr,rr0);gl.uniform1fv(U.Pr,pr0);gl.uniform1fv(U.Av,avA);gl.uniform2fv(U.C,CUP);gl.uniform2fv(U.An,an);gl.uniform1fv(U.A,al);gl.uniform1fv(U.G,gn);gl.uniform1fv(U.H,hm);gl.uniform1fv(U.Pf,PF);gl.uniform1fv(U.Dz,DZ);
 gl.uniform4fv(U.M1,M1);gl.uniform4fv(U.M2,M2);gl.uniform4fv(U.M3,M3);gl.uniform3fv(U.Ca,CA);gl.uniform3fv(U.Cb,CB);gl.uniform3fv(U.Cc,CC);
 keep.forEach(function(k){for(var q=0;q<k[1].length;q++)k[0][q]=k[1][q];});}
 function want(i,nn){if(nn===0){ht[i]=0;pend[i]=0;}else if(nn===gn[i]){ht[i]=1;pend[i]=0;}else if(hm[i]<0.03){gn[i]=nn;ht[i]=1;pend[i]=0;}else{pend[i]=nn;ht[i]=0;}}
@@ -597,7 +607,7 @@ actx.decodeAudioData(fr.result,function(b){
 buf=b;offset=0;prog=0;
 var hsh=5381;for(var i=0;i<f.name.length;i++)hsh=((hsh*33)^f.name.charCodeAt(i))>>>0;
 resetAll();newSeed((hsh%999)+1);trackName=f.name.replace(/\.[^.]+$/,'');$('ttl').value=trackName;setCredit();
-try{pre=preAnalyse(b);}catch(e){pre=null;}
+try{pre=preAnalyse(b);}catch(e){pre=null;}popAuto=!!(pre&&pre.beats&&pre.bpm>=110&&pre.level===2);
 fitStory();syncPointers(0);
 $('an').textContent=pre?((pre.beats?'約'+Math.round(pre.bpm)+'拍/分':'拍は不明瞭')+' ・ 場面が変わる所 '+pre.cuts.length+'か所（大きな区切り '+pre.cuts.filter(function(c){return c.w>=0.55;}).length+'） ・ 本編 '+fmt(pre.t0)+'〜'+fmt(pre.t1)):'下読みできませんでした';
 lastSec=T;eSlow=eLong=0;mx=[.08,.08,.08];
@@ -891,7 +901,7 @@ for(i=0;i<NM;i++){var w=i<cnt;
 if(w&&!on[i]){on[i]=true;roll(i);al[i]=1;rad[i]=0;mf[i]=0;
 par[i]=anyOn(i);bof[i]=par[i]>=0?1:0;                      /* 親がいれば、親の場所から分かれて出てくる */
 radT[i]=stage===1?0.08:(cnt<=1?1.35:(ordT>0.5?rnd(.24,.5):rnd(.16,.78)));
-gn[i]=pick(SIDES);hm[i]=0;ht[i]=(Math.random()<0.3||stage===1)?0:1;}
+gn[i]=stage===1?pick([6,6,8,8,5]):pick(SIDES);hm[i]=0;ht[i]=Math.random()<(stage===1?0.5:0.3)?0:1;}
 if(!w&&on[i]){on[i]=false;radT[i]=0;mf[i]=0;mt[i]=stage===3?-2:anyOn(i);}   /* 消える時は、隣の曼荼羅へ吸い込まれる */
 if(stage===1&&i===0)radT[0]=0.08+1.27*ease((pr2-P1)/(P2-P1));
 if(stage===3){var sp3=sig.slots[i],F3=sig.fin[sp3.cls],ti=ease((t3-sp3.ord*0.05)/0.55),o4=i*4;
@@ -977,7 +987,7 @@ gl.uniform1f(U.W,reduce?vel*0.3:vel);gl.uniform1f(U.L,0.36+0.2*Ls+0.2*holdGlow);
 gl.uniform3fv(U.Ca,CA);gl.uniform3fv(U.Cb,CB);gl.uniform3fv(U.Cc,CC);
 gl.uniform1f(U.O,pulseOn?Oe:0);gl.uniform1f(U.Sv,1.18+0.42*energy+0.25*holdGlow);gl.uniform1f(U.Fn,holdGlow);gl.uniform1f(U.Pt,Pt);gl.uniform1f(U.Ac,stage===4?Md:Math.min(1,sm));
 gl.uniform3fv(U.Q,Q);gl.uniform3f(U.Qs,nq>1?4.6:2.2,nq>1?0.11:0.2,nq>1?90:26);
-gl.uniform2fv(U.C,cs);gl.uniform2fv(U.An,an);gl.uniform1fv(U.A,al);gl.uniform1fv(U.G,gn);gl.uniform1fv(U.H,hm);gl.uniform1fv(U.Bm,BmU);
+gl.uniform2fv(U.C,cs);gl.uniform2fv(U.An,an);gl.uniform1fv(U.A,al);gl.uniform1fv(U.G,gn);gl.uniform1fv(U.H,hm);gl.uniform1fv(U.Pf,PF);gl.uniform1fv(U.Bm,BmU);
 for(i=0;i<48;i++){WP[i]+=(WT[i]-WP[i])*Math.min(1,vd*1.1);WU[i]=reduce?0:WP[i]*orgF*(0.45+0.9*inten);}
 gl.uniform4fv(U.Wp,WU);gl.uniform4fv(U.M1,M1);gl.uniform4fv(U.M2,M2);gl.uniform4fv(U.M3,M3);
 gl.drawArrays(gl.TRIANGLES,0,3);

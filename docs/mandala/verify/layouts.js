@@ -2,7 +2,7 @@ const fs=require('fs');const html=fs.readFileSync(__dirname+'/../mandala-prototy
 const a=L.findIndex(l=>l.startsWith('var TAU=')),b=L.findIndex(l=>l.startsWith('function build('));
 const src=L.slice(a,b).join('\n');
 for(const [AR,WN] of [[1,0],[16/9,2],[2.4,2]]){
- const f=new Function('AR','WN',src+';return makeFinal;')(AR,WN);
+ const f=new Function('AR','WN','$',src+';return makeFinal;')(AR,WN,function(){return {};});
  let bad=0,maxS=0,maxC=0,minS=99,fam={},wingBad=0,over=0;
  for(let seed=0;seed<4000;seed++)for(let lv=0;lv<3;lv++)for(const free of [false,true]){
   const g=f(free?{free:true}:{sym:[5,6,7,8,9,10,12][seed%7]},seed,lv);const s=g.slots;
